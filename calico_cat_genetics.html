@@ -6,470 +6,455 @@
     <title>X染色体の不活性化（三毛猫の遺伝）シミュレーター</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome icons for Lucide fallbacks -->
+    <!-- FontAwesome icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- React & ReactDOM CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <!-- Babel Standalone -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff7ed; }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fff7ed; color: #1f2937; }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="min-h-screen p-4 md:p-8">
 
-    <script type="text/babel">
-        const { useState } = React;
+    <div class="max-w-3xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight flex justify-center items-center gap-3">
+                <span class="text-4xl">🐈</span>
+                67. X染色体の不活性化（三毛猫の遺伝）
+            </h1>
+            <p class="text-gray-600 mt-2 font-medium">一緒にステップバイステップで解いていこう！</p>
+        </header>
 
-        // Lucide icons replacements using FontAwesome
-        const ChevronRight = ({ className = '' }) => <i className={`fa-solid fa-chevron-right ${className}`}></i>;
-        const CheckCircle2 = ({ className = '' }) => <i className={`fa-solid fa-circle-check ${className}`}></i>;
-        const HelpCircle = ({ className = '' }) => <i className={`fa-solid fa-circle-question ${className}`}></i>;
-        const BookOpen = ({ className = '' }) => <i className={`fa-solid fa-book-open ${className}`}></i>;
-        const AlertCircle = ({ className = '' }) => <i className={`fa-solid fa-circle-exclamation ${className}`}></i>;
-        const RefreshCcw = ({ className = '' }) => <i className={`fa-solid fa-rotate-left ${className}`}></i>;
-        const Dna = ({ className = '' }) => <i className={`fa-solid fa-dna ${className}`}></i>;
-        const Microscope = ({ className = '' }) => <i className={`fa-solid fa-microscope ${className}`}></i>;
+        <!-- Tab Navigation -->
+        <div class="flex flex-col sm:flex-row gap-2 mb-6 bg-gray-200/60 p-1.5 rounded-xl">
+            <button id="tab-theory" onclick="switchView('theory')" class="flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 flex justify-center items-center gap-2 bg-white text-purple-700 shadow-sm">
+                <i class="fa-solid fa-microscope"></i> 基礎知識
+            </button>
+            <button id="tab-rules" onclick="switchView('rules')" class="flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 flex justify-center items-center gap-2 text-gray-600 hover:text-gray-900">
+                <i class="fa-solid fa-book-open"></i> ルール確認
+            </button>
+            <button id="tab-question" onclick="switchView('question')" class="flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 flex justify-center items-center gap-2 text-gray-600 hover:text-gray-900">
+                <i class="fa-solid fa-circle-question"></i> 問題に挑戦
+            </button>
+        </div>
 
-        const problemData = {
-          title: '67. X染色体の不活性化（三毛猫の遺伝）',
-          image: null,
-          rules: [
-            { gene: 'A (常染色体)', effect: '黒色メラニンをつくる (A > a)' },
-            { gene: 'B (常染色体)', effect: '白斑をつくる (B > b, bbは白斑なし)' },
-            { gene: 'D (X染色体)', effect: '黒毛を茶毛に変える (D > d, dは変えずに黒のまま)' },
-            { mechanism: 'X不活性化', effect: '雌(XX)の細胞ではランダムに片方のXが不活性化される。雄(XY)はそのまま。' }
-          ],
-          questions: [
-            {
-              id: 'q1',
-              title: '問1：三毛ネコ雌の遺伝子型',
-              text: '三毛ネコ雌の毛色の遺伝子型を答えよ。なお、AおよびB遺伝子の遺伝子型はAABBとし、遺伝子型の書き方は図に従うこと。',
-              steps: [
-                {
-                  hint: '三毛猫の「三色」は何色と何色と何色ですか？問題文の条件を見て確認しましょう。',
-                  options: ['黒・白・グレー', '黒・茶・白', '茶・白・グレー'],
-                  correct: 1,
-                  feedback: '正解！三毛猫の3色は「黒・茶・白」ですね。'
-                },
-                {
-                  hint: '次に、「白斑」をつくる遺伝子について考えます。問題の条件より、AとBの遺伝子型はすでに「AABB」と指定されています。白斑をつくるのはどの遺伝子ですか？',
-                  options: ['A遺伝子', 'B遺伝子', 'D遺伝子'],
-                  correct: 1,
-                  feedback: 'その通り！B遺伝子(今回はBB)が「白斑」をつくります。これで「白」の条件はクリアです。'
-                },
-                {
-                  hint: '残るは「黒」と「茶」です。両方の色が同時にモザイク状に現れるには、X染色体上のD遺伝子はどうなっていれば良いでしょうか？雌はXXなので、X染色体を2つ持ちます。',
-                  options: ['X^D X^D (両方ともD)', 'X^d X^d (両方ともd)', 'X^D X^d (Dとdを1つずつ)'],
-                  correct: 2,
-                  feedback: '大正解！X^D X^d (ヘテロ接合) である必要があります。細胞ごとにランダムにX不活性化が起きるため、Dが残った細胞は「茶」、dが残った細胞は「黒」になり、結果としてモザイク模様（三毛）になります。'
-                }
-              ],
-              finalAnswer: 'AABB X^D X^d',
-              explanation: '白斑を持つのでB遺伝子は優性（指定によりAABB）。黒と茶の両方が現れるためには、X染色体上の遺伝子がヘテロ接合（X^D X^d）であり、ランダムなX染色体の不活性化により黒になる細胞（X^dが活性）と茶になる細胞（X^Dが活性）が混在する必要があります。'
-            },
-            {
-              id: 'q2',
-              title: '問2：XXX雌の遺伝子型',
-              text: '3本のX染色体をもつ三毛ネコ雌が生まれたとする。3本のうち2本のX染色体がランダムに不活性化される場合、この雌ネコがもちうる毛色の遺伝子型をすべて答えよ。なお、AおよびB遺伝子はAABBとする。',
-              steps: [
-                {
-                  hint: '今回はX染色体が3本(XXX)です。3本のうち2本が不活性化されるということは、1つの細胞で最終的に働くX染色体は何本ですか？',
-                  options: ['1本', '2本', '3本'],
-                  correct: 0,
-                  feedback: '正解！結局、働くのは通常通り「1本だけ」です。'
-                },
-                {
-                  hint: '問1で確認したように、「三毛」になるためには「D（茶になる）」と「d（黒のまま）」の両方の情報を持っていなければなりません。3つのX染色体(XXX)で、Dとdを両方とも持つ組み合わせはどうなりますか？',
-                  options: ['X^D X^D X^D と X^d X^d X^d', 'X^D X^D X^d と X^D X^d X^d', 'X^D X^d と X^d X^D'],
-                  correct: 1,
-                  feedback: 'その通り！Dが2つでdが1つ(X^D X^D X^d)か、Dが1つでdが2つ(X^D X^d X^d)のパターンのどちらかであれば、Dとdを両方保有することになります。'
-                }
-              ],
-              finalAnswer: 'AABB X^D X^D X^d, AABB X^D X^d X^d',
-              explanation: '3本のうち2本が不活性化され1本だけが働くため、細胞ごとにX^Dが働くかX^dが働くかのモザイクになります。三毛になるためにはDとdの両方を最低1つずつ持っている必要があります。したがって、Xを3つ持つ場合の組み合わせは、Dを2つ持つ場合（X^D X^D X^d）と、dを2つ持つ場合（X^D X^d X^d）の2通りになります。（常染色体は指定通りAABB）'
-            },
-            {
-              id: 'q3',
-              title: '問3：カンガルーの毛色',
-              text: 'カンガルーはネコと同様、雄がXY、雌がXX。ただし、XX雌の体細胞では【父方】のX染色体が選択的に不活性化される。問1の三毛ネコ雌と同様の毛色の遺伝子型をもつカンガルーの雌は、どのような毛色を示すか。すべて答えよ。',
-              steps: [
-                {
-                  hint: 'カンガルーのX不活性化のルールはネコと何が違いますか？',
-                  options: ['不活性化が起きない', 'ランダムではなく、必ず父方のXが不活性化される', '母方のXが不活性化される'],
-                  correct: 1,
-                  feedback: '正解です！ネコは「ランダム」ですが、カンガルーは「必ず父方」が不活性化されます。'
-                },
-                {
-                  hint: '遺伝子型は問1と同じ「AABB X^D X^d」です。必ず父方のXが不活性化されるということは、全身の細胞で働くX染色体はどちら由来のものになりますか？',
-                  options: ['父方由来のX', '母方由来のX', '細胞によってバラバラ'],
-                  correct: 1,
-                  feedback: 'その通り！父方が不活性化（OFF）になるので、全身すべての細胞で【母方】のX染色体が活性化（ON）します。ネコのようなモザイク（三毛）にはなりません。'
-                },
-                {
-                  hint: '全身で母方のX染色体だけが働くことがわかりました。では、その母方由来のX染色体が「X^D」だった場合、毛色はどうなりますか？（AABBで白斑はある状態です）',
-                  options: ['黒白二毛', '茶白二毛', '三毛'],
-                  correct: 1,
-                  feedback: '正解！X^Dが全身で働くので、黒毛がすべて茶毛に変わり、白斑と合わさって「茶白二毛」になります。'
-                },
-                {
-                  hint: '逆に、母方由来のX染色体が「X^d」だった場合はどうなりますか？',
-                  options: ['黒白二毛', '茶白二毛', '三毛'],
-                  correct: 0,
-                  feedback: '正解！X^dが全身で働くので、黒毛のままであり、白斑と合わさって「黒白二毛」になります。'
-                }
-              ],
-              finalAnswer: '茶白二毛, 黒白二毛',
-              explanation: 'カンガルーは父方のX染色体が必ず不活性化されるため、全身の細胞で発現するのは「母方由来のX染色体」のみになり、ネコのようなモザイクになりません。遺伝子型がX^D X^dの雌の場合、母方からX^Dを受け継いでいれば全身が「茶白二毛」に、母方からX^dを受け継いでいれば全身が「黒白二毛」になります。'
-            }
-          ]
-        };
+        <!-- MAIN VIEW AREA -->
+        <main>
+            <!-- 1. THEORY VIEW -->
+            <section id="view-theory" class="bg-white p-6 rounded-xl shadow-sm border border-purple-100 space-y-5 fade-in">
+                <h3 class="text-xl md:text-2xl font-bold text-purple-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-dna text-purple-600"></i>
+                    基礎知識：性染色体の遺伝
+                </h3>
 
-        const formatText = (text) => {
-          if (typeof text !== 'string') return text;
-          const parts = text.split(/(X\^[A-Za-z])/g);
-          return parts.map((part, index) => {
-            if (part.startsWith('X^')) {
-              const gene = part.slice(2);
-              return (
-                <span key={index} className="whitespace-nowrap">
-                  X<sup className="text-[0.8em] font-bold ml-[0.5px]">{gene}</sup>
-                </span>
-              );
-            }
-            return part;
-          });
-        };
-
-        const CatGeneticsTutor = () => {
-          const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-          const [currentStep, setCurrentStep] = useState(0);
-          const [selectedOption, setSelectedOption] = useState(null);
-          const [isCorrect, setIsCorrect] = useState(null);
-          const [showExplanation, setShowExplanation] = useState(false);
-          const [viewMode, setViewMode] = useState('theory');
-
-          const currentQ = problemData.questions[currentQuestionIndex];
-          const currentStepData = currentQ.steps[currentStep];
-
-          const handleOptionSelect = (index) => {
-            if (isCorrect) return;
-            setSelectedOption(index);
-            if (index === currentStepData.correct) {
-              setIsCorrect(true);
-            } else {
-              setIsCorrect(false);
-            }
-          };
-
-          const handleNextStep = () => {
-            if (currentStep < currentQ.steps.length - 1) {
-              setCurrentStep(currentStep + 1);
-              setSelectedOption(null);
-              setIsCorrect(null);
-            } else {
-              setShowExplanation(true);
-            }
-          };
-
-          const handleNextQuestion = () => {
-            if (currentQuestionIndex < problemData.questions.length - 1) {
-              setCurrentQuestionIndex(currentQuestionIndex + 1);
-              setCurrentStep(0);
-              setSelectedOption(null);
-              setIsCorrect(null);
-              setShowExplanation(false);
-              setViewMode('question');
-            }
-          };
-
-          const resetAll = () => {
-            setCurrentQuestionIndex(0);
-            setCurrentStep(0);
-            setSelectedOption(null);
-            setIsCorrect(null);
-            setShowExplanation(false);
-            setViewMode('theory');
-          };
-
-          const renderTheory = () => (
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-purple-100 animate-in fade-in duration-300">
-              <h3 className="text-xl md:text-2xl font-bold text-purple-800 mb-6 flex items-center">
-                <Dna className="mr-2 h-7 w-7 text-purple-600" />
-                基礎知識：性染色体の遺伝
-              </h3>
-
-              <div className="space-y-5">
-                <section className="bg-purple-50 p-5 rounded-xl border border-purple-100">
-                  <h4 className="font-bold text-purple-900 mb-3 flex items-center text-lg">
-                    <span className="bg-purple-200 text-purple-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">1</span>
-                    性染色体とは？
-                  </h4>
-                  <p className="text-gray-700 leading-relaxed text-sm md:text-base">
-                    生物の性を決める染色体を<strong>性染色体</strong>と呼びます。哺乳類（ヒトやネコなど）の場合、雌（メス）は<strong>XX</strong>、雄（オス）は<strong>XY</strong>という組み合わせを持っています。<br/>
-                    性染色体上にある遺伝子によって遺伝する現象を<strong>伴性遺伝</strong>と呼びます。
-                  </p>
-                </section>
-
-                <section className="bg-purple-50 p-5 rounded-xl border border-purple-100">
-                  <h4 className="font-bold text-purple-900 mb-3 flex items-center text-lg">
-                    <span className="bg-purple-200 text-purple-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">2</span>
-                    X染色体の不活性化
-                  </h4>
-                  <p className="text-gray-700 leading-relaxed text-sm md:text-base">
-                    雌はX染色体を2本(XX)、雄は1本(XY)持っています。このままでは、雌は雄の2倍のX染色体の遺伝子を働かせてしまい、バランスが崩れてしまいます。<br/>
-                    それを防ぐため、雌の体細胞では発生の初期段階で<strong>2本あるX染色体のうちどちらか1本がランダムに凝縮して働きを止めます</strong>（これを<strong>X染色体の不活性化</strong>と呼びます）。
-                  </p>
-                </section>
-
-                <section className="bg-purple-50 p-5 rounded-xl border border-purple-100">
-                  <h4 className="font-bold text-purple-900 mb-3 flex items-center text-lg">
-                    <span className="bg-purple-200 text-purple-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">3</span>
-                    モザイクと三毛猫の正体
-                  </h4>
-                  <p className="text-gray-700 leading-relaxed text-sm md:text-base">
-                    三毛猫の「茶色」と「黒色」を決める遺伝子はX染色体上にあります。雌(XX)が茶色の遺伝子({formatText('X^D')})と黒色の遺伝子({formatText('X^d')})を1つずつ持っている場合、細胞ごとにどちらのX染色体が不活性化されるかがランダムに決まります。<br/>
-                    その結果、茶色になる細胞と黒色になる細胞がパッチワーク状（モザイク状）に現れ、白斑を作る遺伝子の働きと合わさって「三毛」になります。<br/>
-                    <span className="text-purple-800 font-semibold mt-2 block">※雄(XY)はX染色体を1つしか持たないため、原則として三毛猫にはなりません。</span>
-                  </p>
-                </section>
-              </div>
-
-              <button
-                onClick={() => setViewMode('rules')}
-                className="mt-6 w-full py-4 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-xl font-bold flex items-center justify-center transition-colors shadow-sm text-lg"
-              >
-                ルール確認へ進む <ChevronRight className="ml-2 h-6 w-6" />
-              </button>
-            </div>
-          );
-
-          const renderRules = () => (
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-orange-100 animate-in fade-in duration-300">
-              <h3 className="text-xl md:text-2xl font-bold text-orange-800 mb-4 flex items-center">
-                <BookOpen className="mr-2 h-6 w-6" />
-                問題のルールを整理しよう！
-              </h3>
-              
-              {/* Conceptual Visual Graphic */}
-              <div className="mb-6 rounded-xl p-6 bg-gradient-to-r from-amber-100 via-orange-100 to-amber-50 border border-orange-200 text-center">
-                 <div className="text-4xl mb-2">🐈‍⬛ 🐈 🐾</div>
-                 <h4 className="font-bold text-orange-900 text-lg mb-1">三毛猫の毛色遺伝モデル</h4>
-                 <p className="text-xs text-orange-700">【A遺伝子: 黒基底】 × 【B遺伝子: 白斑】 × 【X染色体 D/d: 茶/黒不活性化モザイク】</p>
-              </div>
-
-              <div className="space-y-3">
-                {problemData.rules.map((rule, idx) => (
-                  <div key={idx} className="bg-orange-50 p-4 rounded-lg flex items-start">
-                    <CheckCircle2 className="h-5 w-5 text-orange-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-bold text-orange-900 block">{formatText(rule.gene || rule.mechanism)}</span>
-                      <span className="text-gray-700">{formatText(rule.effect)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-6 bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
-                <h4 className="font-bold text-yellow-800 flex items-center mb-2">
-                  <AlertCircle className="h-5 w-5 mr-2" />
-                  解き方の基本順序
-                </h4>
-                <p className="text-yellow-900 leading-relaxed">
-                  「AとBで地色／白斑を先に確定」<br/>
-                  → 「X上のD/dで黒か茶を決める（雌はモザイクを考慮）」<br/>
-                  この順序で考えていきましょう！
-                </p>
-              </div>
-
-              <button
-                onClick={() => setViewMode('question')}
-                className="mt-6 w-full py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold flex items-center justify-center transition-colors shadow-sm text-lg"
-              >
-                問題を解き始める <ChevronRight className="ml-2 h-6 w-6" />
-              </button>
-            </div>
-          );
-
-          const renderQuestion = () => (
-            <div className="bg-white rounded-xl shadow-sm border border-orange-100 overflow-hidden animate-in fade-in duration-300">
-              {/* Question Header */}
-              <div className="bg-orange-600 p-4 text-white">
-                <div className="text-sm font-medium text-orange-200 mb-1">
-                  問題 {currentQuestionIndex + 1} / {problemData.questions.length}
-                </div>
-                <h2 className="text-xl font-bold">{formatText(currentQ.title)}</h2>
-              </div>
-
-              {/* Question Text */}
-              <div className="p-5 border-b border-gray-100 bg-gray-50">
-                <p className="text-gray-800 leading-relaxed font-medium">{formatText(currentQ.text)}</p>
-              </div>
-
-              {/* Tutor Interaction Area */}
-              <div className="p-5">
-                {!showExplanation ? (
-                  <div className="space-y-6">
-                    {/* Hint Box */}
-                    <div className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xl">👩‍🏫</span>
-                      </div>
-                      <div className="bg-blue-50 p-4 rounded-2xl rounded-tl-none border border-blue-100 relative w-full">
-                        <span className="text-xs font-bold text-blue-600 mb-1 block">先生のヒント (Step {currentStep + 1}/{currentQ.steps.length})</span>
-                        <p className="text-blue-900 leading-relaxed">{formatText(currentStepData.hint)}</p>
-                      </div>
-                    </div>
-
-                    {/* Options Box */}
-                    <div className="ml-14 space-y-3">
-                      {currentStepData.options.map((option, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => handleOptionSelect(idx)}
-                          disabled={isCorrect}
-                          className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex justify-between items-center
-                            ${selectedOption === idx && !isCorrect && selectedOption !== currentStepData.correct ? 'border-red-400 bg-red-50 text-red-700' : ''}
-                            ${selectedOption === idx && isCorrect ? 'border-green-500 bg-green-50 text-green-700' : ''}
-                            ${selectedOption !== idx && !isCorrect ? 'border-gray-200 hover:border-orange-300 hover:bg-orange-50' : ''}
-                            ${isCorrect && idx !== currentStepData.correct ? 'opacity-50 border-gray-200 bg-gray-50' : ''}
-                          `}
-                        >
-                          <span className="font-medium text-[1.05em]">{formatText(option)}</span>
-                          {selectedOption === idx && isCorrect && <CheckCircle2 className="h-5 w-5 text-green-600 ml-2" />}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Feedback Box */}
-                    {selectedOption !== null && (
-                      <div className={`ml-14 p-4 rounded-xl border ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                        <p className={isCorrect ? 'text-green-800 font-medium' : 'text-red-800'}>
-                          {formatText(isCorrect ? currentStepData.feedback : 'うーん、もう一度考えてみよう！')}
+                <div class="space-y-4">
+                    <div class="bg-purple-50 p-5 rounded-xl border border-purple-100">
+                        <h4 class="font-bold text-purple-900 mb-2 flex items-center text-base">
+                            <span class="bg-purple-200 text-purple-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">1</span>
+                            性染色体とは？
+                        </h4>
+                        <p class="text-gray-700 leading-relaxed text-sm">
+                            生物の性を決める染色体を<strong>性染色体</strong>と呼びます。哺乳類（ヒトやネコなど）の場合、雌（メス）は<strong>XX</strong>、雄（オス）は<strong>XY</strong>という組み合わせを持っています。<br/>
+                            性染色体上にある遺伝子によって遺伝する現象を<strong>伴性遺伝</strong>と呼びます。
                         </p>
-                        {isCorrect && (
-                          <button
-                            onClick={handleNextStep}
-                            className="mt-4 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm transition-colors w-full flex items-center justify-center gap-2"
-                          >
-                            <span>{currentStep < currentQ.steps.length - 1 ? '次のステップへ' : '解答と解説を見る'}</span>
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  /* Final Explanation State */
-                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                     <div className="bg-orange-50 p-6 rounded-2xl border border-orange-200 text-center">
-                        <span className="block text-sm font-bold text-orange-600 mb-2">最終解答</span>
-                        <div className="text-2xl md:text-3xl font-bold text-gray-900 tracking-wide">{formatText(currentQ.finalAnswer)}</div>
-                     </div>
-                     
-                     <div className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xl">👩‍🏫</span>
-                      </div>
-                      <div className="bg-blue-50 p-5 rounded-2xl rounded-tl-none border border-blue-100 w-full">
-                        <span className="text-sm font-bold text-blue-800 mb-2 block flex items-center"><HelpCircle className="w-4 h-4 mr-1"/> 解説まとめ</span>
-                        <p className="text-blue-900 leading-relaxed text-sm md:text-base">{formatText(currentQ.explanation)}</p>
-                      </div>
                     </div>
 
-                    {currentQuestionIndex < problemData.questions.length - 1 ? (
-                      <button
-                        onClick={handleNextQuestion}
-                        className="w-full py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold flex items-center justify-center transition-colors shadow-md text-lg mt-8"
-                      >
-                        次の問題へ進む <ChevronRight className="ml-2 h-6 w-6" />
-                      </button>
-                    ) : (
-                      <div className="text-center pt-8">
-                        <div className="inline-block bg-green-100 text-green-800 px-6 py-3 rounded-full font-bold mb-6 text-lg border border-green-200">
-                          🎉 全問クリア！お疲れ様でした！
-                        </div>
-                        <button
-                          onClick={resetAll}
-                          className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold flex items-center justify-center transition-colors"
-                        >
-                          <RefreshCcw className="mr-2 h-5 w-5" /> 最初からやり直す
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
+                    <div class="bg-purple-50 p-5 rounded-xl border border-purple-100">
+                        <h4 class="font-bold text-purple-900 mb-2 flex items-center text-base">
+                            <span class="bg-purple-200 text-purple-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">2</span>
+                            X染色体の不活性化
+                        </h4>
+                        <p class="text-gray-700 leading-relaxed text-sm">
+                            雌はX染色体を2本(XX)、雄は1本(XY)持っています。このままでは、雌は雄の2倍のX染色体の遺伝子を働かせてしまい、バランスが崩れてしまいます。<br/>
+                            それを防ぐため、雌の体細胞では発生の初期段階で<strong>2本あるX染色体のうちどちらか1本がランダムに凝縮して働きを止めます</strong>（これを<strong>X染色体の不活性化</strong>と呼びます）。
+                        </p>
+                    </div>
 
-          return (
-            <div className="min-h-screen bg-orange-50/50 p-4 md:p-8 font-sans">
-              <div className="max-w-3xl mx-auto">
-                
-                {/* Header */}
-                <header className="mb-8 text-center">
-                  <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight flex justify-center items-center gap-3">
-                     <span className="text-4xl">🐈</span>
-                    {formatText(problemData.title)}
-                  </h1>
-                  <p className="text-gray-600 mt-2 font-medium">一緒にステップバイステップで解いていこう！</p>
-                </header>
-
-                {/* Tab Navigation */}
-                <div className="flex flex-col sm:flex-row gap-2 mb-6 bg-gray-100/50 p-1.5 rounded-xl">
-                  <button
-                    onClick={() => setViewMode('theory')}
-                    className={`flex-1 py-3 px-2 md:px-4 rounded-lg font-bold text-sm transition-all duration-200 flex justify-center items-center ${
-                      viewMode === 'theory'
-                        ? 'bg-white text-purple-600 shadow-sm border border-gray-200'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Microscope className="w-4 h-4 md:mr-2 mr-1" />
-                    <span className="truncate">基礎知識</span>
-                  </button>
-                  <button
-                    onClick={() => setViewMode('rules')}
-                    className={`flex-1 py-3 px-2 md:px-4 rounded-lg font-bold text-sm transition-all duration-200 flex justify-center items-center ${
-                      viewMode === 'rules'
-                        ? 'bg-white text-orange-600 shadow-sm border border-gray-200'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <BookOpen className="w-4 h-4 md:mr-2 mr-1" />
-                    <span className="truncate">ルール確認</span>
-                  </button>
-                  <button
-                    onClick={() => setViewMode('question')}
-                    className={`flex-1 py-3 px-2 md:px-4 rounded-lg font-bold text-sm transition-all duration-200 flex justify-center items-center ${
-                      viewMode === 'question'
-                        ? 'bg-white text-orange-600 shadow-sm border border-gray-200'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <HelpCircle className="w-4 h-4 md:mr-2 mr-1" />
-                    <span className="truncate">問題に挑戦</span>
-                  </button>
+                    <div class="bg-purple-50 p-5 rounded-xl border border-purple-100">
+                        <h4 class="font-bold text-purple-900 mb-2 flex items-center text-base">
+                            <span class="bg-purple-200 text-purple-800 rounded-full w-6 h-6 flex items-center justify-center mr-2 text-xs">3</span>
+                            モザイクと三毛猫の正体
+                        </h4>
+                        <p class="text-gray-700 leading-relaxed text-sm">
+                            三毛猫の「茶色」と「黒色」を決める遺伝子はX染色体上にあります。雌(XX)が茶色の遺伝子(X<sup>D</sup>)と黒色の遺伝子(X<sup>d</sup>)を1つずつ持っている場合、細胞ごとにどちらのX染色体が不活性化されるかがランダムに決まります。<br/>
+                            その結果、茶色になる細胞と黒色になる細胞がパッチワーク状（モザイク状）に現れ、白斑を作る遺伝子の働きと合わさって「三毛」になります。<br/>
+                            <span class="text-purple-800 font-semibold mt-2 block">※雄(XY)はX染色体を1つしか持たないため、原則として三毛猫にはなりません。</span>
+                        </p>
+                    </div>
                 </div>
 
-                {/* Main Content Area */}
-                <main>
-                  {viewMode === 'theory' && renderTheory()}
-                  {viewMode === 'rules' && renderRules()}
-                  {viewMode === 'question' && renderQuestion()}
-                </main>
+                <button onclick="switchView('rules')" class="mt-6 w-full py-4 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors shadow-sm text-base">
+                    ルール確認へ進む <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </section>
 
-              </div>
-            </div>
-          );
+            <!-- 2. RULES VIEW -->
+            <section id="view-rules" class="hidden bg-white p-6 rounded-xl shadow-sm border border-orange-100 space-y-5 fade-in">
+                <h3 class="text-xl md:text-2xl font-bold text-orange-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i>
+                    問題のルールを整理しよう！
+                </h3>
+
+                <!-- Conceptual Visual Graphic -->
+                <div class="rounded-xl p-6 bg-gradient-to-r from-amber-100 via-orange-100 to-amber-50 border border-orange-200 text-center">
+                    <div class="text-4xl mb-2">🐈‍⬛ 🐈 🐾</div>
+                    <h4 class="font-bold text-orange-900 text-lg mb-1">三毛猫の毛色遺伝モデル</h4>
+                    <p class="text-xs text-orange-700">【A遺伝子: 黒基底】 × 【B遺伝子: 白斑】 × 【X染色体 D/d: 茶/黒不活性化モザイク】</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="bg-orange-50 p-4 rounded-lg flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-orange-500 mt-1"></i>
+                        <div>
+                            <span class="font-bold text-orange-900 block">A (常染色体)</span>
+                            <span class="text-gray-700 text-sm">黒色メラニンをつくる (A &gt; a)</span>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-orange-500 mt-1"></i>
+                        <div>
+                            <span class="font-bold text-orange-900 block">B (常染色体)</span>
+                            <span class="text-gray-700 text-sm">白斑をつくる (B &gt; b, bbは白斑なし)</span>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-orange-500 mt-1"></i>
+                        <div>
+                            <span class="font-bold text-orange-900 block">D (X染色体)</span>
+                            <span class="text-gray-700 text-sm">黒毛を茶毛に変える (D &gt; d, dは変えずに黒のまま)</span>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 p-4 rounded-lg flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-orange-500 mt-1"></i>
+                        <div>
+                            <span class="font-bold text-orange-900 block">X不活性化</span>
+                            <span class="text-gray-700 text-sm">雌(XX)の細胞ではランダムに片方のXが不活性化される。雄(XY)はそのまま。</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
+                    <h4 class="font-bold text-yellow-800 flex items-center gap-2 mb-1">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        解き方の基本順序
+                    </h4>
+                    <p class="text-yellow-900 text-xs md:text-sm leading-relaxed">
+                        「AとBで地色／白斑を先に確定」<br/>
+                        → 「X上のD/dで黒か茶を決める（雌はモザイクを考慮）」<br/>
+                        この順序で考えていきましょう！
+                    </p>
+                </div>
+
+                <button onclick="switchView('question')" class="mt-6 w-full py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors shadow-sm text-base">
+                    問題を解き始める <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </section>
+
+            <!-- 3. QUESTION VIEW -->
+            <section id="view-question" class="hidden bg-white rounded-xl shadow-sm border border-orange-100 overflow-hidden fade-in">
+                <!-- Question Header -->
+                <div class="bg-orange-600 p-4 text-white">
+                    <div id="q-counter" class="text-xs font-medium text-orange-200 mb-1">問題 1 / 3</div>
+                    <h2 id="q-title" class="text-lg font-bold">問1：三毛ネコ雌の遺伝子型</h2>
+                </div>
+
+                <!-- Question Text -->
+                <div class="p-5 border-b border-gray-100 bg-gray-50">
+                    <p id="q-text" class="text-gray-800 leading-relaxed font-medium text-sm md:text-base"></p>
+                </div>
+
+                <!-- Interactive Workspace -->
+                <div id="q-workspace" class="p-5 space-y-6">
+                    <!-- Dynamic loaded via JS -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Data Definitions
+        const questions = [
+            {
+                id: 'q1',
+                title: '問1：三毛ネコ雌の遺伝子型',
+                text: '三毛ネコ雌の毛色の遺伝子型を答えよ。なお、AおよびB遺伝子の遺伝子型はAABBとし、遺伝子型の書き方は図に従うこと。',
+                steps: [
+                    {
+                        hint: '三毛猫の「三色」は何色と何色と何色ですか？問題文の条件を見て確認しましょう。',
+                        options: ['黒・白・グレー', '黒・茶・白', '茶・白・グレー'],
+                        correct: 1,
+                        feedback: '正解！三毛猫の3色は「黒・茶・白」ですね。'
+                    },
+                    {
+                        hint: '次に、「白斑」をつくる遺伝子について考えます。問題の条件より、AとBの遺伝子型はすでに「AABB」と指定されています。白斑をつくるのはどの遺伝子ですか？',
+                        options: ['A遺伝子', 'B遺伝子', 'D遺伝子'],
+                        correct: 1,
+                        feedback: 'その通り！B遺伝子(今回はBB)が「白斑」をつくります。これで「白」の条件はクリアです。'
+                    },
+                    {
+                        hint: '残るは「黒」と「茶」です。両方の色が同時にモザイク状に現れるには、X染色体上のD遺伝子はどうなっていれば良いでしょうか？雌はXXなので、X染色体を2つ持ちます。',
+                        options: ['X<sup>D</sup> X<sup>D</sup> (両方ともD)', 'X<sup>d</sup> X<sup>d</sup> (両方ともd)', 'X<sup>D</sup> X<sup>d</sup> (Dとdを1つずつ)'],
+                        correct: 2,
+                        feedback: '大正解！X<sup>D</sup> X<sup>d</sup> (ヘテロ接合) である必要があります。細胞ごとにランダムにX不活性化が起きるため、Dが残った細胞は「茶」、dが残った細胞は「黒」になり、結果としてモザイク模様（三毛）になります。'
+                    }
+                ],
+                finalAnswer: 'AABB X<sup>D</sup> X<sup>d</sup>',
+                explanation: '白斑を持つのでB遺伝子は優性（指定によりAABB）。黒と茶の両方が現れるためには、X染色体上の遺伝子がヘテロ接合（X<sup>D</sup> X<sup>d</sup>）であり、ランダムなX染色体の不活性化により黒になる細胞（X<sup>d</sup>が活性）と茶になる細胞（X<sup>D</sup>が活性）が混在する必要があります。'
+            },
+            {
+                id: 'q2',
+                title: '問2：XXX雌の遺伝子型',
+                text: '3本のX染色体をもつ三毛ネコ雌が生まれたとする。3本のうち2本のX染色体がランダムに不活性化される場合、この雌ネコがもちうる毛色の遺伝子型をすべて答えよ。なお、AおよびB遺伝子はAABBとする。',
+                steps: [
+                    {
+                        hint: '今回はX染色体が3本(XXX)です。3本のうち2本が不活性化されるということは、1つの細胞で最終的に働くX染色体は何本ですか？',
+                        options: ['1本', '2本', '3本'],
+                        correct: 0,
+                        feedback: '正解！結局、働くのは通常通り「1本だけ」です。'
+                    },
+                    {
+                        hint: '問1で確認したように、「三毛」になるためには「D（茶になる）」と「d（黒のまま）」の両方の情報を持っていなければなりません。3つのX染色体(XXX)で、Dとdを両方とも持つ組み合わせはどうなりますか？',
+                        options: ['X<sup>D</sup> X<sup>D</sup> X<sup>D</sup> と X<sup>d</sup> X<sup>d</sup> X<sup>d</sup>', 'X<sup>D</sup> X<sup>D</sup> X<sup>d</sup> と X<sup>D</sup> X<sup>d</sup> X<sup>d</sup>', 'X<sup>D</sup> X<sup>d</sup> と X<sup>d</sup> X<sup>D</sup>'],
+                        correct: 1,
+                        feedback: 'その通り！Dが2つでdが1つ(X<sup>D</sup> X<sup>D</sup> X<sup>d</sup>)か、Dが1つでdが2つ(X<sup>D</sup> X<sup>d</sup> X<sup>d</sup>)のパターンのどちらかであれば、Dとdを両方保有することになります。'
+                    }
+                ],
+                finalAnswer: 'AABB X<sup>D</sup> X<sup>D</sup> X<sup>d</sup>, AABB X<sup>D</sup> X<sup>d</sup> X<sup>d</sup>',
+                explanation: '3本のうち2本が不活性化され1本だけが働くため、細胞ごとにX<sup>D</sup>が働くかX<sup>d</sup>が働くかのモザイクになります。三毛になるためにはDとdの両方を最低1つずつ持っている必要があります。したがって、Xを3つ持つ場合の組み合わせは、Dを2つ持つ場合（X<sup>D</sup> X<sup>D</sup> X<sup>d</sup>）と、dを2つ持つ場合（X<sup>D</sup> X<sup>d</sup> X<sup>d</sup>）の2通りになります。（常染色体は指定通りAABB）'
+            },
+            {
+                id: 'q3',
+                title: '問3：カンガルーの毛色',
+                text: 'カンガルーはネコと同様、雄がXY、雌がXX。ただし、XX雌の体細胞では【父方】のX染色体が選択的に不活性化される。問1の三毛ネコ雌と同様の毛色の遺伝子型をもつカンガルーの雌は、どのような毛色を示すか。すべて答えよ。',
+                steps: [
+                    {
+                        hint: 'カンガルーのX不活性化のルールはネコと何が違いますか？',
+                        options: ['不活性化が起きない', 'ランダムではなく、必ず父方のXが不活性化される', '母方のXが不活性化される'],
+                        correct: 1,
+                        feedback: '正解です！ネコは「ランダム」ですが、カンガルーは「必ず父方」が不活性化されます。'
+                    },
+                    {
+                        hint: '遺伝子型は問1と同じ「AABB X<sup>D</sup> X<sup>d</sup>」です。必ず父方のXが不活性化されるということは、全身の細胞で働くX染色体はどちら由来のものになりますか？',
+                        options: ['父方由来のX', '母方由来のX', '細胞によってバラバラ'],
+                        correct: 1,
+                        feedback: 'その通り！父方が不活性化（OFF）になるので、全身すべての細胞で【母方】のX染色体が活性化（ON）します。ネコのようなモザイク（三毛）にはなりません。'
+                    },
+                    {
+                        hint: '全身で母方のX染色体だけが働くことがわかりました。では、その母方由来のX染色体が「X<sup>D</sup>」だった場合、毛色はどうなりますか？（AABBで白斑はある状態です）',
+                        options: ['黒白二毛', '茶白二毛', '三毛'],
+                        correct: 1,
+                        feedback: '正解！X<sup>D</sup>が全身で働くので、黒毛がすべて茶毛に変わり、白斑と合わさって「茶白二毛」になります。'
+                    },
+                    {
+                        hint: '逆に、母方由来のX染色体が「X<sup>d</sup>」だった場合はどうなりますか？',
+                        options: ['黒白二毛', '茶白二毛', '三毛'],
+                        correct: 0,
+                        feedback: '正解！X<sup>d</sup>が全身で働くので、黒毛のままであり、白斑と合わさって「黒白二毛」になります。'
+                    }
+                ],
+                finalAnswer: '茶白二毛, 黒白二毛',
+                explanation: 'カンガルーは父方のX染色体が必ず不活性化されるため、全身の細胞で発現するのは「母方由来のX染色体」のみになり、ネコのようなモザイクになりません。遺伝子型がX<sup>D</sup> X<sup>d</sup>の雌の場合、母方からX<sup>D</sup>を受け継いでいれば全身が「茶白二毛」に、母方からX<sup>d</sup>を受け継いでいれば全身が「黒白二毛」になります。'
+            }
+        ];
+
+        // State variables
+        let currentQIdx = 0;
+        let currentStepIdx = 0;
+        let selectedOpt = null;
+        let isCorrectStep = false;
+        let showFinalExp = false;
+
+        // View Switching
+        function switchView(viewName) {
+            ['theory', 'rules', 'question'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-${v}`);
+                btn.className = "flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 flex justify-center items-center gap-2 text-gray-600 hover:text-gray-900";
+            });
+
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${viewName}`);
+            
+            if (viewName === 'theory') {
+                activeBtn.className = "flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 flex justify-center items-center gap-2 bg-white text-purple-700 shadow-sm";
+            } else {
+                activeBtn.className = "flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 flex justify-center items-center gap-2 bg-white text-orange-600 shadow-sm";
+            }
+
+            if (viewName === 'question') {
+                renderQuestionView();
+            }
+        }
+
+        // Render Question Step Logic
+        function renderQuestionView() {
+            const q = questions[currentQIdx];
+            document.getElementById('q-counter').innerText = `問題 ${currentQIdx + 1} / ${questions.length}`;
+            document.getElementById('q-title').innerHTML = q.title;
+            document.getElementById('q-text').innerHTML = q.text;
+
+            const ws = document.getElementById('q-workspace');
+
+            if (!showFinalExp) {
+                const step = q.steps[currentStepIdx];
+                
+                let optionsHtml = step.options.map((opt, idx) => {
+                    let btnStyle = "border-gray-200 hover:border-orange-300 hover:bg-orange-50";
+                    let iconHtml = "";
+
+                    if (selectedOpt === idx) {
+                        if (isCorrectStep) {
+                            btnStyle = "border-green-500 bg-green-50 text-green-700";
+                            iconHtml = `<i class="fa-solid fa-circle-check text-green-600 ml-2"></i>`;
+                        } else {
+                            btnStyle = "border-red-400 bg-red-50 text-red-700";
+                        }
+                    } else if (isCorrectStep) {
+                        btnStyle = "opacity-50 border-gray-200 bg-gray-50";
+                    }
+
+                    return `
+                        <button onclick="handleOptionSelect(${idx})" ${isCorrectStep ? 'disabled' : ''} 
+                            class="w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex justify-between items-center ${btnStyle}">
+                            <span class="font-medium text-sm md:text-base">${opt}</span>
+                            ${iconHtml}
+                        </button>
+                    `;
+                }).join('');
+
+                let feedbackHtml = "";
+                if (selectedOpt !== null) {
+                    if (isCorrectStep) {
+                        feedbackHtml = `
+                            <div class="ml-0 sm:ml-14 p-4 rounded-xl border bg-green-50 border-green-200 fade-in">
+                                <p class="text-green-800 font-medium text-sm">${step.feedback}</p>
+                                <button onclick="nextStep()" class="mt-4 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-sm transition-colors w-full flex items-center justify-center gap-2">
+                                    <span>${currentStepIdx < q.steps.length - 1 ? '次のステップへ' : '解答と解説を見る'}</span>
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        feedbackHtml = `
+                            <div class="ml-0 sm:ml-14 p-4 rounded-xl border bg-red-50 border-red-200 fade-in">
+                                <p class="text-red-800 text-sm">うーん、もう一度考えてみよう！</p>
+                            </div>
+                        `;
+                    }
+                }
+
+                ws.innerHTML = `
+                    <!-- Hint Box -->
+                    <div class="flex gap-3 sm:gap-4 items-start">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-xl">
+                            👩‍🏫
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-2xl rounded-tl-none border border-blue-100 w-full">
+                            <span class="text-xs font-bold text-blue-600 mb-1 block">先生のヒント (Step ${currentStepIdx + 1}/${q.steps.length})</span>
+                            <p class="text-blue-900 leading-relaxed text-sm">${step.hint}</p>
+                        </div>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="ml-0 sm:ml-14 space-y-3">
+                        ${optionsHtml}
+                    </div>
+
+                    <!-- Feedback -->
+                    ${feedbackHtml}
+                `;
+            } else {
+                // Final Explanation
+                ws.innerHTML = `
+                    <div class="space-y-6 fade-in">
+                        <div class="bg-orange-50 p-6 rounded-2xl border border-orange-200 text-center">
+                            <span class="block text-xs font-bold text-orange-600 mb-1">最終解答</span>
+                            <div class="text-2xl md:text-3xl font-bold text-gray-900 tracking-wide">${q.finalAnswer}</div>
+                        </div>
+
+                        <div class="flex gap-3 sm:gap-4 items-start">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-xl">
+                                👩‍🏫
+                            </div>
+                            <div class="bg-blue-50 p-5 rounded-2xl rounded-tl-none border border-blue-100 w-full">
+                                <span class="text-xs font-bold text-blue-800 mb-1 flex items-center gap-1.5"><i class="fa-solid fa-circle-question"></i> 解説まとめ</span>
+                                <p class="text-blue-900 leading-relaxed text-sm md:text-base">${q.explanation}</p>
+                            </div>
+                        </div>
+
+                        ${currentQIdx < questions.length - 1 ? `
+                            <button onclick="nextQuestion()" class="w-full py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors shadow-md text-base mt-6">
+                                次の問題へ進む <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        ` : `
+                            <div class="text-center pt-6">
+                                <div class="inline-block bg-green-100 text-green-800 px-6 py-3 rounded-full font-bold mb-6 text-base border border-green-200">
+                                    🎉 全問クリア！お疲れ様でした！
+                                </div>
+                                <button onclick="resetAll()" class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors">
+                                    <i class="fa-solid fa-rotate-left"></i> 最初からやり直す
+                                </button>
+                            </div>
+                        `}
+                    </div>
+                `;
+            }
+        }
+
+        function handleOptionSelect(idx) {
+            if (isCorrectStep) return;
+            selectedOpt = idx;
+            const q = questions[currentQIdx];
+            const step = q.steps[currentStepIdx];
+
+            if (idx === step.correct) {
+                isCorrectStep = true;
+            } else {
+                isCorrectStep = false;
+            }
+            renderQuestionView();
+        }
+
+        function nextStep() {
+            const q = questions[currentQIdx];
+            if (currentStepIdx < q.steps.length - 1) {
+                currentStepIdx++;
+                selectedOpt = null;
+                isCorrectStep = false;
+            } else {
+                showFinalExp = true;
+            }
+            renderQuestionView();
+        }
+
+        function nextQuestion() {
+            if (currentQIdx < questions.length - 1) {
+                currentQIdx++;
+                currentStepIdx = 0;
+                selectedOpt = null;
+                isCorrectStep = false;
+                showFinalExp = false;
+                switchView('question');
+            }
+        }
+
+        function resetAll() {
+            currentQIdx = 0;
+            currentStepIdx = 0;
+            selectedOpt = null;
+            isCorrectStep = false;
+            showFinalExp = false;
+            switchView('theory');
+        }
+
+        window.onload = function() {
+            switchView('theory');
         };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<CatGeneticsTutor />);
     </script>
 </body>
 </html>
