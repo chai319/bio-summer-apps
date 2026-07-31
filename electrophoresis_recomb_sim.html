@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電気泳動と遺伝子の連鎖・組換えシミュレーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js"></script>
+    <style>
+        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f8fafc; }
+        .animation-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .pulse-element { animation: pulseGlow 2s infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // 画像データと解答解説に基づく正確なデータ定義
+        // 1=Iのみ(上段), 2=IIのみ(下段), 3=両方, 0=なし
+        const rawData = {
+            sperms: 15,
+            A: { somatic: [1,2], sperms: [1, 2, 1, 1, 2, 1, 1, 2, 2, 1, 2, 1, 1, 2, 1] },
+            B: { somatic: [1,2], sperms: [1, 2, 1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 1] },
+            C: { somatic: [1],   sperms: [1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0] },
+            D: { somatic: [1,2], sperms: [1, 2, 2, 1, 2, 1, 2, 2, 2, 1, 2, 1, 1, 2, 2] }, // Aと3,7,15で異なる(組換え)
+            E: { somatic: [1],   sperms: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] }
+        };
+
+        const STEPS = [
+            { id: 0, title: "1. 1つの遺伝子に注目 (問1, 問2)" },
+            { id: 1, title: "2. 連鎖の探索 (問3)" },
+            { id: 2, title: "3. 組換え価の計算 (問4)" }
+        ];
+
+        function App() {
+            const [viewMode, setViewMode] = React.useState('electrophoresis'); // 'electrophoresis' or 'meiosis'
+            const [currentStep, setCurrentStep] = React.useState(0);
+            const [hoveredCol, setHoveredCol] = React.useState(null);
+            
+            // Step 1 用 State (連鎖比較)
+            const [selectedGene1, setSelectedGene1] = React.useState('A');
+            const [selectedGene2, setSelectedGene2] = React.useState('D');
+            const [activeMeiosisTab, setActiveMeiosisTab] = React.useState('C'); // 'C', 'E', 'AD'
+
+            // 任意ペアの比較ロジック
+            const compareGenes = (g1, g2) => {
+                if (g1 === g2) return null;
+                let matchCount = 0;
+                let recombineCount = 0;
+                let diffIndices = [];
+
+                for (let i = 0; i < rawData.sperms; i++) {
+                    const val1 = rawData[g1].sperms[i];
+                    const val2 = rawData[g2].sperms[i];
+                    
+                    // バンドが存在する精子同士の比較
+                    if ((val1 === 1 || val1 === 2) && (val2 === 1 || val2 === 2)) {
+                        if (val1 === val2) {
+                            matchCount++;
+                        } else {
+                            recombineCount++;
+                            diffIndices.push(i);
+                        }
+                    }
+                }
+                return { matchCount, recombineCount, diffIndices };
+            };
+
+            const comparison = compareGenes(selectedGene1, selectedGene2);
+
+            // 電気泳動の1レーン描画 (位置ズレを厳密に補正)
+            const renderLane = (gene, index, isSomatic) => {
+                let val = 0;
+                if (isSomatic) {
+                    val = rawData[gene].somatic.length > 1 ? 3 : rawData[gene].somatic[0];
+                } else {
+                    val = rawData[gene].sperms[index];
+                }
+
+                const hasI = val === 1 || val === 3;
+                const hasII = val === 2 || val === 3;
+
+                return (
+                    <div className="h-16 flex flex-col justify-center items-center gap-2.5 py-2 w-full">
+                        {/* Ⅰ (上段バンド) */}
+                        <div className="h-2 flex items-center justify-center">
+                            <div className={`h-1.5 w-5 rounded-sm bg-gray-900 transition-opacity ${hasI ? 'opacity-100' : 'opacity-0'}`}></div>
+                        </div>
+                        {/* Ⅱ (下段バンド) */}
+                        <div className="h-2 flex items-center justify-center">
+                            <div className={`h-1.5 w-5 rounded-sm bg-gray-900 transition-opacity ${hasII ? 'opacity-100' : 'opacity-0'}`}></div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // 生殖細胞（精子）ができるときの染色体・遺伝子の動きビジュアル
+            const renderMeiosisVisualizer = () => {
+                return (
+                    <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 space-y-6 animation-fade-in">
+                        <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-4">
+                            <button 
+                                onClick={() => setActiveMeiosisTab('C')}
+                                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeMeiosisTab === 'C' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                            >
+                                問1：遺伝子C（性染色体）の分離
+                            </button>
+                            <button 
+                                onClick={() => setActiveMeiosisTab('E')}
+                                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeMeiosisTab === 'E' ? 'bg-green-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                            >
+                                問2：遺伝子E（常染色体・ホモ）の分配
+                            </button>
+                            <button 
+                                onClick={() => setActiveMeiosisTab('AD')}
+                                className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${activeMeiosisTab === 'AD' ? 'bg-purple-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                            >
+                                問3・4：遺伝子AとD（連鎖と組換え）
+                            </button>
+                        </div>
+
+                        {activeMeiosisTab === 'C' && (
+                            <div className="space-y-4">
+                                <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                                    <h3 className="font-bold text-blue-900 text-lg mb-1">【問1】なぜバンドが「ある精子」と「全くない精子」ができるのか？</h3>
+                                    <p className="text-sm text-gray-700">
+                                        雄のマウスの性染色体は <strong>X 染色体</strong> と <strong>Y 染色体</strong> のペアです。<br/>
+                                        遺伝子Cが <strong>X 染色体上だけに存在</strong> するため、減数分裂で精子ができるとき、半数の精子にはX（Cあり）が入り、残り半数の精子にはY（Cなし）が入ります。
+                                    </p>
+                                </div>
+
+                                {/* 染色体分離モデル */}
+                                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col md:flex-row items-center justify-around gap-6">
+                                    <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-gray-200 w-48">
+                                        <div className="font-bold text-gray-600 mb-2 text-sm">親の体細胞 (XY)</div>
+                                        <div className="flex justify-center items-center gap-3">
+                                            {/* X染色体 */}
+                                            <div className="w-8 h-20 bg-blue-500 rounded-full flex flex-col justify-center items-center text-white font-bold text-xs relative">
+                                                <span>X</span>
+                                                <span className="bg-yellow-300 text-gray-900 px-1 rounded text-[10px] mt-1 font-extrabold">C-I</span>
+                                            </div>
+                                            {/* Y染色体 */}
+                                            <div className="w-8 h-12 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                                                <span>Y</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-2xl font-bold text-blue-500">減数分裂 ➔</div>
+
+                                    <div className="flex gap-4">
+                                        <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-blue-200 w-36">
+                                            <div className="font-bold text-blue-600 mb-1 text-xs">精子 (約50%)</div>
+                                            <div className="w-8 h-16 bg-blue-500 rounded-full mx-auto flex flex-col justify-center items-center text-white font-bold text-xs mb-2">
+                                                <span>X</span>
+                                                <span className="bg-yellow-300 text-gray-900 px-1 rounded text-[10px] mt-1">C-I</span>
+                                            </div>
+                                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">電気泳動：バンドあり</span>
+                                        </div>
+
+                                        <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-gray-300 w-36">
+                                            <div className="font-bold text-gray-500 mb-1 text-xs">精子 (約50%)</div>
+                                            <div className="w-8 h-10 bg-gray-400 rounded-full mx-auto flex items-center justify-center text-white font-bold text-xs mb-2">
+                                                <span>Y</span>
+                                            </div>
+                                            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-bold">電気泳動：0本 (なし)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeMeiosisTab === 'E' && (
+                            <div className="space-y-4">
+                                <div className="bg-green-50 border border-green-200 p-4 rounded-xl">
+                                    <h3 className="font-bold text-green-900 text-lg mb-1">【問2】なぜすべての精子にまったく同じバンドができるのか？</h3>
+                                    <p className="text-sm text-gray-700">
+                                        遺伝子Eは <strong>常染色体</strong> にあり、かつ父親・母親の両方から同じ「E-I」を受け取った <strong>ホモ接合 (E-I / E-I)</strong> です。<br/>
+                                        そのため、減数分裂によってどの精子が作られても、必ず「E-I」が1つ分配されます。
+                                    </p>
+                                </div>
+
+                                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col md:flex-row items-center justify-around gap-6">
+                                    <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-gray-200 w-48">
+                                        <div className="font-bold text-gray-600 mb-2 text-sm">親の体細胞 (ホモ接合)</div>
+                                        <div className="flex justify-center items-center gap-3">
+                                            <div className="w-8 h-20 bg-green-500 rounded-full flex flex-col justify-center items-center text-white font-bold text-xs">
+                                                <span>E-I</span>
+                                            </div>
+                                            <div className="w-8 h-20 bg-green-500 rounded-full flex flex-col justify-center items-center text-white font-bold text-xs">
+                                                <span>E-I</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-2xl font-bold text-green-500">減数分裂 ➔</div>
+
+                                    <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-green-200 w-48">
+                                        <div className="font-bold text-green-700 mb-1 text-xs">すべての精子 (100%)</div>
+                                        <div className="w-8 h-16 bg-green-500 rounded-full mx-auto flex flex-col justify-center items-center text-white font-bold text-xs mb-2">
+                                            <span>E-I</span>
+                                        </div>
+                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded font-bold">電気泳動：すべて「I」のバンド</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeMeiosisTab === 'AD' && (
+                            <div className="space-y-4">
+                                <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl">
+                                    <h3 className="font-bold text-purple-900 text-lg mb-1">【問3・問4】同じ染色体に乗っている「連鎖」と「乗り換え（組換え）」</h3>
+                                    <p className="text-sm text-gray-700">
+                                        遺伝子AとDは <strong>同じ1本の常染色体の上に並んで存在（連鎖）</strong> しています。<br/>
+                                        基本的には染色体ごとセットで精子に受け継がれますが、減数分裂の時に一部で <strong>「乗り換え（交差）」</strong> が起こり、A-IとD-IIの組み合わせを持った「組換え型精子」が誕生します。
+                                    </p>
+                                </div>
+
+                                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* 非組換え型 */}
+                                        <div className="bg-white p-4 rounded-xl border border-blue-200 shadow-sm text-center">
+                                            <div className="font-bold text-blue-800 text-sm mb-2">① 組換えが起きない場合 (多数：12/15)</div>
+                                            <div className="flex justify-center gap-6 my-3">
+                                                <div className="w-10 h-24 bg-blue-500 rounded-full flex flex-col justify-around py-2 items-center text-white font-bold text-xs">
+                                                    <span className="bg-white text-blue-800 px-1 rounded">A-I</span>
+                                                    <span className="bg-white text-blue-800 px-1 rounded">D-I</span>
+                                                </div>
+                                                <div className="w-10 h-24 bg-indigo-500 rounded-full flex flex-col justify-around py-2 items-center text-white font-bold text-xs">
+                                                    <span className="bg-white text-indigo-800 px-1 rounded">A-II</span>
+                                                    <span className="bg-white text-indigo-800 px-1 rounded">D-II</span>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-gray-600">AとDのタイプが完全一致する！</p>
+                                        </div>
+
+                                        {/* 組換え型 */}
+                                        <div className="bg-white p-4 rounded-xl border border-red-200 shadow-sm text-center bg-red-50/30">
+                                            <div className="font-bold text-red-800 text-sm mb-2">② 染色体の乗り換えが起きた場合 (精子3, 7, 15)</div>
+                                            <div className="flex justify-center gap-6 my-3">
+                                                <div className="w-10 h-24 rounded-full flex flex-col justify-around py-2 items-center text-white font-bold text-xs overflow-hidden border-2 border-red-400">
+                                                    <div className="w-full bg-blue-500 flex-1 flex items-center justify-center"><span className="bg-white text-blue-800 px-1 rounded">A-I</span></div>
+                                                    <div className="w-full bg-indigo-500 flex-1 flex items-center justify-center"><span className="bg-white text-indigo-800 px-1 rounded">D-II</span></div>
+                                                </div>
+                                                <div className="w-10 h-24 rounded-full flex flex-col justify-around py-2 items-center text-white font-bold text-xs overflow-hidden border-2 border-red-400">
+                                                    <div className="w-full bg-indigo-500 flex-1 flex items-center justify-center"><span className="bg-white text-indigo-800 px-1 rounded">A-II</span></div>
+                                                    <div className="w-full bg-blue-500 flex-1 flex items-center justify-center"><span className="bg-white text-blue-800 px-1 rounded">D-I</span></div>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-red-600 font-bold">AとDの組み合わせが交差してズレる！</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderStepContent = () => {
+                switch(currentStep) {
+                    case 0:
+                        return (
+                            <div className="space-y-6 animation-fade-in">
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center">
+                                        <span className="bg-blue-200 text-blue-800 px-2 py-0.5 rounded text-sm mr-2">問1</span>
+                                        遺伝子座Cに注目！
+                                    </h3>
+                                    <p className="text-gray-700 text-sm mb-3 leading-relaxed">
+                                        Cの体細胞には「I」のバンドしかありません。<br/>
+                                        しかし、精子を見ると<strong>「バンドがある精子」と「全くない（0本の）精子」</strong>が存在します。
+                                    </p>
+                                    <details className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 cursor-pointer">
+                                        <summary className="font-semibold text-blue-700 text-sm">💡 解答とここからわかること（タップで開く）</summary>
+                                        <p className="mt-2 text-xs text-gray-700 border-t pt-2 leading-relaxed">
+                                            <strong>【解答】X染色体およびY染色体のいずれかにある。</strong><br/>
+                                            （理由：体細胞に存在するのに精子の中で持たないものができるのは、XY性染色体の片方にしか遺伝子がないためです。）
+                                        </p>
+                                    </details>
+                                </div>
+
+                                <div className="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm">
+                                    <h3 className="font-bold text-green-900 mb-2 flex items-center">
+                                        <span className="bg-green-200 text-green-800 px-2 py-0.5 rounded text-sm mr-2">問2</span>
+                                        遺伝子座Eに注目！
+                                    </h3>
+                                    <p className="text-gray-700 text-sm mb-3 leading-relaxed">
+                                        Eはすべての精子において<strong>まったく同じ大きさ（I）のDNA</strong>が見られます。
+                                    </p>
+                                    <details className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 cursor-pointer">
+                                        <summary className="font-semibold text-green-700 text-sm">💡 解答とここからわかること（タップで開く）</summary>
+                                        <p className="mt-2 text-xs text-gray-700 border-t pt-2 leading-relaxed">
+                                            <strong>【解答】常染色体にありホモ接合である。</strong><br/>
+                                            （理由：すべての精子に漏れなく分配されているので常染色体であり、すべて同じ長さなので両親から同一の遺伝子を受け取ったホモ接合です。）
+                                        </p>
+                                    </details>
+                                </div>
+                            </div>
+                        );
+                    case 1:
+                        return (
+                            <div className="space-y-4 animation-fade-in">
+                                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-sm">
+                                    <h3 className="font-bold text-yellow-900 mb-2 flex items-center">
+                                        <span className="bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-sm mr-2">問3</span>
+                                        連鎖している2つの遺伝子を探そう！
+                                    </h3>
+                                    <p className="text-gray-700 text-sm mb-3">
+                                        ヘテロ接合（IとIIの両方を持つ）である <strong>A, B, D</strong> の中から比較します。<br/>
+                                        連鎖しているものは動きが一致しますが、乗り換え（組換え）があるため<strong>「ほとんど同じだが、ごく一部だけ異なる」</strong>ペアを探すのがコツです！
+                                    </p>
+                                    
+                                    <div className="flex justify-center items-center gap-3 my-4 bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+                                        <select value={selectedGene1} onChange={e => setSelectedGene1(e.target.value)} className="border-2 border-yellow-400 rounded p-1.5 font-bold text-gray-800">
+                                            <option value="A">遺伝子 A</option>
+                                            <option value="B">遺伝子 B</option>
+                                            <option value="D">遺伝子 D</option>
+                                        </select>
+                                        <span className="text-gray-400 font-extrabold">VS</span>
+                                        <select value={selectedGene2} onChange={e => setSelectedGene2(e.target.value)} className="border-2 border-yellow-400 rounded p-1.5 font-bold text-gray-800">
+                                            <option value="A">遺伝子 A</option>
+                                            <option value="B">遺伝子 B</option>
+                                            <option value="D">遺伝子 D</option>
+                                        </select>
+                                    </div>
+
+                                    {comparison ? (
+                                        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                            {comparison.matchCount >= 10 ? (
+                                                <div className="space-y-2">
+                                                    <p className="text-purple-700 font-bold flex items-center text-sm">
+                                                        🎯 発見！動きが非常によく似ています！（連鎖の可能性大）
+                                                    </p>
+                                                    <div className="text-xs text-gray-700 grid grid-cols-2 gap-2 bg-purple-50 p-2.5 rounded border border-purple-100">
+                                                        <div>一致した精子: <span className="font-bold text-sm text-purple-900">{comparison.matchCount} / 15</span></div>
+                                                        <div>不一致(組換え): <span className="font-bold text-sm text-red-600">{comparison.recombineCount} / 15</span></div>
+                                                    </div>
+                                                    {comparison.diffIndices.length > 0 && (
+                                                        <p className="text-xs text-red-600 font-semibold bg-red-50 p-2 rounded border border-red-100">
+                                                            ⚠️ 精子番号 <strong>{comparison.diffIndices.map(i => i+1).join(', ')}</strong> でバンドが入れ替わっています（ここが組換え！）。
+                                                        </p>
+                                                    )}
+                                                    {(selectedGene1==='A' && selectedGene2==='D') || (selectedGene1==='D' && selectedGene2==='A') ? (
+                                                        <div className="mt-2 p-2 bg-green-100 text-green-800 rounded font-bold text-xs">
+                                                            ✅ 正解！【解答】A-IとD-I, A-IIとD-II
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-gray-600">
+                                                    一致している数が少ないです。独立して自由に分配されている（別々の染色体上にある）可能性が高いです。他の組み合わせを選んでみましょう！
+                                                </p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-gray-500 text-center">異なる2つの遺伝子を選択してください。</p>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    case 2:
+                        return (
+                            <div className="space-y-4 animation-fade-in">
+                                <div className="bg-purple-50 p-4 rounded-xl border border-purple-200 shadow-sm">
+                                    <h3 className="font-bold text-purple-900 mb-2 flex items-center">
+                                        <span className="bg-purple-200 text-purple-800 px-2 py-0.5 rounded text-sm mr-2">問4</span>
+                                        組換え価を計算しよう！
+                                    </h3>
+                                    <p className="text-gray-700 text-sm mb-4">
+                                        問3で連鎖が判明した「A」と「D」について計算します。<br/>
+                                        全15個の精子のうち、精子番号 <strong>3, 7, 15</strong> の3つで組換えが起きていました。
+                                    </p>
+
+                                    <div className="bg-white p-4 rounded-xl shadow-sm text-center border border-purple-100">
+                                        <div className="text-xs font-bold text-gray-500 mb-2">組換え価 (%) の計算式</div>
+                                        <div className="inline-flex items-center text-sm font-bold bg-purple-50/50 px-4 py-3 rounded-lg border border-purple-200">
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-red-600 border-b-2 border-gray-800 px-2">組換えを起こした精子数 (3)</span>
+                                                <span className="text-gray-800 mt-1">調査した全精子数 (15)</span>
+                                            </div>
+                                            <span className="mx-3 text-lg">×</span>
+                                            <span>100</span>
+                                            <span className="mx-3 text-lg">=</span>
+                                            <span className="text-2xl text-purple-700 font-extrabold ml-1">20 %</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-3 p-3 bg-white border-l-4 border-purple-400 text-xs text-gray-600 rounded-r shadow-sm">
+                                        <span className="font-bold text-purple-900">解答：20 %</span>
+                                        <p className="mt-1 leading-relaxed">
+                                            解説にある通り、DNAの微小な反復配列（マイクロサテライト）の長さの違いを電気泳動で検出するリアルな実験モデルとなっています。
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    default: return null;
+                }
+            };
+
+            return (
+                <div className="container mx-auto p-3 md:p-6 max-w-6xl min-h-screen flex flex-col">
+                    {/* ヘッダーとビュー切り替え */}
+                    <header className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4 border-gray-200">
+                        <div>
+                            <h1 className="text-2xl font-black text-gray-800 tracking-tight">電気泳動から読み解く連鎖と組換え</h1>
+                            <p className="text-gray-500 text-xs mt-1">思考のステップに沿って電気泳動のデータと染色体の動きを理解しよう</p>
+                        </div>
+
+                        {/* モード切替タブ */}
+                        <div className="flex bg-gray-200 p-1 rounded-xl w-fit">
+                            <button
+                                onClick={() => setViewMode('electrophoresis')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'electrophoresis' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                            >
+                                ⚡ 電気泳動データの解析
+                            </button>
+                            <button
+                                onClick={() => setViewMode('meiosis')}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'meiosis' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                            >
+                                🧬 減数分裂と遺伝子の動き
+                            </button>
+                        </div>
+                    </header>
+
+                    {viewMode === 'meiosis' ? (
+                        renderMeiosisVisualizer()
+                    ) : (
+                        <div className="space-y-6">
+                            {/* ステップナビゲーション */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                {STEPS.map(step => (
+                                    <button 
+                                        key={step.id}
+                                        onClick={() => setCurrentStep(step.id)}
+                                        className={`py-3 px-4 rounded-xl font-bold text-xs transition-all text-left shadow-sm flex items-center justify-between ${
+                                            currentStep === step.id 
+                                                ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300' 
+                                                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <span>{step.title}</span>
+                                        {currentStep === step.id && <span>➔</span>}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                                {/* 左側：電気泳動の図 */}
+                                <div className="lg:col-span-7 bg-white p-4 md:p-5 rounded-2xl shadow-md border border-gray-100 overflow-x-auto">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h2 className="text-base font-bold text-gray-700 flex items-center gap-2">
+                                            <span>📊</span> 電気泳動結果の図
+                                        </h2>
+                                        <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded">泳動方向 ➔ 下向き</span>
+                                    </div>
+
+                                    <table className="w-full text-center text-xs border-collapse min-w-[580px]">
+                                        <thead>
+                                            <tr>
+                                                <th className="w-12 pb-2"></th>
+                                                <th className="w-14 pb-2 font-bold text-gray-600 border-r-2 border-gray-300 bg-gray-50/80 rounded-t">体細胞</th>
+                                                {Array.from({length: 15}).map((_, i) => {
+                                                    // 不一致（組換え）が起きている列かどうかを動的判定
+                                                    const isDiffCol = currentStep === 1 && comparison && comparison.diffIndices.includes(i) && (selectedGene1 === 'A' || selectedGene2 === 'A' || selectedGene1 === 'B' || selectedGene2 === 'B');
+                                                    return (
+                                                        <th key={i} 
+                                                            className={`w-7 pb-2 font-bold cursor-pointer transition-colors ${
+                                                                isDiffCol ? 'text-red-600 font-black bg-red-100/60 rounded-t-md' : 'text-gray-500'
+                                                            } ${hoveredCol === i ? 'bg-gray-100' : ''}`}
+                                                            onMouseEnter={() => setHoveredCol(i)}
+                                                            onMouseLeave={() => setHoveredCol(null)}
+                                                        >
+                                                            精<br/>{i + 1}
+                                                        </th>
+                                                    );
+                                                })}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {['A', 'B', 'C', 'D', 'E'].map(gene => {
+                                                let isHighlightedRow = false;
+                                                if (currentStep === 0 && (gene === 'C' || gene === 'E')) isHighlightedRow = true;
+                                                if (currentStep === 1 && (gene === selectedGene1 || gene === selectedGene2)) isHighlightedRow = true;
+
+                                                return (
+                                                    <tr key={gene} className={`border-t border-gray-200 transition-colors ${isHighlightedRow ? 'bg-yellow-50/80' : ''}`}>
+                                                        {/* 遺伝子名とⅠ, Ⅱラベル (完璧な高さ同期) */}
+                                                        <td className="font-bold text-base align-middle p-0 relative">
+                                                            <div className="absolute inset-0 flex flex-col justify-center gap-2 text-[10px] text-gray-400 py-2 pr-1 text-right">
+                                                                <span>Ⅰ➔</span>
+                                                                <span>Ⅱ➔</span>
+                                                            </div>
+                                                            <span className="relative z-10 text-lg font-black pl-2 pr-5 text-gray-800">{gene}</span>
+                                                        </td>
+
+                                                        {/* 体細胞 */}
+                                                        <td className="p-0 border-r-2 border-gray-300 bg-gray-50/50">
+                                                            {renderLane(gene, 0, true)}
+                                                        </td>
+
+                                                        {/* 精子 1〜15 */}
+                                                        {Array.from({length: 15}).map((_, i) => {
+                                                            const isDiffCol = currentStep === 1 && comparison && comparison.diffIndices.includes(i) && (gene === selectedGene1 || gene === selectedGene2);
+                                                            return (
+                                                                <td key={i} className={`p-0 border-r border-dashed border-gray-200 transition-colors ${isDiffCol ? 'bg-red-100/50' : ''} ${hoveredCol === i ? 'bg-gray-100/60' : ''}`}>
+                                                                    {renderLane(gene, i, false)}
+                                                                </td>
+                                                            );
+                                                        })}
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* 右側：思考をガイドするインタラクティブエリア */}
+                                <div className="lg:col-span-5 flex flex-col h-full">
+                                    <div className="bg-white p-5 rounded-2xl shadow-md border border-gray-100 flex-grow">
+                                        {renderStepContent()}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

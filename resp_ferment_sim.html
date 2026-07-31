@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>化学計算シミュレーター | 比から分数への思考改革</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM (Production CDN) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel Standalone for in-browser JSX compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        /* 数式・化学式の表示スタイル */
+        .chem-formula sub {
+            font-size: 0.75em;
+            vertical-align: sub;
+        }
+
+        /* アニメーション */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.35s ease-out forwards;
+        }
+
+        /* 分数表記用のカスタムユーティリティ */
+        .fraction-container {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            margin: 0 0.25rem;
+            padding: 0 0.15rem;
+        }
+        .fraction-numerator {
+            border-bottom: 2px solid currentColor;
+            padding-bottom: 1px;
+            text-align: center;
+            line-height: 1.1;
+            width: 100%;
+        }
+        .fraction-denominator {
+            padding-top: 2px;
+            text-align: center;
+            line-height: 1.1;
+            width: 100%;
+        }
+
+        /* スクロールバーのカスタマイズ */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 原子量データ
+        const ATOMIC_WEIGHTS = { H: 1, C: 12, O: 16 };
+
+        // 分子量（モル質量）
+        const MW = {
+            glucose: 180, // C6H12O6
+            o2: 32,       // O2
+            co2: 44,      // CO2
+            ethanol: 46   // C2H5OH
+        };
+
+        // 上下配置の分数UIコンポーネント
+        const Fraction = ({ num, den, colorClass = "text-slate-800", bgClass = "" }) => (
+            <span className={`fraction-container ${colorClass} ${bgClass} rounded px-1.5 py-0.5 font-semibold text-sm sm:text-base`}>
+                <span className="fraction-numerator">{num}</span>
+                <span className="fraction-denominator">{den}</span>
+            </span>
+        );
+
+        function App() {
+            const [step, setStep] = useState(0);
+            const [selectedMethod, setSelectedMethod] = useState(null);
+
+            // 問題データ
+            const problemData = {
+                absorbedO2_mg: 32,
+                releasedCO2_mg: 70
+            };
+
+            // 全ステップのデータ構成
+            const stepsData = [
+                {
+                    title: "【問題の確認】呼吸と発酵の同時進行",
+                    icon: "fa-clipboard-question",
+                    content: (
+                        <div className="space-y-6 text-slate-700">
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-indigo-500 p-5 rounded-r-xl shadow-sm">
+                                <h3 className="font-bold text-lg text-indigo-950 mb-2 flex items-center gap-2">
+                                    <i className="fa-solid fa-flask text-indigo-600"></i> 実験のデータ
+                                </h3>
+                                <p className="leading-relaxed">
+                                    ある条件で、グルコースを呼吸と発酵の基質として酵母を培養したところ、以下の結果が得られた。
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                                    <div className="bg-white p-3.5 rounded-lg border border-indigo-100 shadow-sm flex items-center justify-between">
+                                        <span className="font-medium text-slate-600">吸収された酸素 (<span className="chem-formula">O<sub>2</sub></span>)</span>
+                                        <span className="font-black text-xl text-blue-600">{problemData.absorbedO2_mg} mg</span>
+                                    </div>
+                                    <div className="bg-white p-3.5 rounded-lg border border-indigo-100 shadow-sm flex items-center justify-between">
+                                        <span className="font-medium text-slate-600">放出された二酸化炭素 (<span className="chem-formula">CO<sub>2</sub></span>)</span>
+                                        <span className="font-black text-xl text-emerald-600">{problemData.releasedCO2_mg} mg</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <h4 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                                    <i className="fa-solid fa-lightbulb text-amber-500"></i> 化学反応式の確認
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                                        <span className="inline-block px-2.5 py-1 bg-blue-100 text-blue-800 rounded text-xs font-bold mb-2">呼吸の反応式</span>
+                                        <div className="font-mono text-sm sm:text-base font-semibold text-slate-800 chem-formula">
+                                            C<sub>6</sub>H<sub>12</sub>O<sub>6</sub> + <span className="text-blue-600 font-bold">6</span>O<sub>2</sub> &#8594; <span className="text-red-600 font-bold">6</span>CO<sub>2</sub> + 6H<sub>2</sub>O
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                                        <span className="inline-block px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-bold mb-2">アルコール発酵の反応式</span>
+                                        <div className="font-mono text-sm sm:text-base font-semibold text-slate-800 chem-formula">
+                                            C<sub>6</sub>H<sub>12</sub>O<sub>6</sub> &#8594; <span className="text-emerald-600 font-bold">2</span>CO<sub>2</sub> + 2C<sub>2</sub>H<sub>5</sub>OH
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-900 text-sm leading-relaxed flex gap-3 items-start">
+                                <i className="fa-solid fa-circle-info text-amber-600 mt-1 text-lg"></i>
+                                <div>
+                                    <strong className="font-bold block mb-1">ポイント</strong>
+                                    酵母は酸素がある環境では「呼吸」を行い、酵素反応でグルコースを完全分解します。
+                                    一方、酸素が途中で不足したり並行していると「発酵」も起こります。
+                                    <strong>「呼吸で使われた酸素」から「呼吸由来のCO<sub>2</sub>」を特定する</strong>のが解法の第一歩です。
+                                </div>
+                            </div>
+                        </div>
+                    )
+                },
+                {
+                    title: "【STEP 1】呼吸によるCO₂量の計算（比較実験）",
+                    icon: "fa-calculator",
+                    content: (
+                        <div className="space-y-6 text-slate-700">
+                            <p className="leading-relaxed">
+                                吸収された酸素 <strong>{problemData.absorbedO2_mg} mg</strong> はすべて「呼吸」のみで消費されます。
+                                ここから呼吸で生成した二酸化炭素の量を計算します。
+                            </p>
+
+                            <div className="bg-slate-100 p-4 rounded-xl text-center font-mono font-semibold text-base sm:text-lg border border-slate-300">
+                                <span className="chem-formula">
+                                    C<sub>6</sub>H<sub>12</sub>O<sub>6</sub> + <span className="text-blue-600 font-bold text-xl">6</span>O<sub>2</sub> &#8594; <span className="text-red-600 font-bold text-xl">6</span>CO<sub>2</sub> + 6H<sub>2</sub>O
+                                </span>
+                                <div className="text-xs font-sans text-slate-500 mt-1">係数比： O<sub>2</sub> : CO<sub>2</sub> = 6 : 6 = 1 : 1</div>
+                            </div>
+
+                            <p className="font-bold text-slate-800">
+                                どちらの計算思考メソッドを試しますか？（選択してください）
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => setSelectedMethod('ratio')}
+                                    className={`p-5 rounded-xl border-2 transition-all text-left flex flex-col justify-between ${
+                                        selectedMethod === 'ratio'
+                                            ? 'border-amber-500 bg-amber-50/80 shadow-md ring-2 ring-amber-300'
+                                            : 'border-slate-200 bg-white hover:border-amber-300 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <div>
+                                        <span className="inline-block px-2 py-0.5 bg-amber-200 text-amber-900 rounded text-xs font-bold mb-2">従来の方法</span>
+                                        <h4 className="font-bold text-lg text-slate-900 mb-1">① 「比」を使って順に解く</h4>
+                                        <p className="text-xs text-slate-600 leading-relaxed">
+                                            中学生までの比例式（a:b = c:d）を使い、ステップごとに文字(x, y)を置いて順繰りに計算する。
+                                        </p>
+                                    </div>
+                                    <div className="mt-4 text-xs font-semibold text-amber-700 flex items-center gap-1">
+                                        試してみる <i className="fa-solid fa-arrow-right"></i>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => setSelectedMethod('fraction')}
+                                    className={`p-5 rounded-xl border-2 transition-all text-left flex flex-col justify-between ${
+                                        selectedMethod === 'fraction'
+                                            ? 'border-emerald-500 bg-emerald-50/80 shadow-md ring-2 ring-emerald-300'
+                                            : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <div>
+                                        <span className="inline-block px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded text-xs font-bold mb-2">おすすめ高校メソッド</span>
+                                        <h4 className="font-bold text-lg text-slate-900 mb-1">② 「分数」でストーリーを繋ぐ</h4>
+                                        <p className="text-xs text-slate-600 leading-relaxed">
+                                            与えられた値に「単位を消去する分数」を次々と掛け合わせ、1本の式でゴールへ到達する。
+                                        </p>
+                                    </div>
+                                    <div className="mt-4 text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                                        試してみる <i className="fa-solid fa-arrow-right"></i>
+                                    </div>
+                                </button>
+                            </div>
+
+                            {/* 「比」の解説 */}
+                            {selectedMethod === 'ratio' && (
+                                <div className="p-5 bg-amber-50/90 border border-amber-300 rounded-xl space-y-3 animate-fade-in">
+                                    <h5 className="font-bold text-amber-950 text-base flex items-center gap-2">
+                                        <i className="fa-solid fa-triangle-exclamation text-amber-600"></i> 「比」を使った場合の計算プロセス
+                                    </h5>
+                                    <ol className="list-decimal list-inside space-y-2 text-sm text-slate-800 leading-relaxed">
+                                        <li><span className="font-semibold">O<sub>2</sub>の物質量[mmol]を求める:</span> <br/>
+                                            <span className="ml-5 font-mono text-xs bg-white px-2 py-1 rounded border">32 mg &#247; 32 mg/mmol = 1 mmol</span>
+                                        </li>
+                                        <li><span className="font-semibold">CO<sub>2</sub>の物質量を x [mmol] とおき比例式を作る:</span> <br/>
+                                            <span className="ml-5 font-mono text-xs bg-white px-2 py-1 rounded border">1 : x = 6 : 6  &#8658;  x = 1 mmol</span>
+                                        </li>
+                                        <li><span className="font-semibold">CO<sub>2</sub>の質量 y [mg] を求める:</span> <br/>
+                                            <span className="ml-5 font-mono text-xs bg-white px-2 py-1 rounded border">y = 1 mmol &#215; 44 mg/mmol = 44 mg</span>
+                                        </li>
+                                    </ol>
+                                    <div className="bg-white p-3 rounded-lg text-xs text-amber-900 border border-amber-200 font-medium">
+                                        <i className="fa-solid fa-face-frown text-amber-500 mr-1"></i>
+                                        <strong>問題点:</strong> 式がいくつにも分断されるため、「途中で自分がいま何を計算しているのか」を見失いやすく、書き写しや約分の取りこぼしによる計算ミスが多発します。
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 「分数」の解説 */}
+                            {selectedMethod === 'fraction' && (
+                                <div className="p-5 bg-emerald-50/90 border border-emerald-300 rounded-xl space-y-4 animate-fade-in">
+                                    <h5 className="font-bold text-emerald-950 text-base flex items-center gap-2">
+                                        <i className="fa-solid fa-wand-magic-sparkles text-emerald-600"></i> 「分数」を掛け合わせる一直線思考
+                                    </h5>
+                                    <p className="text-sm text-slate-700">
+                                        スタート（問題の与えられた数値）からゴール（求めたい単位）まで、分子と分母の単位を相殺しながら掛け合わせます。
+                                    </p>
+
+                                    {/* 分数式表示 */}
+                                    <div className="bg-white p-4 rounded-xl border border-emerald-200 shadow-inner overflow-x-auto custom-scrollbar">
+                                        <div className="flex items-center gap-2 font-mono text-sm sm:text-base whitespace-nowrap min-w-max">
+                                            <span className="font-bold text-slate-700">呼吸のCO<sub>2</sub>質量 = </span>
+                                            
+                                            {/* 32mg O2 */}
+                                            <span className="bg-blue-100 text-blue-900 px-2 py-1 rounded font-bold border border-blue-200">
+                                                32 [mg O<sub>2</sub>]
+                                            </span>
+                                            
+                                            <span>&#215;</span>
+
+                                            {/* 分数1: mg -> mmol */}
+                                            <Fraction 
+                                                num={<>1 [mmol O<sub>2</sub>]</>} 
+                                                den={<>32 [mg O<sub>2</sub>]</>} 
+                                                colorClass="text-purple-900"
+                                                bgClass="bg-purple-50 border border-purple-200"
+                                            />
+
+                                            <span>&#215;</span>
+
+                                            {/* 分数2: O2 mol -> CO2 mol */}
+                                            <Fraction 
+                                                num={<>6 [mmol CO<sub>2</sub>]</>} 
+                                                den={<>6 [mmol O<sub>2</sub>]</>} 
+                                                colorClass="text-amber-900"
+                                                bgClass="bg-amber-50 border border-amber-200"
+                                            />
+
+                                            <span>&#215;</span>
+
+                                            {/* 分数3: mmol CO2 -> mg CO2 */}
+                                            <Fraction 
+                                                num={<>44 [mg CO<sub>2</sub>]</>} 
+                                                den={<>1 [mmol CO<sub>2</sub>]</>} 
+                                                colorClass="text-emerald-900"
+                                                bgClass="bg-emerald-50 border border-emerald-200"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* カラー解説 */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                        <div className="bg-white p-2.5 rounded border border-blue-200 flex items-center gap-2">
+                                            <span className="w-3 h-3 rounded-full bg-blue-500 shrink-0"></span>
+                                            <span><strong>スタート:</strong> 与えられたO<sub>2</sub>の質量 (32mg)</span>
+                                        </div>
+                                        <div className="bg-white p-2.5 rounded border border-purple-200 flex items-center gap-2">
+                                            <span className="w-3 h-3 rounded-full bg-purple-500 shrink-0"></span>
+                                            <span><strong>紫の分数:</strong> モル質量で割って mmol に換算</span>
+                                        </div>
+                                        <div className="bg-white p-2.5 rounded border border-amber-200 flex items-center gap-2">
+                                            <span className="w-3 h-3 rounded-full bg-amber-500 shrink-0"></span>
+                                            <span><strong>橙の分数:</strong> 化学反応式の係数比 (6:6) を適用</span>
+                                        </div>
+                                        <div className="bg-white p-2.5 rounded border border-emerald-200 flex items-center gap-2">
+                                            <span className="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></span>
+                                            <span><strong>緑の分数:</strong> CO<sub>2</sub>のモル質量(44)をかけて質量へ</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-emerald-100/80 p-3 rounded-lg text-center font-bold text-emerald-900 text-lg">
+                                        計算: 32 &#215; <Fraction num="1" den="32" /> &#215; 1 &#215; 44 = <span className="text-2xl text-emerald-700 underline decoration-2 underline-offset-4 ml-1">44 mg</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )
+                },
+                {
+                    title: "【STEP 2】発酵によるCO₂量の特定 (問1)",
+                    icon: "fa-bullseye",
+                    content: (
+                        <div className="space-y-6 text-slate-700">
+                            <p className="leading-relaxed">
+                                放出された二酸化炭素の総量は <strong>{problemData.releasedCO2_mg} mg</strong> でした。
+                                STEP 1 から、そのうち <strong>44 mg</strong> が呼吸由来であることが分かっています。
+                            </p>
+
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                                <h4 className="font-bold text-slate-800 text-center text-lg">発酵によって発生した CO<sub>2</sub> 量</h4>
+                                <div className="flex items-center justify-center gap-3 font-mono text-xl sm:text-2xl font-black">
+                                    <span className="text-slate-600">{problemData.releasedCO2_mg} mg <span className="text-xs font-sans text-slate-400 block text-center">(全体)</span></span>
+                                    <span>-</span>
+                                    <span className="text-blue-600">44 mg <span className="text-xs font-sans text-slate-400 block text-center">(呼吸)</span></span>
+                                    <span>=</span>
+                                    <span className="text-emerald-600 text-3xl bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">26 mg</span>
+                                </div>
+                            </div>
+
+                            {/* 問1の解答 */}
+                            <div className="bg-indigo-900 text-white p-5 rounded-xl shadow-md space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs uppercase tracking-wider font-semibold text-indigo-300">問1の回答結果</span>
+                                    <span className="px-3 py-1 bg-emerald-500 text-white font-bold rounded-full text-xs">正解：③</span>
+                                </div>
+                                <p className="text-lg font-bold">
+                                    発酵によって放出された二酸化炭素は <span className="text-amber-300 text-2xl font-black">26 mg</span> です。
+                                </p>
+                            </div>
+                        </div>
+                    )
+                },
+                {
+                    title: "【STEP 3】消費されたグルコースの合計計算 (問2)",
+                    icon: "fa-chart-pie",
+                    content: (
+                        <div className="space-y-6 text-slate-700">
+                            <p className="leading-relaxed">
+                                「呼吸で使われたグルコース」と「発酵で使われたグルコース」をそれぞれ分数の一気通貫計算で求め、合算します。
+                            </p>
+
+                            {/* ① 呼吸のグルコース */}
+                            <div className="bg-white p-5 rounded-xl border border-blue-200 shadow-sm space-y-3">
+                                <div className="flex items-center justify-between border-b pb-2 border-blue-100">
+                                    <h4 className="font-bold text-blue-900 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-blue-600"></span> ① 呼吸で消費されたグルコース量
+                                    </h4>
+                                    <span className="text-xs text-slate-500 font-mono">基質: O<sub>2</sub> 32mg</span>
+                                </div>
+
+                                <div className="bg-slate-50 p-3 rounded-lg overflow-x-auto custom-scrollbar">
+                                    <div className="flex items-center gap-2 font-mono text-sm sm:text-base whitespace-nowrap min-w-max">
+                                        <span>32 [mg O<sub>2</sub>]</span>
+                                        <span>&#215;</span>
+                                        <Fraction num="1 [mmol]" den="32 [mg O2]" colorClass="text-purple-800" />
+                                        <span>&#215;</span>
+                                        <Fraction num={<>1 [mmol C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>]</>} den={<>6 [mmol O<sub>2</sub>]</>} colorClass="text-amber-800" />
+                                        <span>&#215;</span>
+                                        <Fraction num="180 [mg]" den="1 [mmol C6H12O6]" colorClass="text-emerald-800" />
+                                    </div>
+                                </div>
+
+                                <div className="text-right font-mono text-base font-bold text-blue-950">
+                                    = 1 &#215; <Fraction num="1" den="6" /> &#215; 180 = <span className="text-xl text-blue-600 font-black">30 mg</span>
+                                </div>
+                            </div>
+
+                            {/* ② 発酵のグルコース */}
+                            <div className="bg-white p-5 rounded-xl border border-emerald-200 shadow-sm space-y-3">
+                                <div className="flex items-center justify-between border-b pb-2 border-emerald-100">
+                                    <h4 className="font-bold text-emerald-900 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-600"></span> ② 発酵で消費されたグルコース量
+                                    </h4>
+                                    <span className="text-xs text-slate-500 font-mono">基質: 発酵CO<sub>2</sub> 26mg</span>
+                                </div>
+
+                                <div className="bg-slate-50 p-3 rounded-lg overflow-x-auto custom-scrollbar">
+                                    <div className="flex items-center gap-2 font-mono text-sm sm:text-base whitespace-nowrap min-w-max">
+                                        <span>26 [mg CO<sub>2</sub>]</span>
+                                        <span>&#215;</span>
+                                        <Fraction num="1 [mmol]" den="44 [mg CO2]" colorClass="text-purple-800" />
+                                        <span>&#215;</span>
+                                        <Fraction num={<>1 [mmol C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>]</>} den={<>2 [mmol CO<sub>2</sub>]</>} colorClass="text-amber-800" />
+                                        <span>&#215;</span>
+                                        <Fraction num="180 [mg]" den="1 [mmol C6H12O6]" colorClass="text-emerald-800" />
+                                    </div>
+                                </div>
+
+                                <div className="text-right font-mono text-base font-bold text-emerald-950 flex items-center justify-end gap-2">
+                                    <span>=</span>
+                                    <Fraction num="26" den="44" />
+                                    <span>&#215;</span>
+                                    <Fraction num="1" den="2" />
+                                    <span>&#215; 180 = </span>
+                                    <Fraction num="2340" den="44" />
+                                    <span>&#22891;</span>
+                                    <span className="text-xl text-emerald-600 font-black">53.18 mg</span>
+                                </div>
+                            </div>
+
+                            {/* 合計と問2の回答 */}
+                            <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-2xl shadow-lg space-y-3">
+                                <div className="text-xs uppercase tracking-wider font-semibold text-indigo-300 flex justify-between">
+                                    <span>消費グルコースの合計</span>
+                                    <span className="px-3 py-1 bg-amber-500 text-slate-900 font-black rounded-full text-xs">正解：⑤ (83mg)</span>
+                                </div>
+                                <div className="text-center py-2 font-mono text-2xl sm:text-3xl font-black text-amber-300">
+                                    30 mg + 53.18 mg = 83.18 mg &#8658; 約 83 mg
+                                </div>
+                                <p className="text-xs text-indigo-200 text-center leading-relaxed">
+                                    分数式を使うことで、途中で小数の丸め誤差を発生させることなく、最後に一回だけ計算を行えるため、高速かつ正確に答えを導けます！
+                                </p>
+                            </div>
+                        </div>
+                    )
+                },
+                {
+                    title: "【まとめ】高校化学での計算メソッドまとめ",
+                    icon: "fa-trophy",
+                    content: (
+                        <div className="space-y-6 text-center py-4">
+                            <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-inner">
+                                <i className="fa-solid fa-graduation-cap"></i>
+                            </div>
+
+                            <h3 className="text-2xl font-extrabold text-slate-900">
+                                シミュレーション完了！
+                            </h3>
+
+                            <div className="max-w-xl mx-auto space-y-4 text-slate-600 text-left bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                                <h4 className="font-bold text-slate-900 text-base text-center border-b pb-2">
+                                    なぜ「比」ではなく「分数」なのか？
+                                </h4>
+                                <ul className="space-y-3 text-sm">
+                                    <li className="flex gap-2 items-start">
+                                        <i className="fa-solid fa-check text-emerald-500 mt-1"></i>
+                                        <span><strong>単位が打ち消しあうストーリーが見える:</strong> 分子と分母で単位が消えていくため、自分が今どの物質の何の値を求めているかが一目瞭然。</span>
+                                    </li>
+                                    <li className="flex gap-2 items-start">
+                                        <i className="fa-solid fa-check text-emerald-500 mt-1"></i>
+                                        <span><strong>式が1つにまとまる:</strong> 「xとおく」「yとおく」といった無駄なステップがなくなり、約分をまとめて処理できる。</span>
+                                    </li>
+                                    <li className="flex gap-2 items-start">
+                                        <i className="fa-solid fa-check text-emerald-500 mt-1"></i>
+                                        <span><strong>共通テスト・二次試験で圧倒的スピード差:</strong> 化学計算問題での処理速度が上がり、見直し時間をしっかり確保できます。</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <button
+                                onClick={() => { setStep(0); setSelectedMethod(null); }}
+                                className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-indigo-200 transition-all text-base inline-flex items-center gap-2"
+                            >
+                                <i className="fa-solid fa-rotate-right"></i> 最初からもう一度体験する
+                            </button>
+                        </div>
+                    )
+                }
+            ];
+
+            return (
+                <div className="max-w-3xl mx-auto min-h-screen my-0 sm:my-6 flex flex-col justify-between">
+                    {/* カードコンテナ */}
+                    <div className="bg-white rounded-none sm:rounded-3xl shadow-xl border border-slate-200/80 overflow-hidden flex-1 flex flex-col">
+                        
+                        {/* ヘッダー */}
+                        <header className="bg-slate-900 text-white p-6 sm:p-8 relative">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <span className="px-3 py-1 bg-indigo-500/30 text-indigo-300 rounded-full text-xs font-semibold tracking-wider uppercase border border-indigo-500/40">
+                                        高校化学・生物 計算メソッド
+                                    </span>
+                                    <h1 className="text-xl sm:text-2xl font-black mt-2 tracking-tight">
+                                        化学反応式「分数思考」シミュレーター
+                                    </h1>
+                                </div>
+                                <div className="hidden sm:flex w-12 h-12 bg-indigo-600/30 rounded-2xl items-center justify-center text-indigo-400 text-xl border border-indigo-500/30">
+                                    <i className="fa-solid fa-atom"></i>
+                                </div>
+                            </div>
+                            <p className="text-slate-400 text-xs sm:text-sm mt-2">
+                                「比」の丸暗記を卒業し、「単位を消去する分数」で計算速度と正確性を飛躍的に高めよう
+                            </p>
+                        </header>
+
+                        {/* プログレスバー */}
+                        <div className="w-full bg-slate-100 h-2 relative">
+                            <div
+                                className="bg-indigo-600 h-2 transition-all duration-500 ease-in-out"
+                                style={{ width: `${((step + 1) / stepsData.length) * 100}%` }}
+                            ></div>
+                        </div>
+
+                        {/* メインコンテンツ */}
+                        <main className="p-5 sm:p-8 flex-1 flex flex-col justify-between">
+                            <div>
+                                {/* ステップタイトル */}
+                                <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
+                                    <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                        <i className={`fa-solid ${stepsData[step].icon}`}></i>
+                                    </span>
+                                    <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                                        {stepsData[step].title}
+                                    </h2>
+                                </div>
+
+                                {/* ステップコンテンツ */}
+                                <div className="animate-fade-in">
+                                    {stepsData[step].content}
+                                </div>
+                            </div>
+
+                            {/* フッターナビゲーション */}
+                            <footer className="flex items-center justify-between mt-10 pt-6 border-t border-slate-100">
+                                <button
+                                    onClick={() => setStep(Math.max(0, step - 1))}
+                                    disabled={step === 0}
+                                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+                                        step === 0
+                                            ? 'text-slate-300 bg-slate-50 cursor-not-allowed'
+                                            : 'text-slate-700 bg-slate-100 hover:bg-slate-200 active:scale-95'
+                                    }`}
+                                >
+                                    <i className="fa-solid fa-chevron-left"></i> 前へ
+                                </button>
+
+                                <div className="text-xs font-semibold text-slate-400">
+                                    STEP <span className="text-slate-800 font-bold">{step + 1}</span> / {stepsData.length}
+                                </div>
+
+                                <button
+                                    onClick={() => setStep(Math.min(stepsData.length - 1, step + 1))}
+                                    disabled={step === stepsData.length - 1 || (step === 1 && selectedMethod === null)}
+                                    className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md flex items-center gap-2 ${
+                                        step === stepsData.length - 1 || (step === 1 && selectedMethod === null)
+                                            ? 'text-slate-400 bg-slate-200 shadow-none cursor-not-allowed'
+                                            : 'text-white bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-200 active:scale-95'
+                                    }`}
+                                >
+                                    {step === stepsData.length - 2 ? 'まとめへ' : '次へ'} <i className="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </footer>
+                        </main>
+                    </div>
+
+                    {/* クレジット/フッターメッセージ */}
+                    <div className="text-center py-4 text-xs text-slate-400">
+                        スタンドアロン化学学習アプリ &bull; ブラウザのみでスタンドアロン動作可能
+                    </div>
+                </div>
+            );
+        }
+
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+    </script>
+</body>
+</html>

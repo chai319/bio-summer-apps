@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABO式血液型 遺伝子・酵素・糖鎖伸長シミュレーター</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .85; transform: scale(1.03); }
+        }
+
+        .dna-base {
+            transition: all 0.3s ease;
+        }
+        .dna-base:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.2);
+        }
+
+        /* 酵素反応アニメーション */
+        @keyframes bindEnzyme {
+            0% { transform: translate(-30px, -50px) scale(0.6); opacity: 0; }
+            50% { transform: translate(0, 0) scale(1.1); opacity: 1; }
+            80% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(20px, -30px) scale(0.8); opacity: 0; }
+        }
+        .anim-bind {
+            animation: bindEnzyme 2.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-rose-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-rose-900/50">
+                    <i class="fa-solid fa-droplet"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-wide">ABO式血液型 遺伝子・酵素シミュレーター</h1>
+                    <p class="text-xs text-slate-400">高校生物「遺伝子発現・酵素・減数分裂と乗換え」総合学習アプリ</p>
+                </div>
+            </div>
+
+            <!-- Tab Buttons -->
+            <nav class="flex bg-slate-900 p-1 rounded-xl border border-slate-700 text-sm font-medium">
+                <button onclick="switchTab('sim')" id="tab-sim" class="px-4 py-2 rounded-lg transition text-rose-400 bg-slate-800 shadow">
+                    <i class="fa-solid fa-flask-vial mr-1.5"></i> 1. 糖鎖伸長シミュレーション
+                </button>
+                <button onclick="switchTab('dna')" id="tab-dna" class="px-4 py-2 rounded-lg transition text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-dna mr-1.5"></i> 2. 遺伝子配列 & 乗換え分析
+                </button>
+                <button onclick="switchTab('solve')" id="tab-solve" class="px-4 py-2 rounded-lg transition text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-brain mr-1.5"></i> 3. 問題演習 & 思考ガイド
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <!-- TAB 1: 糖鎖伸長シミュレーション -->
+        <section id="sec-sim" class="space-y-6">
+            <div class="bg-slate-800/80 rounded-2xl p-6 border border-slate-700 shadow-xl">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-700 pb-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <span class="text-rose-500"><i class="fa-solid fa-vial-circle-check"></i></span>
+                            遺伝子型から抗原ができる仕組み (糖鎖伸長)
+                        </h2>
+                        <p class="text-slate-400 text-sm mt-1">遺伝子型を選択し、どんな酵素が作られて赤血球の糖鎖がどのように変化するか観察しよう。</p>
+                    </div>
+
+                    <!-- Genotype Selector -->
+                    <div class="flex items-center space-x-2 bg-slate-900/90 p-2 rounded-xl border border-slate-700">
+                        <label class="text-xs font-semibold text-slate-300 px-2">遺伝子型:</label>
+                        <select id="genotype-select" onchange="updateSimulation()" class="bg-slate-800 text-rose-300 font-mono font-bold px-3 py-1.5 rounded-lg border border-rose-500/30 focus:outline-none focus:ring-2 focus:ring-rose-500">
+                            <option value="AA">AA (A型)</option>
+                            <option value="AO">AO (A型)</option>
+                            <option value="BB">BB (B型)</option>
+                            <option value="BO">BO (B型)</option>
+                            <option value="AB">AB (AB型)</option>
+                            <option value="OO">OO (O型)</option>
+                            <option value="BO-fused">B-O融合型 (A酵素活性)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Left: Biological Process Diagram -->
+                    <div class="lg:col-span-7 bg-slate-900/80 rounded-xl p-5 border border-slate-700/80 flex flex-col justify-between">
+                        <h3 class="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-microscope text-rose-400"></i> 赤血球膜上の糖鎖伸長反応 (分子イメージ)
+                        </h3>
+
+                        <!-- Red Blood Cell Surface Visualizer -->
+                        <div class="relative bg-gradient-to-b from-slate-950 to-slate-900 rounded-xl p-6 min-h-[300px] flex flex-col justify-between border border-slate-800 overflow-hidden">
+                            <!-- RBC Membrane Line -->
+                            <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-red-950/80 to-red-900/30 border-t-2 border-red-600/50 flex items-center justify-center">
+                                <span class="text-xs text-red-300 font-semibold tracking-wider opacity-60">赤血球膜 (Membrane)</span>
+                            </div>
+
+                            <!-- Glycan Chains Visual Container -->
+                            <div id="glycan-container" class="relative z-10 flex justify-around items-end mb-12 h-48 px-4">
+                                <!-- Dynamic Glycan Chains loaded via JS -->
+                            </div>
+
+                            <!-- Floating Legend / Info overlay -->
+                            <div class="relative z-10 flex flex-wrap gap-3 text-xs bg-slate-900/90 p-3 rounded-lg border border-slate-800">
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> H抗原(基本糖鎖)</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span> A抗原 (N-アセチルガラクトサミン付加)</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> B抗原 (ガラクトース付加)</span>
+                            </div>
+                        </div>
+
+                        <!-- Result Summary Card -->
+                        <div id="sim-result-card" class="mt-4 p-4 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-between">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Gene -> Enzyme Mechanism Details -->
+                    <div class="lg:col-span-5 space-y-4">
+                        <div class="bg-slate-900/80 rounded-xl p-5 border border-slate-700/80">
+                            <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-gear text-amber-400"></i> 発現する酵素と機能
+                            </h3>
+                            <div id="enzyme-details-container" class="space-y-3">
+                                <!-- JS populated -->
+                            </div>
+                        </div>
+
+                        <!-- Educational Key Takeaway -->
+                        <div class="bg-gradient-to-br from-indigo-950/60 to-slate-900 rounded-xl p-5 border border-indigo-900/50">
+                            <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">💡 ここがポイント (問2の考え方)</h4>
+                            <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+                                <li><strong class="text-rose-400">共優性(AとB):</strong> A酵素とB酵素はどちらも「異なる基質（糖）」をH抗原に結合させる酵素活性を持つため、AB型では両方の抗原が赤血球上に合成される。</li>
+                                <li><strong class="text-slate-400">潜性/劣性(O):</strong> O遺伝子は塩基欠失により正常な酵素が作られず、糖鎖伸長を起こさない。そのためAやBが存在すると表現型に影響を与えない。</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: 遺伝子配列 & 乗換え分析 -->
+        <section id="sec-dna" class="hidden space-y-6">
+            <div class="bg-slate-800/80 rounded-2xl p-6 border border-slate-700 shadow-xl">
+                <div class="border-b border-slate-700 pb-4 mb-6">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <span class="text-emerald-400"><i class="fa-solid fa-dna"></i></span>
+                        遺伝子配列の違いと「乗換え (B-O融合遺伝子)」の仕組み
+                    </h2>
+                    <p class="text-slate-400 text-sm mt-1">問3で話題となった「BO型の母親からなぜA酵素を持つ子が生じたか？」の謎を塩基配列レベルで解き明かします。</p>
+                </div>
+
+                <!-- Base Sequence Table Visualizer -->
+                <div class="bg-slate-900 p-5 rounded-xl border border-slate-700 overflow-x-auto mb-6">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-table-list text-emerald-400"></i> リード図1：塩基配列の主要変異部位の比較
+                    </h3>
+                    
+                    <table class="w-full text-center text-xs border-collapse font-mono">
+                        <thead>
+                            <tr class="bg-slate-800 text-slate-400 border-b border-slate-700">
+                                <th class="p-2 text-left font-sans">塩基番号</th>
+                                <th class="p-2 text-rose-400 font-bold bg-rose-950/40">261</th>
+                                <th class="p-2">297</th>
+                                <th class="p-2">525</th>
+                                <th class="p-2">557</th>
+                                <th class="p-2">703</th>
+                                <th class="p-2">795</th>
+                                <th class="p-2">803</th>
+                                <th class="p-2">930</th>
+                                <th class="p-2 text-left font-sans">特徴・酵素活性</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <!-- A Gene -->
+                            <tr class="hover:bg-slate-800/50">
+                                <td class="p-2.5 font-bold text-left text-emerald-400 font-sans">A遺伝子</td>
+                                <td class="p-2.5 bg-rose-950/20 text-rose-300 font-bold">G</td>
+                                <td class="p-2.5">A</td>
+                                <td class="p-2.5">C</td>
+                                <td class="p-2.5">C</td>
+                                <td class="p-2.5">G</td>
+                                <td class="p-2.5">C</td>
+                                <td class="p-2.5">G</td>
+                                <td class="p-2.5">G</td>
+                                <td class="p-2.5 text-left text-slate-300 font-sans">正常なA酵素を合成</td>
+                            </tr>
+                            <!-- B Gene -->
+                            <tr class="hover:bg-slate-800/50">
+                                <td class="p-2.5 font-bold text-left text-amber-400 font-sans">B遺伝子</td>
+                                <td class="p-2.5 bg-rose-950/20 text-amber-300 font-bold">G</td>
+                                <td class="p-2.5 text-amber-300">G</td>
+                                <td class="p-2.5">C</td>
+                                <td class="p-2.5 text-amber-300">T</td>
+                                <td class="p-2.5 text-amber-300">A</td>
+                                <td class="p-2.5 text-amber-300">A</td>
+                                <td class="p-2.5">C</td>
+                                <td class="p-2.5 text-amber-300">A</td>
+                                <td class="p-2.5 text-left text-slate-300 font-sans">7箇所で塩基が異なり、B酵素を合成</td>
+                            </tr>
+                            <!-- O Gene -->
+                            <tr class="hover:bg-slate-800/50">
+                                <td class="p-2.5 font-bold text-left text-slate-400 font-sans">O遺伝子</td>
+                                <td class="p-2.5 bg-rose-900/60 text-red-400 font-extrabold animate-pulse">欠失(-)</td>
+                                <td class="p-2.5 text-emerald-300">A</td>
+                                <td class="p-2.5">C</td>
+                                <td class="p-2.5 text-emerald-300">C</td>
+                                <td class="p-2.5 text-emerald-300">G</td>
+                                <td class="p-2.5 text-emerald-300">C</td>
+                                <td class="p-2.5">G</td>
+                                <td class="p-2.5 text-emerald-300">G</td>
+                                <td class="p-2.5 text-left text-red-300 font-sans">261番欠失で早期終止→<strong>不活性</strong> (※297番以降はAと同じ配列!)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Crossover Mechanism Interactive Visualizer -->
+                <div class="bg-slate-900/90 rounded-xl p-6 border border-slate-700">
+                    <h3 class="text-base font-bold text-white mb-2 flex items-center justify-between">
+                        <span><i class="fa-solid fa-code-branch text-indigo-400 mr-2"></i> 減数分裂における乗換え（組換え）シミュレーター</span>
+                        <span class="text-xs bg-indigo-900/60 text-indigo-300 px-3 py-1 rounded-full border border-indigo-700">問3(1)(2) の本質</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-6">母の染色体(B遺伝子とO遺伝子のヘテロ)が減数第一分裂で組換えを起こすアニメーションです。「乗換え位置」をスライドさせてみよう！</p>
+
+                    <!-- Interactive Slider for Crossover Point -->
+                    <div class="mb-8 max-w-xl mx-auto bg-slate-800 p-4 rounded-xl border border-slate-700 text-center">
+                        <label class="block text-xs font-bold text-slate-300 mb-2">乗換え（交差）発生位置を選択:</label>
+                        <input type="range" id="crossover-slider" min="1" max="3" value="1" oninput="updateCrossoverVisual()" class="w-full accent-emerald-500 cursor-pointer">
+                        <div class="flex justify-between text-[11px] text-slate-400 mt-1 font-mono">
+                            <span>① 261番の直後 (261〜297間)</span>
+                            <span>② 297〜525間</span>
+                            <span>③ 703〜795間</span>
+                        </div>
+                    </div>
+
+                    <!-- Chromosome Graphic Representation -->
+                    <div class="space-y-6 max-w-3xl mx-auto">
+                        <!-- Before Crossover -->
+                        <div class="space-y-2">
+                            <span class="text-xs font-bold text-slate-400 block">【乗換え前】母の減数分裂前 (BO型)</span>
+                            <!-- B Gene strand -->
+                            <div class="flex items-center space-x-2">
+                                <span class="w-16 text-xs text-amber-400 font-bold">B遺伝子:</span>
+                                <div class="flex-grow h-8 bg-amber-900/50 border border-amber-500/50 rounded-lg flex items-center justify-between px-4 text-xs font-mono">
+                                    <span class="text-emerald-300 font-bold">261: G (正常)</span>
+                                    <span class="text-amber-300">297: G</span>
+                                    <span class="text-amber-300">557: T</span>
+                                    <span class="text-amber-300">703: A</span>
+                                    <span class="text-amber-300">930: A</span>
+                                </div>
+                            </div>
+                            <!-- O Gene strand -->
+                            <div class="flex items-center space-x-2">
+                                <span class="w-16 text-xs text-slate-400 font-bold">O遺伝子:</span>
+                                <div class="flex-grow h-8 bg-slate-800 border border-slate-600 rounded-lg flex items-center justify-between px-4 text-xs font-mono">
+                                    <span class="text-red-400 font-bold">261: 欠失(-)</span>
+                                    <span class="text-emerald-400">297: A (※A型と同)</span>
+                                    <span class="text-emerald-400">557: C</span>
+                                    <span class="text-emerald-400">703: G</span>
+                                    <span class="text-emerald-400">930: G</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Down Arrow Indicator -->
+                        <div class="text-center text-slate-500 text-lg">
+                            <i class="fa-solid fa-arrow-down-long animate-bounce"></i>
+                            <span class="text-xs text-emerald-400 block font-semibold">減数分裂期における乗換え（組換え）が発生</span>
+                        </div>
+
+                        <!-- Resulting Hybrid Gene -->
+                        <div id="crossover-result-box" class="p-4 rounded-xl border transition-all duration-300 bg-slate-800/90 border-emerald-500/50">
+                            <!-- JS Populated -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: 問題演習 & 思考ガイド -->
+        <section id="sec-solve" class="hidden space-y-6">
+            <div class="bg-slate-800/80 rounded-2xl p-6 border border-slate-700 shadow-xl">
+                <div class="border-b border-slate-700 pb-4 mb-6">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <span class="text-sky-400"><i class="fa-solid fa-graduation-cap"></i></span>
+                        思考の組み立て＆論述トレーニング
+                    </h2>
+                    <p class="text-slate-400 text-sm mt-1">問題の意図を汲み取り、リード文のキーワードを活かして満点解答を作成する練習をしよう。</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Left: Navigation of Questions -->
+                    <div class="lg:col-span-4 space-y-2">
+                        <button onclick="selectQuestion('q1')" id="btn-q1" class="q-btn w-full text-left p-3.5 rounded-xl border transition flex items-center justify-between bg-sky-900/40 border-sky-500 text-white font-semibold">
+                            <span>問1: 家系図と遺伝子型の推論</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                        <button onclick="selectQuestion('q21')" id="btn-q21" class="q-btn w-full text-left p-3.5 rounded-xl border transition flex items-center justify-between bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500">
+                            <span>問2(1): A, B共優性の理由 (60字)</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                        <button onclick="selectQuestion('q22')" id="btn-q22" class="q-btn w-full text-left p-3.5 rounded-xl border transition flex items-center justify-between bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500">
+                            <span>問2(2): O遺伝子潜性の理由 (60字)</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                        <button onclick="selectQuestion('q31')" id="btn-q31" class="q-btn w-full text-left p-3.5 rounded-xl border transition flex items-center justify-between bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500">
+                            <span>問3(1): B-O遺伝子の発生原因 (40字)</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                        <button onclick="selectQuestion('q32')" id="btn-q32" class="q-btn w-full text-left p-3.5 rounded-xl border transition flex items-center justify-between bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500">
+                            <span>問3(2): A酵素機能獲得メカニズム (60字)</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+
+                    <!-- Right: Active Question Detail & Interactive Workspace -->
+                    <div class="lg:col-span-8 bg-slate-900/90 rounded-xl p-6 border border-slate-700" id="question-workspace">
+                        <!-- JS populated -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- State Management ---
+        let currentTab = 'sim';
+        let currentQuestion = 'q1';
+
+        // --- Data Definitions ---
+        const genotypeData = {
+            'AA': {
+                phenotype: 'A型',
+                enzymes: ['A酵素', 'A酵素'],
+                glycans: ['A抗原', 'A抗原', 'A抗原'],
+                desc: '両方の遺伝子から正常なA酵素がつくられ、H抗原にN-アセチルガラクトサミンが結合して全てA抗原となります。'
+            },
+            'AO': {
+                phenotype: 'A型',
+                enzymes: ['A酵素', '失活タンパク質(O)'],
+                glycans: ['A抗原', 'A抗原', 'H抗原(未変化)'],
+                desc: 'A遺伝子からA酵素が作られます。O遺伝子は不活性なため糖鎖を変化させませんが、A抗原が存在するため表現型はA型となります。'
+            },
+            'BB': {
+                phenotype: 'B型',
+                enzymes: ['B酵素', 'B酵素'],
+                glycans: ['B抗原', 'B抗原', 'B抗原'],
+                desc: '両方の遺伝子から正常なB酵素がつくられ、H抗原にガラクトースが結合して全てB抗原となります。'
+            },
+            'BO': {
+                phenotype: 'B型',
+                enzymes: ['B酵素', '失活タンパク質(O)'],
+                glycans: ['B抗原', 'B抗原', 'H抗原(未変化)'],
+                desc: 'B遺伝子からB酵素が作られます。O遺伝子由来のタンパク質は不活性なため、B抗原の存在により表現型はB型になります。'
+            },
+            'AB': {
+                phenotype: 'AB型',
+                enzymes: ['A酵素', 'B酵素'],
+                glycans: ['A抗原', 'B抗原', 'A抗原'],
+                desc: 'A酵素とB酵素が同時に作られ、それぞれの作用でA抗原とB抗原の両方が赤血球上に合成されます（共優性）。'
+            },
+            'OO': {
+                phenotype: 'O型',
+                enzymes: ['失活タンパク質(O)', '失活タンパク質(O)'],
+                glycans: ['H抗原(未変化)', 'H抗原(未変化)', 'H抗原(未変化)'],
+                desc: 'どちらの遺伝子も261番塩基の欠失により活性のある酵素を作れません。糖鎖の伸長が起こらず、基本となるH抗原のままとなります。'
+            },
+            'BO-fused': {
+                phenotype: 'A型 (B-O融合遺伝子)',
+                enzymes: ['A酵素活性を持つ融合タンパク質', '失活タンパク質(O)'],
+                glycans: ['A抗原', 'A抗原', 'H抗原(未変化)'],
+                desc: '【実験的事例】乗換えにより「261番G(B由来)」と「それ以降の配列(O由来=本来のA配列)」が結合し、結果的に完全なA酵素が復元されました！'
+            }
+        };
+
+        const questionsData = {
+            'q1': {
+                title: '問1: 家系図と遺伝子型の推論',
+                problemText: 'A型の母親からA型とO型の子どもが生まれた場合、父親は何型か。あり得る型をすべて答えよ。',
+                thinkingSteps: [
+                    'O型の子どもが生じるには、両親ともにO遺伝子を持っていなければならない（遺伝子型: OO）。',
+                    'したがって、母親の遺伝子型は AA ではなく AO である。',
+                    '父親も少なくとも1つの O 遺伝子を保持している必要がある。',
+                    'したがって、父親としてあり得る遺伝子型は AO (A型), BO (B型), OO (O型) である。'
+                ],
+                answerText: 'A型，B型，O型 （※父親の遺伝子型としてAO, BO, OOが可能）',
+                type: 'choice'
+            },
+            'q21': {
+                title: '問2(1): A, B遺伝子が共優性となる理由',
+                problemText: '下線部①「A遺伝子とB遺伝子との間には優劣関係はなく（共優性）」について、理由を60字以内で記せ。',
+                targetLength: 60,
+                keywords: ['A酵素', 'B酵素', '糖鎖伸長', '両方の抗原', '合成'],
+                sampleAnswer: '両方の遺伝子からそれぞれ異なる糖鎖伸長作用を示すA酵素とB酵素が産生され、AとB両方の抗原が合成されるから。（56字）',
+                thinkingHint: 'リード文の「機能の異なった酵素活性」「N-アセチルガラクトサミン」「ガラクトース」の記述を参考に、「それぞれの酵素が異なる糖鎖伸長を行い、両方の抗原ができる」という流れでまとめます。'
+            },
+            'q22': {
+                title: '問2(2): O遺伝子がA, Bに対して潜性となる理由',
+                problemText: '下線部①「O遺伝子はA, Bのいずれの遺伝子に対しても潜性（劣性）である」について、理由を60字以内で記せ。',
+                targetLength: 60,
+                keywords: ['酵素活性', '糖鎖', '伸長', '現れない', '欠失'],
+                sampleAnswer: 'O遺伝子によるタンパク質は酵素活性を示さず糖鎖伸長が起こらないため、AやB遺伝子と共存しても表現型として現れないから。（58字）',
+                thinkingHint: '261番目の欠失によるフレームシフトで酵素活性を持たないタンパク質になるため、糖鎖が伸びず、AやBが存在すると隠れてしまうことに着目します。'
+            },
+            'q31': {
+                title: '問3(1): B-O遺伝子の発生原因',
+                problemText: 'B-O遺伝子は卵母細胞から卵が形成される際にどのようにして生じたと考えられるか。40字以内で記せ。',
+                targetLength: 40,
+                keywords: ['減数分裂', '卵母細胞', '乗換え', '組換え'],
+                sampleAnswer: '卵母細胞が減数分裂する際に、B遺伝子とO遺伝子の間で乗換えが起こり生じた。（36字）',
+                thinkingHint: '高校生物で「遺伝子の組み換え・融合」が起こる場面は減数分裂（第一分裂前期）の「乗換え（交差）」です。「乗換え（または組換え）」というキーワードを確実に使います。'
+            },
+            'q32': {
+                title: '問3(2): A酵素機能獲得メカニズム',
+                problemText: 'B-O融合遺伝子はどのようにしてA遺伝子機能を獲得したのか。60字以内で記せ。',
+                targetLength: 60,
+                keywords: ['261番', 'B遺伝子', 'O遺伝子', '組換え', 'A遺伝子'],
+                sampleAnswer: '261番までを含むB遺伝子と、それ以降のO遺伝子が乗換えにより補われ、A遺伝子と同じ配列となったから。（50字）',
+                thinkingHint: '261番の欠失が原因で失活しているO遺伝子に対し、261番まで正常なB遺伝子の頭部がくっつくことで欠失が補われ、297番以降はもともとAと同じ配列だったO遺伝子の胴体と融合してA遺伝子が復元されたことを書きます。'
+            }
+        };
+
+        // --- Tab Switching Logic ---
+        function switchTab(tab) {
+            currentTab = tab;
+            ['sim', 'dna', 'solve'].forEach(t => {
+                const sec = document.getElementById(`sec-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    sec.classList.remove('hidden');
+                    btn.classList.add('text-rose-400', 'bg-slate-800', 'shadow');
+                    btn.classList.remove('text-slate-400');
+                } else {
+                    sec.classList.add('hidden');
+                    btn.classList.remove('text-rose-400', 'bg-slate-800', 'shadow');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+        }
+
+        // --- Tab 1 Simulation Logic ---
+        function updateSimulation() {
+            const geno = document.getElementById('genotype-select').value;
+            const data = genotypeData[geno];
+
+            const glycanContainer = document.getElementById('glycan-container');
+            glycanContainer.innerHTML = '';
+
+            // Render 3 Glycan chains
+            data.glycans.forEach((type, idx) => {
+                const chainEl = document.createElement('div');
+                chainEl.className = 'flex flex-col items-center justify-end h-full group cursor-pointer relative';
+                
+                let topBallColor = 'bg-blue-500';
+                let topText = 'H抗原';
+                let bindAnim = '';
+
+                if (type === 'A抗原') {
+                    topBallColor = 'bg-emerald-400 shadow-lg shadow-emerald-500/50';
+                    topText = 'A抗原 (GalNAc付加)';
+                    bindAnim = 'anim-bind';
+                } else if (type === 'B抗原') {
+                    topBallColor = 'bg-amber-400 shadow-lg shadow-amber-500/50';
+                    topText = 'B抗原 (Gal付加)';
+                    bindAnim = 'anim-bind';
+                }
+
+                chainEl.innerHTML = `
+                    <div class="mb-2 text-[10px] font-mono text-slate-300 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700">
+                        ${topText}
+                    </div>
+                    <!-- Glycan Structure Ball Stack -->
+                    <div class="flex flex-col items-center space-y-1">
+                        <!-- Top sugar added by enzyme if present -->
+                        <div class="w-7 h-7 rounded-full ${topBallColor} flex items-center justify-center text-[10px] font-bold text-slate-950 transition-transform hover:scale-125">
+                            ${type === 'A抗原' ? 'A' : type === 'B抗原' ? 'B' : 'H'}
+                        </div>
+                        <!-- Core H Antigen Base Sugar Chain -->
+                        <div class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[8px] font-bold text-white">H</div>
+                        <div class="w-4 h-4 rounded-full bg-slate-600"></div>
+                        <div class="w-1.5 h-6 bg-slate-500"></div>
+                    </div>
+                `;
+                glycanContainer.appendChild(chainEl);
+            });
+
+            // Update Result summary
+            document.getElementById('sim-result-card').innerHTML = `
+                <div>
+                    <span class="text-xs text-slate-400 block">表現型 (血液型)</span>
+                    <span class="text-xl font-bold text-rose-400">${data.phenotype}</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs text-slate-400 block">主な赤血球抗原</span>
+                    <span class="text-sm font-semibold text-slate-200">${[...new Set(data.glycans)].join(' / ')}</span>
+                </div>
+            `;
+
+            // Update Enzyme Details list
+            const enzymeBox = document.getElementById('enzyme-details-container');
+            enzymeBox.innerHTML = '';
+            data.enzymes.forEach(enz => {
+                let badgeStyle = 'bg-slate-800 text-slate-400 border-slate-700';
+                let icon = 'fa-ban';
+                if (enz.includes('A酵素')) {
+                    badgeStyle = 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60';
+                    icon = 'fa-circle-check';
+                } else if (enz.includes('B酵素')) {
+                    badgeStyle = 'bg-amber-950/80 text-amber-300 border-amber-700/60';
+                    icon = 'fa-circle-check';
+                }
+
+                const enzDiv = document.createElement('div');
+                enzDiv.className = `p-3 rounded-lg border flex items-center justify-between text-xs font-semibold ${badgeStyle}`;
+                enzDiv.innerHTML = `
+                    <span class="flex items-center gap-2"><i class="fa-solid ${icon}"></i> ${enz}</span>
+                    <span class="font-normal text-[11px] opacity-80">${enz.includes('失活') ? '酵素活性なし (伸長不可)' : '特定の単糖を結合'}</span>
+                `;
+                enzymeBox.appendChild(enzDiv);
+            });
+        }
+
+        // --- Tab 2 Crossover Visualizer Logic ---
+        function updateCrossoverVisual() {
+            const pos = parseInt(document.getElementById('crossover-slider').value);
+            const resBox = document.getElementById('crossover-result-box');
+
+            let resultHtml = '';
+            if (pos === 1) {
+                // Perfect crossover (Between 261 and 297) -> Gives A Gene!
+                resultHtml = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-circle-check"></i> B-O 融合遺伝子 (261番直後で乗換え)</span>
+                        <span class="text-[11px] bg-emerald-900/80 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-700">A酵素活性を獲得！</span>
+                    </div>
+                    <div class="h-9 bg-slate-900 rounded-lg border border-emerald-500/80 flex items-center justify-between px-3 text-xs font-mono">
+                        <span class="text-amber-300 font-bold bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/40">261: G (B由来)</span>
+                        <span class="text-emerald-400">297: A (O由来)</span>
+                        <span class="text-emerald-400">557: C (O由来)</span>
+                        <span class="text-emerald-400">703: G (O由来)</span>
+                        <span class="text-emerald-400">930: G (O由来)</span>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-2.5 leading-relaxed">
+                        欠失のあった261番が<strong>B遺伝子で補われ</strong>、それ以降の配列は<strong>O遺伝子（もともとAと同じ塩基配列）</strong>となるため、奇跡的に<span class="text-emerald-400 font-bold">「A遺伝子と完全に同一」</span>になり、A酵素活性を獲得しました！
+                    </p>
+                `;
+            } else if (pos === 2) {
+                // Crossover between 297 and 525 -> B-like hybrid
+                resultHtml = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-amber-400"><i class="fa-solid fa-triangle-exclamation"></i> B-O 融合遺伝子 (297〜525間で乗換え)</span>
+                        <span class="text-[11px] bg-amber-900/80 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-700">不完全なハイブリッド</span>
+                    </div>
+                    <div class="h-9 bg-slate-900 rounded-lg border border-amber-500/80 flex items-center justify-between px-3 text-xs font-mono">
+                        <span class="text-amber-300 font-bold">261: G (B由来)</span>
+                        <span class="text-amber-300 font-bold">297: G (B由来)</span>
+                        <span class="text-emerald-400">557: C (O由来)</span>
+                        <span class="text-emerald-400">703: G (O由来)</span>
+                        <span class="text-emerald-400">930: G (O由来)</span>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-2.5 leading-relaxed">
+                        297番にB特有の塩基(G)が入るため、A酵素とは異なる配列になります。
+                    </p>
+                `;
+            } else {
+                // Crossover after 703 -> B gene functionality
+                resultHtml = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-amber-400"><i class="fa-solid fa-dna"></i> B-O 融合遺伝子 (703番以降で乗換え)</span>
+                        <span class="text-[11px] bg-amber-900/80 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-700">ほぼB酵素活性</span>
+                    </div>
+                    <div class="h-9 bg-slate-900 rounded-lg border border-amber-500/80 flex items-center justify-between px-3 text-xs font-mono">
+                        <span class="text-amber-300">261: G (B由来)</span>
+                        <span class="text-amber-300">297: G (B由来)</span>
+                        <span class="text-amber-300">557: T (B由来)</span>
+                        <span class="text-amber-300">703: A (B由来)</span>
+                        <span class="text-emerald-400">930: G (O由来)</span>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-2.5 leading-relaxed">
+                        主要な変異部の大半がB遺伝子由来となるため、B酵素活性を示す融合型となります。
+                    </p>
+                `;
+            }
+            resBox.innerHTML = resultHtml;
+        }
+
+        // --- Tab 3 Question Selection Logic ---
+        function selectQuestion(qId) {
+            currentQuestion = qId;
+            
+            // Update sidebar buttons active status
+            document.querySelectorAll('.q-btn').forEach(btn => {
+                btn.classList.remove('bg-sky-900/40', 'border-sky-500', 'text-white');
+                btn.classList.add('bg-slate-900/60', 'border-slate-700', 'text-slate-300');
+            });
+            const activeBtn = document.getElementById(`btn-${qId}`);
+            activeBtn.classList.add('bg-sky-900/40', 'border-sky-500', 'text-white');
+            activeBtn.classList.remove('bg-slate-900/60', 'border-slate-700');
+
+            const data = questionsData[qId];
+            const ws = document.getElementById('question-workspace');
+
+            if (data.type === 'choice') {
+                // Multiple Choice / Deduction layout
+                ws.innerHTML = `
+                    <h3 class="text-lg font-bold text-white mb-2">${data.title}</h3>
+                    <p class="text-sm text-slate-300 bg-slate-800 p-4 rounded-xl border border-slate-700 mb-6 leading-relaxed">${data.problemText}</p>
+
+                    <div class="space-y-4 mb-6">
+                        <h4 class="text-xs font-bold text-sky-400 uppercase tracking-wider">思考の組み立てステップ:</h4>
+                        <ol class="space-y-2 text-xs text-slate-300 list-decimal list-inside bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                            ${data.thinkingSteps.map(step => `<li class="leading-relaxed mb-1">${step}</li>`).join('')}
+                        </ol>
+                    </div>
+
+                    <div class="p-4 bg-emerald-950/40 border border-emerald-500/50 rounded-xl">
+                        <span class="text-xs font-bold text-emerald-400 block mb-1">【模範解答】</span>
+                        <p class="text-base font-bold text-white">${data.answerText}</p>
+                    </div>
+                `;
+            } else {
+                // Writing & Character Counting Essay Practice Workspace
+                ws.innerHTML = `
+                    <h3 class="text-lg font-bold text-white mb-1">${data.title}</h3>
+                    <p class="text-xs text-sky-400 mb-3">制限文字数: ${data.targetLength}字以内</p>
+                    
+                    <p class="text-sm text-slate-300 bg-slate-800 p-4 rounded-xl border border-slate-700 mb-4 leading-relaxed">${data.problemText}</p>
+
+                    <!-- Hint Box -->
+                    <div class="bg-indigo-950/40 p-3.5 rounded-xl border border-indigo-900/60 mb-4 text-xs text-indigo-200">
+                        <span class="font-bold text-indigo-400"><i class="fa-regular fa-lightbulb mr-1"></i> 解答作成のヒント:</span> ${data.thinkingHint}
+                    </div>
+
+                    <!-- Keywords Checklist -->
+                    <div class="mb-4">
+                        <span class="text-xs font-bold text-slate-400 block mb-2">含めるべき重要キーワード:</span>
+                        <div class="flex flex-wrap gap-2">
+                            ${data.keywords.map(kw => `<span id="kw-${kw}" class="text-xs bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-1 rounded-lg font-mono">${kw}</span>`).join('')}
+                        </div>
+                    </div>
+
+                    <!-- User Input Textarea -->
+                    <div class="relative mb-4">
+                        <textarea id="user-essay-input" oninput="checkEssayText()" rows="3" placeholder="ここに自分の解答を入力して文字数やキーワードをチェック..." class="w-full bg-slate-950 text-slate-100 p-3.5 rounded-xl border border-slate-700 focus:border-sky-500 focus:outline-none text-sm leading-relaxed"></textarea>
+                        <div class="absolute bottom-3 right-3 text-xs text-slate-400 font-mono">
+                            <span id="char-count">0</span> / ${data.targetLength} 字
+                        </div>
+                    </div>
+
+                    <!-- Sample Answer Reveal Button -->
+                    <div class="space-y-3">
+                        <button onclick="toggleSampleAnswer()" class="text-xs font-semibold text-sky-400 hover:text-sky-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-eye"></i> 模範解答と解説を表示する
+                        </button>
+                        <div id="sample-answer-box" class="hidden p-4 bg-slate-800/90 border border-slate-700 rounded-xl text-xs text-slate-300 space-y-2">
+                            <span class="font-bold text-emerald-400 block">【模範解答】</span>
+                            <p class="text-sm text-white font-medium bg-slate-900 p-3 rounded-lg border border-slate-700/80 leading-relaxed">${data.sampleAnswer}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // --- Realtime Character Counter and Keyword Checker ---
+        function checkEssayText() {
+            const input = document.getElementById('user-essay-input');
+            const countEl = document.getElementById('char-count');
+            if (!input || !countEl) return;
+
+            const text = input.value;
+            const count = text.length;
+            countEl.innerText = count;
+
+            const data = questionsData[currentQuestion];
+            if (count > data.targetLength) {
+                countEl.classList.add('text-red-400', 'font-bold');
+            } else {
+                countEl.classList.remove('text-red-400', 'font-bold');
+            }
+
+            // Keyword highlighting check
+            if (data.keywords) {
+                data.keywords.forEach(kw => {
+                    const kwBadge = document.getElementById(`kw-${kw}`);
+                    if (kwBadge) {
+                        if (text.includes(kw)) {
+                            kwBadge.className = 'text-xs bg-emerald-950 text-emerald-300 border border-emerald-600/60 px-2.5 py-1 rounded-lg font-mono font-bold';
+                        } else {
+                            kwBadge.className = 'text-xs bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-1 rounded-lg font-mono';
+                        }
+                    }
+                });
+            }
+        }
+
+        function toggleSampleAnswer() {
+            const box = document.getElementById('sample-answer-box');
+            if (box) box.classList.toggle('hidden');
+        }
+
+        // --- Initial Load Event ---
+        window.onload = function() {
+            updateSimulation();
+            updateCrossoverVisual();
+            selectQuestion('q1');
+        };
+    </script>
+</body>
+</html>

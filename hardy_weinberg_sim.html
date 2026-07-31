@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集団遺伝学・ハーディ・ワインベルグ法則 解法アプリ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="initMath()"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .math-font {
+            font-family: 'Roboto Mono', monospace;
+        }
+        .butterfly-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .butterfly-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -4px rgba(0,0,0,0.1);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-teal-700 via-emerald-600 to-indigo-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-xl backdrop-blur-md">
+                    <svg class="w-7 h-7 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">集団遺伝学 & ハーディ・ワインベルグの法則</h1>
+                    <p class="text-xs text-emerald-100">ミドリシジミの複対立遺伝子（A, B, O）解法学習＆シミュレーター</p>
+                </div>
+            </div>
+
+            <!-- Tab Buttons -->
+            <nav class="flex bg-black/20 p-1 rounded-xl backdrop-blur-sm text-sm font-medium">
+                <button onclick="switchTab('quiz')" id="tab-quiz" class="px-4 py-2 rounded-lg transition-all duration-200 bg-white text-emerald-800 shadow font-bold">
+                    問題・演習
+                </button>
+                <button onclick="switchTab('explain')" id="tab-explain" class="px-4 py-2 rounded-lg transition-all duration-200 text-white hover:bg-white/10">
+                    図解・解法ステップ
+                </button>
+                <button onclick="switchTab('sim')" id="tab-sim" class="px-4 py-2 rounded-lg transition-all duration-200 text-white hover:bg-white/10">
+                    シミュレーター＆計算機
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- TAB 1: 問題演習 & 穴埋めクイズ -->
+        <section id="section-quiz" class="space-y-6">
+            <!-- Problem Overview Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">Lv4 高度遺伝問題</span>
+                        <h2 class="text-lg font-bold text-slate-800">問題 5. 集団遺伝学と遺伝子頻度</h2>
+                    </div>
+                    <button onclick="resetQuiz()" class="text-xs text-slate-500 hover:text-emerald-600 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        リセット
+                    </button>
+                </div>
+
+                <div class="prose max-w-none text-sm text-slate-700 leading-relaxed space-y-3">
+                    <p>
+                        日本の里山には雌の前翅に4種類の表現型が存在するミドリシジミが棲息している。
+                        表現型の遺伝は常染色体上の <span class="font-bold text-indigo-600">A, B, O</span> の3つの複対立遺伝子による。
+                        遺伝子 <i class="font-serif font-bold text-indigo-600">A</i> と <i class="font-serif font-bold text-indigo-600">B</i> に優劣関係はなく（共優性）、どちらも <i class="font-serif font-bold text-indigo-600">O</i> に対して優性である（<i class="font-serif">A = B &gt; O</i>）。
+                    </p>
+                    <p class="bg-slate-50 p-3 rounded-lg border-l-4 border-indigo-500 text-xs text-slate-600">
+                        • 対立遺伝子頻度: <i class="font-serif">A</i> &rarr; <i class="font-serif font-semibold text-red-600">p</i>, &nbsp; <i class="font-serif">B</i> &rarr; <i class="font-serif font-semibold text-sky-600">q</i>, &nbsp; <i class="font-serif">O</i> &rarr; <i class="font-serif font-semibold text-slate-700">r</i> &nbsp; (<i class="font-serif">p + q + r = 1</i>)<br>
+                        • 100個体の調査結果: <span class="font-medium text-slate-800">無紋型 25個体 (0.25)</span>, <span class="font-medium text-red-600">赤斑型 39個体 (0.39)</span>, <span class="font-medium text-sky-600">青斑型 24個体 (0.24)</span>, <span class="font-medium text-purple-600">赤斑・青斑型 12個体 (0.12)</span>
+                    </p>
+                </div>
+
+                <!-- 4 Types Butterfly Visual Showcase -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                    <!-- 無紋型 -->
+                    <div class="butterfly-card bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                        <div class="h-24 flex items-center justify-center">
+                            <svg class="w-20 h-20" viewBox="0 0 100 100">
+                                <path d="M50,85 C25,75 15,50 20,25 C35,15 50,30 50,85 Z" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <div class="text-xs font-bold text-slate-700 mt-1">無紋型 (25個体)</div>
+                        <div class="text-[11px] text-slate-500">遺伝子型: <span class="font-mono font-semibold">OO</span></div>
+                    </div>
+                    <!-- 赤斑型 -->
+                    <div class="butterfly-card bg-red-50/50 p-3 rounded-xl border border-red-100 text-center">
+                        <div class="h-24 flex items-center justify-center">
+                            <svg class="w-20 h-20" viewBox="0 0 100 100">
+                                <path d="M50,85 C25,75 15,50 20,25 C35,15 50,30 50,85 Z" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+                                <circle cx="36" cy="38" r="4" fill="#ef4444"/>
+                                <circle cx="44" cy="42" r="3" fill="#ef4444"/>
+                            </svg>
+                        </div>
+                        <div class="text-xs font-bold text-red-700 mt-1">赤斑型 (39個体)</div>
+                        <div class="text-[11px] text-red-600">遺伝子型: <span class="font-mono font-semibold">AA, AO</span></div>
+                    </div>
+                    <!-- 青斑型 -->
+                    <div class="butterfly-card bg-sky-50/50 p-3 rounded-xl border border-sky-100 text-center">
+                        <div class="h-24 flex items-center justify-center">
+                            <svg class="w-20 h-20" viewBox="0 0 100 100">
+                                <path d="M50,85 C25,75 15,50 20,25 C35,15 50,30 50,85 Z" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+                                <ellipse cx="32" cy="60" rx="9" ry="14" fill="#38bdf8" transform="rotate(-20 32 60)"/>
+                            </svg>
+                        </div>
+                        <div class="text-xs font-bold text-sky-700 mt-1">青斑型 (24個体)</div>
+                        <div class="text-[11px] text-sky-600">遺伝子型: <span class="font-mono font-semibold">BB, BO</span></div>
+                    </div>
+                    <!-- 赤斑・青斑型 -->
+                    <div class="butterfly-card bg-purple-50/50 p-3 rounded-xl border border-purple-100 text-center">
+                        <div class="h-24 flex items-center justify-center">
+                            <svg class="w-20 h-20" viewBox="0 0 100 100">
+                                <path d="M50,85 C25,75 15,50 20,25 C35,15 50,30 50,85 Z" fill="#f3e8ff" stroke="#9333ea" stroke-width="2"/>
+                                <circle cx="36" cy="38" r="4" fill="#ef4444"/>
+                                <circle cx="44" cy="42" r="3" fill="#ef4444"/>
+                                <ellipse cx="32" cy="60" rx="9" ry="14" fill="#38bdf8" transform="rotate(-20 32 60)"/>
+                            </svg>
+                        </div>
+                        <div class="text-xs font-bold text-purple-700 mt-1">赤斑・青斑型 (12個体)</div>
+                        <div class="text-[11px] text-purple-600">遺伝子型: <span class="font-mono font-semibold">AB</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Quiz Section -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="w-2 h-5 bg-emerald-500 rounded-full inline-block"></span>
+                    空欄補充問題に挑戦しよう
+                </h3>
+
+                <!-- Question 1 -->
+                <div class="p-4 bg-slate-50 rounded-xl space-y-3">
+                    <p class="font-semibold text-sm text-slate-800">
+                        問1. 赤斑型を示す遺伝子型 <span class="text-red-600">[ ア ]</span> と <span class="text-red-600">[ イ ]</span>、青斑型を示す遺伝子型 <span class="text-sky-600">[ ウ ]</span> と <span class="text-sky-600">[ エ ]</span> を選んでください。
+                    </p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">(ア)</label>
+                            <select id="ans-a" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+                                <option value="">選択</option>
+                                <option value="AA">AA</option>
+                                <option value="AO">AO</option>
+                                <option value="BB">BB</option>
+                                <option value="BO">BO</option>
+                                <option value="AB">AB</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">(イ)</label>
+                            <select id="ans-b" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+                                <option value="">選択</option>
+                                <option value="AA">AA</option>
+                                <option value="AO">AO</option>
+                                <option value="BB">BB</option>
+                                <option value="BO">BO</option>
+                                <option value="AB">AB</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">(ウ)</label>
+                            <select id="ans-c" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+                                <option value="">選択</option>
+                                <option value="AA">AA</option>
+                                <option value="AO">AO</option>
+                                <option value="BB">BB</option>
+                                <option value="BO">BO</option>
+                                <option value="AB">AB</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">(エ)</label>
+                            <select id="ans-d" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+                                <option value="">選択</option>
+                                <option value="AA">AA</option>
+                                <option value="AO">AO</option>
+                                <option value="BB">BB</option>
+                                <option value="BO">BO</option>
+                                <option value="AB">AB</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question 2 -->
+                <div class="p-4 bg-slate-50 rounded-xl space-y-3">
+                    <p class="font-semibold text-sm text-slate-800">
+                        問2. 式変形に関する空欄に入る表現型を選んでください。
+                    </p>
+                    <div class="bg-white p-3 rounded-lg border border-slate-200 text-xs sm:text-sm text-slate-700 leading-relaxed overflow-x-auto space-y-2">
+                        <div>\( p = 1 - \sqrt{\text{[ オ ]の頻度} + \text{[ カ ]の頻度}} \)</div>
+                        <div>\( q = 1 - \sqrt{\text{[ キ ]の頻度} + \text{[ ク ]の頻度}} \)</div>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">(オ), (カ)</label>
+                            <select id="ans-ef" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500">
+                                <option value="">選択</option>
+                                <option value="青斑型, 無紋型">青斑型, 無紋型</option>
+                                <option value="赤斑型, 無紋型">赤斑型, 無紋型</option>
+                                <option value="赤斑型, 青斑型">赤斑型, 青斑型</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">(キ), (ク)</label>
+                            <select id="ans-gh" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500">
+                                <option value="">選択</option>
+                                <option value="青斑型, 無紋型">青斑型, 無紋型</option>
+                                <option value="赤斑型, 無紋型">赤斑型, 無紋型</option>
+                                <option value="赤斑型, 青斑型">赤斑型, 青斑型</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question 3 -->
+                <div class="p-4 bg-slate-50 rounded-xl space-y-3">
+                    <p class="font-semibold text-sm text-slate-800">
+                        問3. 有効数字2桁で対立遺伝子頻度 $p, q, r$ を求めて入力してください。
+                    </p>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">遺伝子Aの頻度 $p$</label>
+                            <input type="number" step="0.01" id="ans-p" placeholder="例: 0.30" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">遺伝子Bの頻度 $q$</label>
+                            <input type="number" step="0.01" id="ans-q" placeholder="例: 0.20" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1">遺伝子Oの頻度 $r$</label>
+                            <input type="number" step="0.01" id="ans-r" placeholder="例: 0.50" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="checkQuizAnswer()" class="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        解答を判定・解説を見る
+                    </button>
+                </div>
+
+                <!-- Quiz Feedback Result -->
+                <div id="quiz-result" class="hidden p-5 rounded-xl border transition-all"></div>
+            </div>
+        </section>
+
+        <!-- TAB 2: 図解・解法ステップ -->
+        <section id="section-explain" class="hidden space-y-6">
+            <!-- Concept Grid -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800 mb-2">遺伝子型と表現型の関係（プネット四角形 / 3×3 Grid）</h2>
+                    <p class="text-sm text-slate-600">
+                        ハーディ・ワインベルグの法則に従う集団では、次世代の遺伝子型頻度はランダム接合により配偶子頻度の積で表されます。
+                    </p>
+                </div>
+
+                <!-- Punnett Square Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-center border-collapse border border-slate-300 rounded-lg text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700">
+                                <th class="border border-slate-300 p-3">雌＼雄</th>
+                                <th class="border border-slate-300 p-3 bg-red-50 text-red-700">A (<i class="font-serif">p</i>)</th>
+                                <th class="border border-slate-300 p-3 bg-sky-50 text-sky-700">B (<i class="font-serif">q</i>)</th>
+                                <th class="border border-slate-300 p-3 bg-slate-200 text-slate-700">O (<i class="font-serif">r</i>)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th class="border border-slate-300 p-3 bg-red-50 text-red-700">A (<i class="font-serif">p</i>)</th>
+                                <td class="border border-slate-300 p-3 bg-red-100/50">
+                                    <span class="font-bold text-red-800">AA</span><br><span class="font-mono text-xs text-red-600">\(p^2\)</span>
+                                    <div class="text-[10px] text-red-600">赤斑型</div>
+                                </td>
+                                <td class="border border-slate-300 p-3 bg-purple-100/50">
+                                    <span class="font-bold text-purple-800">AB</span><br><span class="font-mono text-xs text-purple-600">\(pq\)</span>
+                                    <div class="text-[10px] text-purple-600">赤斑・青斑型</div>
+                                </td>
+                                <td class="border border-slate-300 p-3 bg-red-100/50">
+                                    <span class="font-bold text-red-800">AO</span><br><span class="font-mono text-xs text-red-600">\(pr\)</span>
+                                    <div class="text-[10px] text-red-600">赤斑型</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="border border-slate-300 p-3 bg-sky-50 text-sky-700">B (<i class="font-serif">q</i>)</th>
+                                <td class="border border-slate-300 p-3 bg-purple-100/50">
+                                    <span class="font-bold text-purple-800">BA</span><br><span class="font-mono text-xs text-purple-600">\(pq\)</span>
+                                    <div class="text-[10px] text-purple-600">赤斑・青斑型</div>
+                                </td>
+                                <td class="border border-slate-300 p-3 bg-sky-100/50">
+                                    <span class="font-bold text-sky-800">BB</span><br><span class="font-mono text-xs text-sky-600">\(q^2\)</span>
+                                    <div class="text-[10px] text-sky-600">青斑型</div>
+                                </td>
+                                <td class="border border-slate-300 p-3 bg-sky-100/50">
+                                    <span class="font-bold text-sky-800">BO</span><br><span class="font-mono text-xs text-sky-600">\(qr\)</span>
+                                    <div class="text-[10px] text-sky-600">青斑型</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="border border-slate-300 p-3 bg-slate-200 text-slate-700">O (<i class="font-serif">r</i>)</th>
+                                <td class="border border-slate-300 p-3 bg-red-100/50">
+                                    <span class="font-bold text-red-800">OA</span><br><span class="font-mono text-xs text-red-600">\(pr\)</span>
+                                    <div class="text-[10px] text-red-600">赤斑型</div>
+                                </td>
+                                <td class="border border-slate-300 p-3 bg-sky-100/50">
+                                    <span class="font-bold text-sky-800">OB</span><br><span class="font-mono text-xs text-sky-600">\(qr\)</span>
+                                    <div class="text-[10px] text-sky-600">青斑型</div>
+                                </td>
+                                <td class="border border-slate-300 p-3 bg-slate-100">
+                                    <span class="font-bold text-slate-800">OO</span><br><span class="font-mono text-xs text-slate-600">\(r^2\)</span>
+                                    <div class="text-[10px] text-slate-600">無紋型</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Key Point Magic Box -->
+                <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 space-y-3">
+                    <h3 class="font-bold text-amber-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        解法の極意: 二項展開の平方根を利用した補集合テクニック
+                    </h3>
+                    <p class="text-xs sm:text-sm text-amber-900 leading-relaxed">
+                        通常、<i class="font-serif">p + q + r = 1</i> より <i class="font-serif">p = 1 - (q + r)</i> です。<br>
+                        ここで、<span class="font-bold text-sky-700">青斑型 (\(q^2 + 2qr\))</span> と <span class="font-bold text-slate-700">無紋型 (\(r^2\))</span> の頻度を足し合わせると：
+                    </p>
+                    <div class="bg-white/80 p-3 rounded-lg border border-amber-300 text-xs sm:text-sm text-slate-800 text-center">
+                        \( \text{青斑型} + \text{無紋型} = (q^2 + 2qr) + r^2 = (q + r)^2 \)
+                    </div>
+                    <p class="text-xs sm:text-sm text-amber-900">
+                        両辺の平方根をとると： \( \sqrt{\text{青斑型} + \text{無紋型}} = q + r \)<br>
+                        これを \( p = 1 - (q + r) \) に代入すると、<span class="font-bold text-emerald-800">\( p = 1 - \sqrt{\text{青斑型} + \text{無紋型}} \)</span> という解法公式が得られます！
+                    </p>
+                </div>
+
+                <!-- Step by step Numerical Solving -->
+                <div class="space-y-4">
+                    <h3 class="font-bold text-slate-800 border-l-4 border-indigo-500 pl-3">本問題の具体的な計算手順</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                            <div class="text-xs font-bold text-indigo-600">STEP 1: <i class="font-serif">r</i> を求める</div>
+                            <div class="text-xs text-slate-700">
+                                劣性ホモ接合である無紋型 (<i class="font-mono">OO</i>) の頻度は \(r^2 = 0.25\)<br>
+                                平方根をとって：<br>
+                                <span class="font-bold text-slate-900 text-sm font-mono">r = √0.25 = 0.50</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                            <div class="text-xs font-bold text-indigo-600">STEP 2: <i class="font-serif">p</i> を求める</div>
+                            <div class="text-xs text-slate-700">
+                                青斑型 (0.24) と無紋型 (0.25) より：<br>
+                                \( p = 1 - \sqrt{0.24 + 0.25} = 1 - \sqrt{0.49} \)<br>
+                                <span class="font-bold text-slate-900 text-sm font-mono">p = 1 - 0.70 = 0.30</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                            <div class="text-xs font-bold text-indigo-600">STEP 3: <i class="font-serif">q</i> を求める</div>
+                            <div class="text-xs text-slate-700">
+                                赤斑型 (0.39) と無紋型 (0.25) より：<br>
+                                \( q = 1 - \sqrt{0.39 + 0.25} = 1 - \sqrt{0.64} \)<br>
+                                <span class="font-bold text-slate-900 text-sm font-mono">q = 1 - 0.80 = 0.20</span><br>
+                                <span class="text-[10px] text-slate-500">(※ \( q = 1 - p - r = 1 - 0.30 - 0.50 = 0.20 \) でも可)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: シミュレーター＆計算機 -->
+        <section id="section-sim" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Controls & Inputs (5 cols) -->
+                <div class="lg:col-span-5 bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        パラメータ調整
+                    </h2>
+
+                    <!-- Mode Switch: Sliders vs Counts -->
+                    <div class="flex rounded-lg bg-slate-100 p-1 text-xs font-medium">
+                        <button id="sim-mode-freq" onclick="setSimMode('freq')" class="flex-1 py-1.5 rounded-md bg-white text-slate-800 shadow font-bold">遺伝子頻度 <i class="font-serif">p, q, r</i> 指定</button>
+                        <button id="sim-mode-count" onclick="setSimMode('count')" class="flex-1 py-1.5 rounded-md text-slate-600 hover:text-slate-900">観察個体数から逆算</button>
+                    </div>
+
+                    <!-- Mode A: Sliders -->
+                    <div id="sim-controls-freq" class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-red-600">遺伝子 A 頻度 (<i class="font-serif">p</i>): <span id="val-p" class="font-mono">0.30</span></span>
+                            </div>
+                            <input type="range" id="slider-p" min="0" max="1" step="0.01" value="0.30" oninput="onSliderChange('p')" class="w-full accent-red-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-sky-600">遺伝子 B 頻度 (<i class="font-serif">q</i>): <span id="val-q" class="font-mono">0.20</span></span>
+                            </div>
+                            <input type="range" id="slider-q" min="0" max="1" step="0.01" value="0.20" oninput="onSliderChange('q')" class="w-full accent-sky-500">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-slate-600">遺伝子 O 頻度 (<i class="font-serif">r</i>): <span id="val-r" class="font-mono">0.50</span></span>
+                            </div>
+                            <input type="range" id="slider-r" min="0" max="1" step="0.01" value="0.50" oninput="onSliderChange('r')" class="w-full accent-slate-600">
+                        </div>
+
+                        <div class="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                            ※ <i class="font-serif">p + q + r = 1.00</i> になるよう自動調整されます。
+                        </div>
+                    </div>
+
+                    <!-- Mode B: Individual Counts -->
+                    <div id="sim-controls-count" class="hidden space-y-3">
+                        <p class="text-xs text-slate-600">観測された各表現型の個体数を入力すると、<i class="font-serif">p, q, r</i> を逆算します。</p>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-700">無紋型 個体数</label>
+                                <input type="number" id="input-count-oo" value="25" min="0" oninput="calculateFromCounts()" class="w-full border rounded-lg p-2 text-sm font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-red-700">赤斑型 個体数</label>
+                                <input type="number" id="input-count-red" value="39" min="0" oninput="calculateFromCounts()" class="w-full border rounded-lg p-2 text-sm font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-sky-700">青斑型 個体数</label>
+                                <input type="number" id="input-count-blue" value="24" min="0" oninput="calculateFromCounts()" class="w-full border rounded-lg p-2 text-sm font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-purple-700">赤斑・青斑型 個体数</label>
+                                <input type="number" id="input-count-both" value="12" min="0" oninput="calculateFromCounts()" class="w-full border rounded-lg p-2 text-sm font-mono">
+                            </div>
+                        </div>
+
+                        <div id="count-calc-msg" class="text-xs p-2 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono"></div>
+                    </div>
+
+                    <!-- Preset Buttons -->
+                    <div class="pt-2">
+                        <label class="block text-xs font-semibold text-slate-600 mb-2">サンプルデータセット</label>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="applyPreset(0.30, 0.20, 0.50)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border">問題のデータ (30:20:50)</button>
+                            <button onclick="applyPreset(0.33, 0.33, 0.34)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border">均等分布 (33:33:34)</button>
+                            <button onclick="applyPreset(0.10, 0.10, 0.80)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border">無紋優勢 (10:10:80)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Visual Output (7 cols) -->
+                <div class="lg:col-span-7 bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center justify-between">
+                        <span>理論値 表現型比率 & 集団ビジュアル</span>
+                        <span class="text-xs font-normal text-slate-500 font-mono">Total Population: 1000</span>
+                    </h2>
+
+                    <!-- Phenotype Breakdown Progress Bars -->
+                    <div class="space-y-3">
+                        <!-- 無紋型 -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-slate-700">無紋型 (OO: r²)</span>
+                                <span id="sim-pct-oo" class="font-mono text-slate-600">25.0% (250個体)</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                                <div id="sim-bar-oo" class="bg-slate-400 h-3 transition-all duration-300" style="width: 25%"></div>
+                            </div>
+                        </div>
+
+                        <!-- 赤斑型 -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-red-700">赤斑型 (AA + AO: p² + 2pr)</span>
+                                <span id="sim-pct-red" class="font-mono text-red-600">39.0% (390個体)</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                                <div id="sim-bar-red" class="bg-red-500 h-3 transition-all duration-300" style="width: 39%"></div>
+                            </div>
+                        </div>
+
+                        <!-- 青斑型 -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-sky-700">青斑型 (BB + BO: q² + 2qr)</span>
+                                <span id="sim-pct-blue" class="font-mono text-sky-600">24.0% (240個体)</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                                <div id="sim-bar-blue" class="bg-sky-500 h-3 transition-all duration-300" style="width: 24%"></div>
+                            </div>
+                        </div>
+
+                        <!-- 赤斑・青斑型 -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <span class="text-purple-700">赤斑・青斑型 (AB: 2pq)</span>
+                                <span id="sim-pct-both" class="font-mono text-purple-600">12.0% (120個体)</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                                <div id="sim-bar-both" class="bg-purple-500 h-3 transition-all duration-300" style="width: 12%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Population Grid Visualization -->
+                    <div class="border border-slate-200 rounded-xl p-4 bg-slate-50">
+                        <div class="text-xs font-semibold text-slate-600 mb-3 flex items-center justify-between">
+                            <span>集団サンプリング（100個体アイコンマップ）</span>
+                            <button onclick="renderButterflyGrid()" class="text-[11px] text-emerald-600 hover:underline">再サンプリング</button>
+                        </div>
+                        <div id="butterfly-grid" class="grid grid-cols-10 gap-1.5 justify-items-center">
+                            <!-- Populated dynamically by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+        <div class="max-w-6xl mx-auto px-4 text-center text-xs text-slate-500">
+            集団遺伝学・ハーディ・ワインベルグの法則 学習支援ツール
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        function initMath() {
+            if (typeof renderMathInElement === 'function') {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '\\[', right: '\\]', display: true},
+                        {left: '\\(', right: '\\)', display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
+        }
+
+        // Tab Switcher Logic
+        function switchTab(tabId) {
+            ['quiz', 'explain', 'sim'].forEach(id => {
+                document.getElementById(`section-${id}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-${id}`);
+                btn.className = "px-4 py-2 rounded-lg transition-all duration-200 text-white hover:bg-white/10";
+            });
+
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.className = "px-4 py-2 rounded-lg transition-all duration-200 bg-white text-emerald-800 shadow font-bold";
+            
+            initMath();
+        }
+
+        // Quiz Logic
+        function checkQuizAnswer() {
+            const a = document.getElementById('ans-a').value;
+            const b = document.getElementById('ans-b').value;
+            const c = document.getElementById('ans-c').value;
+            const d = document.getElementById('ans-d').value;
+            const ef = document.getElementById('ans-ef').value;
+            const gh = document.getElementById('ans-gh').value;
+            const p = parseFloat(document.getElementById('ans-p').value);
+            const q = parseFloat(document.getElementById('ans-q').value);
+            const r = parseFloat(document.getElementById('ans-r').value);
+
+            let isCorrect = true;
+            let feedback = [];
+
+            // Q1 check (AA, AO pair regardless of order, BB, BO pair regardless of order)
+            const redGenos = [a, b].sort();
+            const blueGenos = [c, d].sort();
+
+            if (redGenos[0] === 'AA' && redGenos[1] === 'AO') {
+                feedback.push('✅ <b>問1 (ア)(イ) 正解:</b> AA と AO');
+            } else {
+                isCorrect = false;
+                feedback.push('❌ <b>問1 (ア)(イ) 不正解:</b> 赤斑型は AA と AO です。');
+            }
+
+            if (blueGenos[0] === 'BB' && blueGenos[1] === 'BO') {
+                feedback.push('✅ <b>問1 (ウ)(エ) 正解:</b> BB と BO');
+            } else {
+                isCorrect = false;
+                feedback.push('❌ <b>問1 (ウ)(エ) 不正解:</b> 青斑型は BB と BO です。');
+            }
+
+            // Q2 check
+            if (ef === '青斑型, 無紋型') {
+                feedback.push('✅ <b>問2 (オ)(カ) 正解:</b> 青斑型, 無紋型');
+            } else {
+                isCorrect = false;
+                feedback.push('❌ <b>問2 (オ)(カ) 不正解:</b> (q+r)² = 青斑型(q²+2qr) + 無紋型(r²) です。');
+            }
+
+            if (gh === '赤斑型, 無紋型') {
+                feedback.push('✅ <b>問2 (キ)(ク) 正解:</b> 赤斑型, 無紋型');
+            } else {
+                isCorrect = false;
+                feedback.push('❌ <b>問2 (キ)(ク) 不正解:</b> (p+r)² = 赤斑型(p²+2pr) + 無紋型(r²) です。');
+            }
+
+            // Q3 check
+            if (Math.abs(p - 0.30) < 0.01 && Math.abs(q - 0.20) < 0.01 && Math.abs(r - 0.50) < 0.01) {
+                feedback.push('✅ <b>問3 正解:</b> p = 0.30, q = 0.20, r = 0.50');
+            } else {
+                isCorrect = false;
+                feedback.push('❌ <b>問3 不正解:</b> 正しい値は p = 0.30, q = 0.20, r = 0.50 です。');
+            }
+
+            const resDiv = document.getElementById('quiz-result');
+            resDiv.classList.remove('hidden');
+            if (isCorrect) {
+                resDiv.className = "p-5 rounded-xl border bg-emerald-50 border-emerald-300 text-emerald-900 space-y-2";
+                resDiv.innerHTML = `<div class="font-bold text-lg flex items-center gap-2">🎉 全問正解です！素晴らしい！</div>` + feedback.join('<br>');
+            } else {
+                resDiv.className = "p-5 rounded-xl border bg-rose-50 border-rose-300 text-rose-900 space-y-2";
+                resDiv.innerHTML = `<div class="font-bold text-lg">採点結果</div>` + feedback.join('<br>');
+            }
+        }
+
+        function resetQuiz() {
+            ['ans-a', 'ans-b', 'ans-c', 'ans-d', 'ans-ef', 'ans-gh'].forEach(id => {
+                document.getElementById(id).value = "";
+            });
+            ['ans-p', 'ans-q', 'ans-r'].forEach(id => {
+                document.getElementById(id).value = "";
+            });
+            const resDiv = document.getElementById('quiz-result');
+            resDiv.classList.add('hidden');
+        }
+
+        // Simulator Logic
+        let simState = { p: 0.30, q: 0.20, r: 0.50 };
+
+        function setSimMode(mode) {
+            if (mode === 'freq') {
+                document.getElementById('sim-controls-freq').classList.remove('hidden');
+                document.getElementById('sim-controls-count').classList.add('hidden');
+                document.getElementById('sim-mode-freq').className = "flex-1 py-1.5 rounded-md bg-white text-slate-800 shadow font-bold";
+                document.getElementById('sim-mode-count').className = "flex-1 py-1.5 rounded-md text-slate-600 hover:text-slate-900";
+            } else {
+                document.getElementById('sim-controls-freq').classList.add('hidden');
+                document.getElementById('sim-controls-count').classList.remove('hidden');
+                document.getElementById('sim-mode-count').className = "flex-1 py-1.5 rounded-md bg-white text-slate-800 shadow font-bold";
+                document.getElementById('sim-mode-freq').className = "flex-1 py-1.5 rounded-md text-slate-600 hover:text-slate-900";
+                calculateFromCounts();
+            }
+        }
+
+        function onSliderChange(changedParam) {
+            let p = parseFloat(document.getElementById('slider-p').value);
+            let q = parseFloat(document.getElementById('slider-q').value);
+            let r = parseFloat(document.getElementById('slider-r').value);
+
+            // Re-normalize remaining parameters
+            if (changedParam === 'p') {
+                let rem = 1.0 - p;
+                if (rem < 0) { p = 1.0; rem = 0; }
+                let oldSum = q + r;
+                if (oldSum > 0) {
+                    q = (q / oldSum) * rem;
+                    r = (r / oldSum) * rem;
+                } else {
+                    q = rem / 2;
+                    r = rem / 2;
+                }
+            } else if (changedParam === 'q') {
+                let rem = 1.0 - q;
+                if (rem < 0) { q = 1.0; rem = 0; }
+                let oldSum = p + r;
+                if (oldSum > 0) {
+                    p = (p / oldSum) * rem;
+                    r = (r / oldSum) * rem;
+                } else {
+                    p = rem / 2;
+                    r = rem / 2;
+                }
+            } else if (changedParam === 'r') {
+                let rem = 1.0 - r;
+                if (rem < 0) { r = 1.0; rem = 0; }
+                let oldSum = p + q;
+                if (oldSum > 0) {
+                    p = (p / oldSum) * rem;
+                    q = (q / oldSum) * rem;
+                } else {
+                    p = rem / 2;
+                    q = rem / 2;
+                }
+            }
+
+            simState.p = p;
+            simState.q = q;
+            simState.r = r;
+
+            document.getElementById('slider-p').value = p;
+            document.getElementById('slider-q').value = q;
+            document.getElementById('slider-r').value = r;
+
+            document.getElementById('val-p').innerText = p.toFixed(2);
+            document.getElementById('val-q').innerText = q.toFixed(2);
+            document.getElementById('val-r').innerText = r.toFixed(2);
+
+            updateSimOutput();
+        }
+
+        function applyPreset(p, q, r) {
+            document.getElementById('slider-p').value = p;
+            document.getElementById('slider-q').value = q;
+            document.getElementById('slider-r').value = r;
+            onSliderChange('p');
+        }
+
+        function calculateFromCounts() {
+            const nOO = parseFloat(document.getElementById('input-count-oo').value) || 0;
+            const nRed = parseFloat(document.getElementById('input-count-red').value) || 0;
+            const nBlue = parseFloat(document.getElementById('input-count-blue').value) || 0;
+            const nBoth = parseFloat(document.getElementById('input-count-both').value) || 0;
+
+            const total = nOO + nRed + nBlue + nBoth;
+            const msgDiv = document.getElementById('count-calc-msg');
+
+            if (total === 0) {
+                msgDiv.innerHTML = "個体数を入力してください。";
+                return;
+            }
+
+            const freqOO = nOO / total;
+            const freqBlue = nBlue / total;
+            const freqRed = nRed / total;
+
+            const r = Math.sqrt(freqOO);
+            const p = 1.0 - Math.sqrt(freqBlue + freqOO);
+            const q = 1.0 - Math.sqrt(freqRed + freqOO);
+
+            simState.p = Math.max(0, Math.min(1, p));
+            simState.q = Math.max(0, Math.min(1, q));
+            simState.r = Math.max(0, Math.min(1, r));
+
+            msgDiv.innerHTML = `逆算結果: p(A) = <b>${simState.p.toFixed(3)}</b>, q(B) = <b>${simState.q.toFixed(3)}</b>, r(O) = <b>${simState.r.toFixed(3)}</b>`;
+
+            updateSimOutput();
+        }
+
+        function updateSimOutput() {
+            const { p, q, r } = simState;
+
+            const pctOO = r * r;
+            const pctRed = p * p + 2 * p * r;
+            const pctBlue = q * q + 2 * q * r;
+            const pctBoth = 2 * p * q;
+
+            document.getElementById('sim-pct-oo').innerText = `${(pctOO * 100).toFixed(1)}% (${Math.round(pctOO * 1000)}個体)`;
+            document.getElementById('sim-pct-red').innerText = `${(pctRed * 100).toFixed(1)}% (${Math.round(pctRed * 1000)}個体)`;
+            document.getElementById('sim-pct-blue').innerText = `${(pctBlue * 100).toFixed(1)}% (${Math.round(pctBlue * 1000)}個体)`;
+            document.getElementById('sim-pct-both').innerText = `${(pctBoth * 100).toFixed(1)}% (${Math.round(pctBoth * 1000)}個体)`;
+
+            document.getElementById('sim-bar-oo').style.width = `${pctOO * 100}%`;
+            document.getElementById('sim-bar-red').style.width = `${pctRed * 100}%`;
+            document.getElementById('sim-bar-blue').style.width = `${pctBlue * 100}%`;
+            document.getElementById('sim-bar-both').style.width = `${pctBoth * 100}%`;
+
+            renderButterflyGrid();
+        }
+
+        function renderButterflyGrid() {
+            const grid = document.getElementById('butterfly-grid');
+            grid.innerHTML = '';
+
+            const { p, q, r } = simState;
+            const pctOO = r * r;
+            const pctRed = p * p + 2 * p * r;
+            const pctBlue = q * q + 2 * q * r;
+            const pctBoth = 2 * p * q;
+
+            const nOO = Math.round(pctOO * 100);
+            const nRed = Math.round(pctRed * 100);
+            const nBlue = Math.round(pctBlue * 100);
+            const nBoth = 100 - (nOO + nRed + nBlue); // Ensure total is exactly 100
+
+            const types = [
+                ...Array(Math.max(0, nOO)).fill('oo'),
+                ...Array(Math.max(0, nRed)).fill('red'),
+                ...Array(Math.max(0, nBlue)).fill('blue'),
+                ...Array(Math.max(0, nBoth)).fill('both')
+            ];
+
+            // Shuffle array
+            for (let i = types.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [types[i], types[j]] = [types[j], types[i]];
+            }
+
+            types.forEach(t => {
+                const item = document.createElement('div');
+                item.className = 'w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold shadow-sm transition-transform hover:scale-125';
+                
+                if (t === 'oo') {
+                    item.className += ' bg-slate-200 text-slate-700 border border-slate-300';
+                    item.innerText = 'O';
+                    item.title = '無紋型 (OO)';
+                } else if (t === 'red') {
+                    item.className += ' bg-red-500 text-white';
+                    item.innerText = 'A';
+                    item.title = '赤斑型 (A)';
+                } else if (t === 'blue') {
+                    item.className += ' bg-sky-500 text-white';
+                    item.innerText = 'B';
+                    item.title = '青斑型 (B)';
+                } else {
+                    item.className += ' bg-purple-600 text-white';
+                    item.innerText = 'AB';
+                    item.title = '赤斑・青斑型 (AB)';
+                }
+
+                grid.appendChild(item);
+            });
+        }
+
+        window.onload = function() {
+            initMath();
+            updateSimOutput();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遺伝の法則をマスターしよう！〜連鎖と組換え〜</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kosugi Maru', sans-serif;
+            background-color: #f0fdf4; /* やさしい緑系の背景 */
+            color: #333;
+        }
+        .step-container {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        .step-container.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .hint-box {
+            background-color: #fffbeb;
+            border-left: 4px solid #fbbf24;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0.25rem;
+        }
+        .punnett-square {
+            width: 100%;
+            max-width: 400px;
+            border-collapse: collapse;
+            margin: 1rem auto;
+            text-align: center;
+        }
+        .punnett-square th, .punnett-square td {
+            border: 1px solid #cbd5e1;
+            padding: 0.5rem;
+        }
+        .punnett-square th {
+            background-color: #e2e8f0;
+        }
+        .highlight-cell {
+            background-color: #bbf7d0; /* 目立たせる色 */
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-10">
+        <h1 class="text-2xl md:text-3xl font-bold text-green-600 mb-6 text-center">遺伝の法則をマスターしよう！<br><span class="text-xl text-gray-500">〜マルバアサガオの交雑問題〜</span></h1>
+
+        <!-- イントロダクション -->
+        <div id="intro" class="step-container active">
+            <p class="text-lg mb-4">こんにちは！遺伝の問題は少し複雑に見えるかもしれませんが、一つひとつ整理していけば必ず解けます。一緒に頑張りましょう！</p>
+            <p class="mb-4">今回は、マルバアサガオの「花の色」と「子葉の色」についての問題です。</p>
+            
+            <div class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200">
+                <h3 class="font-bold mb-2">【前提条件の確認】</h3>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><strong>花の色（遺伝子 R, r）</strong>: 不完全優性（RR=赤、Rr=桃、rr=白）</li>
+                    <li><strong>子葉の色（遺伝子 Y, y）</strong>: 不完全優性（YY=緑、Yy=黄緑、yy=黄）</li>
+                    <li>親の交雑: <strong>RRYY（赤・緑） × rryy（白・黄）</strong></li>
+                </ul>
+            </div>
+            
+            <button onclick="nextStep(1)" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
+                問題を解き始める！
+            </button>
+        </div>
+
+        <div id="step1" class="step-container">
+            <h2 class="text-xl font-bold text-green-600 mb-4">ステップ1：問1 (ア) 子葉の色だけを考えてみよう</h2>
+            
+            <p class="mb-4">まずは基本から！F1の遺伝子型は何になるでしょうか？</p>
+            <p class="mb-4">親は純系（RRYY と rryy）なので、F1はすべて<strong>RrYy</strong>になりますね。</p>
+            
+            <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100">
+                <p>問1の(ア)では、「子葉の色（Yとy）」だけに着目しています。<br>
+                F1(RrYy)を自家受精させるときの、子葉の遺伝子だけの交雑を考えてみましょう。</p>
+                <p class="text-center font-bold text-lg my-2">Yy × Yy</p>
+            </div>
+
+            <p class="mb-2">この交雑から生まれるF2の表現型の分離比はどうなるでしょうか？</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button onclick="checkAnswer1('wrong')" class="border-2 border-gray-300 hover:border-green-500 rounded-lg p-3 text-center transition">
+                    緑 : 黄緑 : 黄 = 3 : 0 : 1
+                </button>
+                <button onclick="checkAnswer1('correct')" class="border-2 border-gray-300 hover:border-green-500 rounded-lg p-3 text-center transition">
+                    緑 : 黄緑 : 黄 = 1 : 2 : 1
+                </button>
+            </div>
+
+            <div id="feedback1" class="hidden mb-6">
+                <!-- フィードバックがここに表示されます -->
+            </div>
+        </div>
+
+        <div id="step2" class="step-container">
+            <h2 class="text-xl font-bold text-green-600 mb-4">ステップ2：問1 (イ) 2つの形質を同時に考えよう</h2>
+            <p class="mb-4">素晴らしい！(ア)は50%（①）ですね。</p>
+            <p class="mb-4">次は、花の色と子葉の色の両方を考えます。問題文には<strong>「連鎖していない（独立している）」</strong>とありますね。</p>
+            
+            <div class="hint-box mb-4">
+                <p class="font-bold">💡 ヒント</p>
+                <p>独立している場合、F1 (RrYy) がつくる配偶子の比は <strong>RY : Ry : rY : ry = 1 : 1 : 1 : 1</strong> になります。</p>
+            </div>
+
+            <p class="mb-4">16マスの表（パネットスクエア）を書いてみましょう。私たちが探しているのは<strong>「桃色花・緑色子葉」</strong>の個体です。<br>
+            この個体の遺伝子型は分かりますか？</p>
+            
+            <select id="genotype-select" class="block w-full p-2 border border-gray-300 rounded-md mb-4 bg-white" onchange="checkGenotype()">
+                <option value="">選んでください</option>
+                <option value="RRYY">RRYY</option>
+                <option value="RrYY">RrYY</option>
+                <option value="RrYy">RrYy</option>
+                <option value="rrYY">rrYY</option>
+            </select>
+
+            <div id="feedback-genotype" class="hidden mb-4"></div>
+
+            <div id="punnett-step2" class="hidden">
+                <p class="mb-2">そうです、<strong>RrYY</strong>ですね！では、表の中でRrYYになるマスを探してみましょう。</p>
+                <table class="punnett-square text-sm md:text-base">
+                    <tr><th></th><th>RY</th><th>Ry</th><th>rY</th><th>ry</th></tr>
+                    <tr><th>RY</th><td>RRYY</td><td>RRYy</td><td class="highlight-cell">RrYY</td><td>RrYy</td></tr>
+                    <tr><th>Ry</th><td>RRYy</td><td>RRyy</td><td>RrYy</td><td>Rryy</td></tr>
+                    <tr><th>rY</th><td class="highlight-cell">RrYY</td><td>RrYy</td><td>rrYY</td><td>rrYy</td></tr>
+                    <tr><th>ry</th><td>RrYy</td><td>Rryy</td><td>rrYy</td><td>rryy</td></tr>
+                </table>
+                <p class="mb-4 text-center">16マスのうち、色が塗られたマスが RrYY ですね。<br>
+                全体のうちの割合を計算してみましょう。</p>
+                
+                <button onclick="nextStep(3)" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
+                    計算できたので次へ！（問2へ）
+                </button>
+            </div>
+        </div>
+
+        <div id="step3" class="step-container">
+            <h2 class="text-xl font-bold text-green-600 mb-4">ステップ3：問2 (ウ) 組換えが起こらない場合（完全連鎖）</h2>
+            <p class="mb-4">いよいよ連鎖の問題です！</p>
+            <p class="mb-4">「花の色」と「子葉の色」の遺伝子が連鎖していて、<strong>組換えが起こらない</strong>場合を考えます。</p>
+            
+            <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100">
+                <p class="mb-2">親の遺伝子型は <strong>RRYY</strong> と <strong>rryy</strong> でした。<br>
+                つまり、RとY、rとyが同じ染色体に乗っています。</p>
+                <p>F1 (RrYy) が作る配偶子は、どのような割合になるでしょうか？</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-2 mb-6">
+                <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="radio" name="q_linkage" value="wrong1" class="form-radio h-5 w-5 text-green-600">
+                    <span>RY : Ry : rY : ry = 1 : 1 : 1 : 1</span>
+                </label>
+                <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="radio" name="q_linkage" value="correct" class="form-radio h-5 w-5 text-green-600">
+                    <span>RY : ry = 1 : 1</span>
+                </label>
+                <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input type="radio" name="q_linkage" value="wrong2" class="form-radio h-5 w-5 text-green-600">
+                    <span>Ry : rY = 1 : 1</span>
+                </label>
+            </div>
+            
+            <button onclick="checkLinkage()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 mb-4">
+                答え合わせ
+            </button>
+
+            <div id="feedback-linkage" class="hidden mb-6"></div>
+        </div>
+
+        <div id="step4" class="step-container">
+            <h2 class="text-xl font-bold text-green-600 mb-4">ステップ4：問2 (エ) 組換え価20%の場合</h2>
+            <p class="mb-4">これが最後の難関です！一緒に解いていきましょう。</p>
+            <p class="mb-4">組換え価が20%ということは、F1 (RrYy) が作る配偶子のうち、<strong>組換えによってできたもの（Ry と rY）が合わせて20%</strong>ということです。</p>
+            
+            <div class="hint-box mb-4">
+                <p class="font-bold">配偶子の比率の考え方</p>
+                <p>全体の比を m : n : n : m と置く方法がよく使われます。<br>
+                今回は RY(連鎖) : Ry(組換え) : rY(組換え) : ry(連鎖) です。</p>
+                <p class="text-center my-2 text-lg">$\frac{n + n}{m + n + n + m} \times 100 = 20\%$</p>
+            </div>
+
+            <p class="mb-4">この式を解いて、配偶子の比 <strong>RY : Ry : rY : ry</strong> を求めてみましょう。</p>
+
+            <div class="flex flex-wrap gap-2 justify-center mb-6">
+                <input type="number" id="ratio1" class="w-16 p-2 border rounded text-center" placeholder="RY"> : 
+                <input type="number" id="ratio2" class="w-16 p-2 border rounded text-center" placeholder="Ry"> : 
+                <input type="number" id="ratio3" class="w-16 p-2 border rounded text-center" placeholder="rY"> : 
+                <input type="number" id="ratio4" class="w-16 p-2 border rounded text-center" placeholder="ry">
+            </div>
+
+            <button onclick="checkRatio()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 mb-4">
+                比率を確認する
+            </button>
+
+            <div id="feedback-ratio" class="hidden mb-4"></div>
+            
+            <div id="final-calculation" class="hidden">
+                <p class="mb-2">素晴らしい！比率は <strong>4 : 1 : 1 : 4</strong> ですね。<br>
+                では、最後にこの配偶子でF2を作ったときの「桃色花・緑色子葉 (RrYY)」の割合を計算しましょう。</p>
+                
+                <table class="punnett-square text-sm">
+                    <tr><th></th><th>4RY</th><th>1Ry</th><th>1rY</th><th>4ry</th></tr>
+                    <tr><th>4RY</th><td>16RRYY</td><td>...</td><td class="highlight-cell">4RrYY</td><td>...</td></tr>
+                    <tr><th>1Ry</th><td>...</td><td>...</td><td>...</td><td>...</td></tr>
+                    <tr><th>1rY</th><td class="highlight-cell">4RrYY</td><td>...</td><td>...</td><td>...</td></tr>
+                    <tr><th>4ry</th><td>...</td><td>...</td><td>...</td><td>...</td></tr>
+                </table>
+                
+                <p class="mt-4 mb-4">全体の数は $(4+1+1+4) \times (4+1+1+4) = 100$ です。<br>
+                そのうち、RrYYになるのは表のハイライトされた部分です。<br>
+                全体に対する割合は何%になりますか？</p>
+                
+                <button onclick="showConclusion()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
+                    最終結果を見る！
+                </button>
+            </div>
+        </div>
+
+        <div id="conclusion" class="step-container text-center">
+            <h2 class="text-2xl font-bold text-green-600 mb-4">🎉 お疲れ様でした！ 🎉</h2>
+            <p class="mb-4">すべての問題を解き終えました！遺伝の計算は、配偶子の割合を正確に出すことが一番の近道です。</p>
+            
+            <div class="bg-gray-50 p-6 rounded-lg text-left inline-block border border-gray-200">
+                <h3 class="font-bold text-lg mb-3 border-b pb-2">【解答のまとめ】</h3>
+                <ul class="space-y-2">
+                    <li>問1 (ア)：① 50 (%) <span class="text-sm text-gray-500">※1:2:1の分離比から</span></li>
+                    <li>問1 (イ)：⑥ 13 (%) <span class="text-sm text-gray-500">※独立の場合。2/16 = 12.5%</span></li>
+                    <li>問2 (ウ)：⑧ 0 (%) <span class="text-sm text-gray-500">※完全連鎖。RrYYは生じない</span></li>
+                    <li>問2 (エ)：⑦ 8 (%) <span class="text-sm text-gray-500">※組換え価20%。(4+4)/100 = 8%</span></li>
+                </ul>
+            </div>
+            
+            <p class="mt-6 text-gray-600">少しずつステップを踏めば、どんな複雑な問題でも解けるようになりますよ！<br>これからも頑張ってくださいね応援しています！</p>
+            
+            <button onclick="location.reload()" class="mt-6 text-blue-500 hover:underline">最初からもう一度やってみる</button>
+        </div>
+
+    </div>
+
+    <script>
+        function showStep(stepId) {
+            document.querySelectorAll('.step-container').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(stepId).classList.add('active');
+        }
+
+        function nextStep(stepNum) {
+            showStep('step' + stepNum);
+        }
+
+        function checkAnswer1(answer) {
+            const feedback = document.getElementById('feedback1');
+            feedback.classList.remove('hidden');
+            if (answer === 'correct') {
+                feedback.innerHTML = `
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded">
+                        <p class="font-bold">大正解！</p>
+                        <p>Yy × Yy の交雑では、不完全優性のため 遺伝子型の比 YY : Yy : yy = 1 : 2 : 1 がそのまま表現型の比（緑 : 黄緑 : 黄）になります。<br>
+                        黄緑（Yy）の割合は全体の 2/4 なので、<strong>50%（選択肢①）</strong>ですね。</p>
+                        <button onclick="nextStep(2)" class="mt-3 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-200">次の問題へ進む</button>
+                    </div>`;
+            } else {
+                feedback.innerHTML = `
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
+                        <p class="font-bold">惜しい！</p>
+                        <p>3:1になるのは「完全優性」の場合です。<br>
+                        今回は「YY=緑、Yy=黄緑、yy=黄」となる不完全優性なので、ヘテロ接合体（Yy）が中間の表現型になることに注意しましょう！</p>
+                    </div>`;
+            }
+        }
+
+        function checkGenotype() {
+            const select = document.getElementById('genotype-select');
+            const feedback = document.getElementById('feedback-genotype');
+            const targetVal = select.value;
+            
+            feedback.classList.remove('hidden');
+            
+            if (targetVal === 'RrYY') {
+                feedback.innerHTML = `
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 rounded">
+                        <p>正解です！桃色花は「Rr」、緑色子葉は「YY」ですね。</p>
+                    </div>`;
+                document.getElementById('punnett-step2').classList.remove('hidden');
+            } else if (targetVal !== "") {
+                feedback.innerHTML = `
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded">
+                        <p>少し違います。花の色は桃色（不完全優性）、子葉は緑色（純系）になる組み合わせを考えてみてください。</p>
+                    </div>`;
+                document.getElementById('punnett-step2').classList.add('hidden');
+            }
+        }
+
+        function checkLinkage() {
+            const selected = document.querySelector('input[name="q_linkage"]:checked');
+            const feedback = document.getElementById('feedback-linkage');
+            
+            if (!selected) {
+                alert("選択肢を選んでください。");
+                return;
+            }
+
+            feedback.classList.remove('hidden');
+
+            if (selected.value === 'correct') {
+                feedback.innerHTML = `
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded">
+                        <p class="font-bold">バッチリです！</p>
+                        <p>親から受け継いだ (R, Y) のセットと (r, y) のセットがそのまま配偶子に入ります。<br>
+                        つまり配偶子は <strong>RY と ry が 1 : 1</strong> でできます。</p>
+                        <p class="mt-2">これを自家受精させると、F2は <strong>RRYY : RrYy : rryy = 1 : 2 : 1</strong> になります。<br>
+                        「桃色花・緑色子葉 (RrYY)」は生まれないので、割合は <strong>0%（選択肢⑧）</strong> になりますね！</p>
+                        <button onclick="nextStep(4)" class="mt-3 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-200">最後の問題へ！</button>
+                    </div>`;
+            } else {
+                feedback.innerHTML = `
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
+                        <p class="font-bold">もう一度考えてみよう！</p>
+                        <p>連鎖している（同じ染色体に乗っている）ので、独立しているときのようにバラバラにはなりません。<br>
+                        親（RRYYとrryy）から来た染色体の組み合わせをそのまま保ちます。</p>
+                    </div>`;
+            }
+        }
+
+        function checkRatio() {
+            const r1 = document.getElementById('ratio1').value;
+            const r2 = document.getElementById('ratio2').value;
+            const r3 = document.getElementById('ratio3').value;
+            const r4 = document.getElementById('ratio4').value;
+            const feedback = document.getElementById('feedback-ratio');
+
+            feedback.classList.remove('hidden');
+
+            if (r1 === '4' && r2 === '1' && r3 === '1' && r4 === '4') {
+                feedback.innerHTML = `
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 rounded">
+                        <p>計算大正解です！よくできました！</p>
+                    </div>`;
+                document.getElementById('final-calculation').classList.remove('hidden');
+            } else {
+                feedback.innerHTML = `
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded">
+                        <p>惜しいですね。ヒントの式を解いてみましょう。<br>
+                        2n / (2m + 2n) = 20/100<br>
+                        n / (m + n) = 1/5<br>
+                        5n = m + n<br>
+                        4n = m<br>
+                        つまり、m : n = 4 : 1 になります。これを当てはめてみてください。</p>
+                    </div>`;
+                document.getElementById('final-calculation').classList.add('hidden');
+            }
+        }
+
+        function showConclusion() {
+            showStep('conclusion');
+        }
+    </script>
+</body>
+</html>

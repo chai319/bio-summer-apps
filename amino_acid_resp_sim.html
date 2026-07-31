@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アミノ酸代謝・呼吸のしくみ シミュレーター</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        biology: {
+                            light: '#ecfdf5',
+                            DEFAULT: '#10b981',
+                            dark: '#047857',
+                        },
+                        chemistry: {
+                            light: '#eff6ff',
+                            DEFAULT: '#3b82f6',
+                            dark: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f3f4f6; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .bounce-slight { animation: bounceSlight 2s infinite; }
+        @keyframes bounceSlight {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        /* トラックの積載アニメーション用 */
+        .electron-dot { transition: all 0.5s ease-in-out; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 化学式を見やすく表示するコンポーネント（C3H4O3 などを自動で下付き文字に）
+        const Chem = ({ formula }) => {
+            const formatted = formula.replace(/(\d+)/g, '<sub>$1</sub>')
+                                     .replace(/\+/g, '<sup>+</sup>')
+                                     .replace(/\-/g, '<sup>-</sup>');
+            return <span dangerouslySetInnerHTML={{ __html: formatted }} className="font-semibold tracking-wide" />;
+        };
+
+        const Card = ({ children, className = "" }) => (
+            <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ${className}`}>
+                {children}
+            </div>
+        );
+
+        const Button = ({ onClick, children, disabled, variant = "primary" }) => {
+            const baseStyle = "px-6 py-2 rounded-full font-bold transition-all duration-200 shadow-sm ";
+            const variants = {
+                primary: "bg-biology text-white hover:bg-biology-dark hover:shadow-md disabled:bg-gray-300",
+                secondary: "bg-chemistry text-white hover:bg-chemistry-dark hover:shadow-md disabled:bg-gray-300",
+                outline: "border-2 border-biology text-biology hover:bg-biology-light"
+            };
+            return (
+                <button 
+                    onClick={onClick} 
+                    disabled={disabled}
+                    className={`${baseStyle} ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : 'transform hover:-translate-y-0.5'}`}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        const MoleculeMath = () => {
+            const [step, setStep] = useState(1);
+            
+            // ステップ3用の入力状態
+            const [inputs, setInputs] = useState({ C: '', H: '', O: '', N: '' });
+            const [showHint, setShowHint] = useState(false);
+            const [isCorrect, setIsCorrect] = useState(false);
+
+            const handleInputChange = (atom, value) => {
+                setInputs(prev => ({ ...prev, [atom]: value }));
+                setIsCorrect(false);
+            };
+
+            const checkAnswer = () => {
+                if (inputs.C == '5' && inputs.H == '9' && inputs.O == '4' && inputs.N == '1') {
+                    setIsCorrect(true);
+                } else {
+                    setShowHint(true);
+                }
+            };
+
+            return (
+                <div className="space-y-6 fade-in">
+                    <div className="bg-blue-50 text-blue-800 p-4 rounded-xl">
+                        <h3 className="font-bold flex items-center"><span className="text-xl mr-2">🧩</span> ミッション：図から分子式を導き出そう！</h3>
+                        <p className="text-sm mt-1">図の矢印に注目。「何が入って、何が出ていったか」を追うと、未知の分子式が計算で求められます。原子の数は勝手に消えたり増えたりしません。</p>
+                    </div>
+
+                    {step === 1 && (
+                        <Card className="fade-in border-l-4 border-blue-400">
+                            <h4 className="text-lg font-bold mb-4">練習1：フマル酸の分子式は？</h4>
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-lg bg-gray-50 p-6 rounded-xl">
+                                <div className="text-center">
+                                    <div className="font-bold text-gray-700">コハク酸</div>
+                                    <div className="text-2xl text-blue-600"><Chem formula="C4H6O4" /></div>
+                                </div>
+                                <div className="text-gray-400 font-bold text-2xl">→</div>
+                                <div className="text-center bg-yellow-100 p-3 rounded-lg border border-yellow-300">
+                                    <div className="text-sm font-bold text-yellow-700">図から読み取れること</div>
+                                    <div className="font-bold">2H が奪われる</div>
+                                </div>
+                                <div className="text-gray-400 font-bold text-2xl">→</div>
+                                <div className="text-center">
+                                    <div className="font-bold text-gray-700">フマル酸</div>
+                                    <div className="text-2xl text-green-600"><Chem formula="C4H4O4" /></div>
+                                </div>
+                            </div>
+                            <div className="mt-6 text-center">
+                                <p className="mb-4 text-gray-600">コハク酸から H が2つ減っただけですね！</p>
+                                <Button onClick={() => setStep(2)} variant="secondary">次へ進む</Button>
+                            </div>
+                        </Card>
+                    )}
+
+                    {step === 2 && (
+                        <Card className="fade-in border-l-4 border-blue-400">
+                            <h4 className="text-lg font-bold mb-4">練習2：ケトグルタル酸の分子式は？</h4>
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-4 text-lg bg-gray-50 p-6 rounded-xl">
+                                <div className="text-center">
+                                    <div className="font-bold text-gray-700">イソクエン酸</div>
+                                    <div className="text-2xl text-blue-600"><Chem formula="C6H8O7" /></div>
+                                </div>
+                                <div className="text-gray-400 font-bold text-2xl">→</div>
+                                <div className="text-center bg-yellow-100 p-3 rounded-lg border border-yellow-300">
+                                    <div className="text-sm font-bold text-yellow-700">図から読み取れること</div>
+                                    <div className="font-bold">2H と CO2 が奪われる</div>
+                                </div>
+                                <div className="text-gray-400 font-bold text-2xl">→</div>
+                                <div className="text-center">
+                                    <div className="font-bold text-gray-700">ケトグルタル酸</div>
+                                    <div className="text-2xl text-green-600"><Chem formula="C5H6O5" /></div>
+                                </div>
+                            </div>
+                            <div className="mt-6 text-center">
+                                <p className="mb-4 text-gray-600">Cが1つ、Hが2つ、Oが2つ減りましたね。</p>
+                                <Button onClick={() => setStep(3)} variant="secondary">いよいよ本番へ</Button>
+                            </div>
+                        </Card>
+                    )}
+
+                    {step === 3 && (
+                        <Card className="fade-in border-l-4 border-orange-400">
+                            <h4 className="text-lg font-bold mb-4 text-orange-600">本番：グルタミン酸の分子式を導こう（問6）</h4>
+                            <p className="mb-4">図の最初の反応に注目します。「アラニン」と「ケトグルタル酸」が反応して、「ピルビン酸」と「グルタミン酸」ができています。<br/>
+                            つまり、<b>(アラニン + ケトグルタル酸) = (ピルビン酸 + グルタミン酸)</b> です。</p>
+                            
+                            <div className="bg-gray-100 p-4 rounded-xl mb-6">
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center items-center">
+                                    <div>
+                                        <div className="font-bold">アラニン</div>
+                                        <div><Chem formula="C3H7O2N" /></div>
+                                    </div>
+                                    <div className="font-bold text-xl">+</div>
+                                    <div>
+                                        <div className="font-bold">ケトグルタル酸</div>
+                                        <div><Chem formula="C5H6O5" /></div>
+                                    </div>
+                                    <div className="font-bold text-xl">=</div>
+                                    <div className="col-span-2 md:col-span-1 bg-white p-2 rounded shadow-sm">
+                                        <div className="text-sm text-gray-500">左辺の合計</div>
+                                        <div className="font-bold text-lg text-blue-600">
+                                            C<sub className="text-xs">8</sub>H<sub className="text-xs">13</sub>O<sub className="text-xs">7</sub>N<sub className="text-xs">1</sub>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-orange-50 p-4 rounded-xl border border-orange-200 text-center">
+                                <p className="font-bold mb-2">ここから「ピルビン酸 <Chem formula="C3H4O3" />」の分を引けば、グルタミン酸になります。</p>
+                                <div className="flex justify-center gap-4 text-xl font-bold items-center mb-4">
+                                    <span>C: </span><input type="number" min="0" className="w-16 p-2 rounded border" value={inputs.C} onChange={e=>handleInputChange('C', e.target.value)} />
+                                    <span>H: </span><input type="number" min="0" className="w-16 p-2 rounded border" value={inputs.H} onChange={e=>handleInputChange('H', e.target.value)} />
+                                    <span>O: </span><input type="number" min="0" className="w-16 p-2 rounded border" value={inputs.O} onChange={e=>handleInputChange('O', e.target.value)} />
+                                    <span>N: </span><input type="number" min="0" className="w-16 p-2 rounded border" value={inputs.N} onChange={e=>handleInputChange('N', e.target.value)} />
+                                </div>
+                                {!isCorrect ? (
+                                    <Button onClick={checkAnswer} variant="primary">解答をチェック</Button>
+                                ) : (
+                                    <div className="text-green-600 font-bold text-xl bg-green-100 p-3 rounded-lg fade-in">
+                                        🎉 大正解！グルタミン酸は <Chem formula="C5H9O4N" /> です。<br/>
+                                        <span className="text-sm font-normal text-gray-700">※解説にある通り、「単にアミノ基(NH2)が移っただけ」と考えると酸素の数を間違えてしまいます。こうして全体の収支を計算するのが確実です。</span>
+                                    </div>
+                                )}
+                                {showHint && !isCorrect && (
+                                    <p className="text-red-500 mt-3 text-sm fade-in">
+                                        惜しい！ 左辺の合計（C:8, H:13, O:7, N:1）から、ピルビン酸（C:3, H:4, O:3, N:0）の数をそれぞれ引き算してみてね。
+                                    </p>
+                                )}
+                            </div>
+                        </Card>
+                    )}
+                </div>
+            );
+        };
+
+        const EquationBalancer = () => {
+            const [valA, setValA] = useState('');
+            const [valB, setValB] = useState('');
+            const [step, setStep] = useState(1);
+            const [feedback, setFeedback] = useState('');
+
+            // 計算用（空欄の場合は0として扱う）
+            const a = parseInt(valA) || 0;
+            const b = parseInt(valB) || 0;
+
+            const checkStep1 = () => {
+                if (a === 4) {
+                    setStep(2);
+                    setFeedback('');
+                } else {
+                    setFeedback('O（酸素）の数に注目してね。右辺の 3CO2 にはOが何個あるかな？');
+                }
+            };
+
+            const checkStep2 = () => {
+                if (b === 12) {
+                    setStep(3);
+                    setFeedback('');
+                } else {
+                    setFeedback('H（水素）の数に注目！左辺には C3H7O2N の7個と、4H2O の8個があるね。右辺の NH3 に使われている3個を引くと...？');
+                }
+            };
+
+            return (
+                <div className="space-y-6 fade-in">
+                    <div className="bg-emerald-50 text-emerald-800 p-4 rounded-xl">
+                        <h3 className="font-bold flex items-center"><span className="text-xl mr-2">⚖️</span> ミッション：反応式の係数を合わせよう！（問2）</h3>
+                        <p className="text-sm mt-1">化学反応式は、矢印の左右で「原子の種類と数」が同じにならなければいけません。順番に数を合わせていきましょう。</p>
+                    </div>
+
+                    <Card className="text-center shadow-md border-t-4 border-biology">
+                        <div className="text-xl md:text-3xl font-bold py-6 overflow-x-auto whitespace-nowrap">
+                            <Chem formula="C3H7O2N" /> + 
+                            <span className={`mx-2 inline-block px-3 py-1 rounded ${step === 1 ? 'bg-yellow-200 ring-2 ring-yellow-400' : 'bg-gray-100'}`}>
+                                {step === 1 ? 
+                                    <input type="number" className="w-12 text-center bg-transparent outline-none" placeholder="ア" value={valA} onChange={e => {setValA(e.target.value); setFeedback('');}} /> 
+                                    : (a || 'ア')
+                                }
+                            </span>
+                            <Chem formula="H2O" /> 
+                            <span className="mx-3 text-gray-400">→</span> 
+                            3<Chem formula="CO2" /> + <Chem formula="NH3" /> + 
+                            <span className={`mx-2 inline-block px-3 py-1 rounded ${step === 2 ? 'bg-yellow-200 ring-2 ring-yellow-400' : 'bg-gray-100'}`}>
+                                {step === 2 ? 
+                                    <input type="number" className="w-12 text-center bg-transparent outline-none" placeholder="イ" value={valB} onChange={e => {setValB(e.target.value); setFeedback('');}} /> 
+                                    : (b || 'イ')
+                                }
+                            </span>
+                            <Chem formula="H+" /> + 
+                            <span className="mx-2 inline-block px-3 py-1 rounded bg-gray-100 text-gray-500">
+                                {b || 'イ'}
+                            </span>
+                            <Chem formula="e-" />
+                        </div>
+                    </Card>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <Card>
+                            <h4 className="font-bold text-gray-700 mb-4 border-b pb-2">現在の原子の数チェック</h4>
+                            <ul className="space-y-3 font-mono text-sm">
+                                <li className="flex justify-between">
+                                    <span>炭素(C):</span>
+                                    <span className="text-green-600">左:3 ＝ 右:3 (OK)</span>
+                                </li>
+                                <li className="flex justify-between">
+                                    <span>窒素(N):</span>
+                                    <span className="text-green-600">左:1 ＝ 右:1 (OK)</span>
+                                </li>
+                                <li className={`flex justify-between p-1 rounded ${step === 1 ? 'bg-yellow-50 font-bold' : ''}`}>
+                                    <span>酸素(O):</span>
+                                    <span className={2 + a === 6 ? 'text-green-600' : 'text-red-500'}>
+                                        左:{2} + {a} ＝ 右:6
+                                    </span>
+                                </li>
+                                <li className={`flex justify-between p-1 rounded ${step === 2 ? 'bg-yellow-50 font-bold' : ''}`}>
+                                    <span>水素(H):</span>
+                                    <span className={7 + (a*2) === 3 + b ? 'text-green-600' : 'text-red-500'}>
+                                        左:{7} + {a*2} ＝ 右:3 + {b}
+                                    </span>
+                                </li>
+                            </ul>
+                        </Card>
+
+                        <Card className="bg-gray-50">
+                            {step === 1 && (
+                                <div className="fade-in flex flex-col h-full justify-between">
+                                    <div>
+                                        <h4 className="font-bold text-biology-dark mb-2">Step 1: Oの数を合わせよう（ア）</h4>
+                                        <p className="text-sm text-gray-600">右辺には <Chem formula="3CO2" /> があるので、O原子は全部で 3×2 = 6個 です。<br/>左辺は最初から2個あるので、あと何個必要ですか？</p>
+                                    </div>
+                                    <div className="mt-4">
+                                        <Button onClick={checkStep1} variant="primary" className="w-full">確認する</Button>
+                                        {feedback && <p className="text-red-500 text-sm mt-2">{feedback}</p>}
+                                    </div>
+                                </div>
+                            )}
+                            {step === 2 && (
+                                <div className="fade-in flex flex-col h-full justify-between">
+                                    <div>
+                                        <h4 className="font-bold text-biology-dark mb-2">Step 2: Hの数を合わせよう（イ）</h4>
+                                        <p className="text-sm text-gray-600">素晴らしい！（ア）は4ですね。<br/>次は水素(H)です。左辺のHは全部で 7 + (4×2) = 15個 になりました。右辺と等しくなるように（イ）の数を入れてください。</p>
+                                    </div>
+                                    <div className="mt-4">
+                                        <Button onClick={checkStep2} variant="primary" className="w-full">確認する</Button>
+                                        {feedback && <p className="text-red-500 text-sm mt-2">{feedback}</p>}
+                                    </div>
+                                </div>
+                            )}
+                            {step === 3 && (
+                                <div className="fade-in flex flex-col h-full justify-center text-center">
+                                    <div className="text-4xl mb-2">🎉</div>
+                                    <h4 className="font-bold text-biology-dark text-lg mb-2">完成です！</h4>
+                                    <p className="text-sm text-gray-700">ア＝4、イ＝12 が導き出せました。<br/>最後に、プラスとマイナスの「電荷」も +12 と -12 でプラマイゼロになり、左右で釣り合っていることを確認しておきましょう！</p>
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                </div>
+            );
+        };
+
+        const ElectronRelay = () => {
+            const [carriedCount, setCarriedCount] = useState(0);
+            const totalElectrons = 12; // 問2で求めた電子の数
+            
+            const handleCarry = () => {
+                if (carriedCount < totalElectrons / 2) {
+                    setCarriedCount(prev => prev + 1);
+                }
+            };
+
+            const reset = () => setCarriedCount(0);
+
+            return (
+                <div className="space-y-6 fade-in">
+                    <div className="bg-amber-50 text-amber-800 p-4 rounded-xl">
+                        <h3 className="font-bold flex items-center"><span className="text-xl mr-2">⚡</span> ミッション：電子の行方を追え！（問4, 5）</h3>
+                        <p className="text-sm mt-1">問2の式で、アラニン1分子が分解されると <b>12個の電子(e-)</b> が放出されることが分かりました。これらはどうなるのでしょうか？</p>
+                    </div>
+
+                    <Card className="text-center overflow-hidden relative">
+                        <h4 className="font-bold text-gray-700 mb-6">電子運搬トラック (NAD⁺, FAD) を呼ぼう</h4>
+                        
+                        <div className="flex justify-center items-center gap-8 mb-8">
+                            {/* 放出された電子 */}
+                            <div className="bg-gray-100 p-4 rounded-xl w-1/3">
+                                <div className="text-sm font-bold text-gray-500 mb-2">残りの電子</div>
+                                <div className="flex flex-wrap justify-center gap-2 min-h-[60px]">
+                                    {Array.from({ length: totalElectrons - (carriedCount * 2) }).map((_, i) => (
+                                        <div key={i} className="w-4 h-4 bg-yellow-400 rounded-full shadow-sm electron-dot bounce-slight"></div>
+                                    ))}
+                                    {carriedCount * 2 === totalElectrons && <span className="text-gray-400 text-sm">空っぽ</span>}
+                                </div>
+                            </div>
+                            
+                            <div className="text-3xl text-gray-300">→</div>
+                            
+                            {/* 運搬トラック (補酵素) */}
+                            <div className="bg-blue-50 p-4 rounded-xl w-1/3 min-h-[120px]">
+                                <div className="text-sm font-bold text-blue-600 mb-2">出動したトラック (X, Y)</div>
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    {Array.from({ length: carriedCount }).map((_, i) => (
+                                        <div key={i} className="bg-white border-2 border-blue-400 rounded p-1 text-xs font-bold text-blue-600 flex items-center gap-1 fade-in">
+                                            🚚 <span className="flex gap-0.5"><div className="w-2 h-2 bg-yellow-400 rounded-full"></div><div className="w-2 h-2 bg-yellow-400 rounded-full"></div></span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {carriedCount < 6 ? (
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-600">
+                                    補酵素（NAD⁺やFAD）は、1分子あたり <b>2つの電子</b> を受け取ります。<br/>
+                                    ボタンを押して、電子を運んでもらいましょう！
+                                </p>
+                                <Button onClick={handleCarry} variant="secondary">🚚 トラックを呼ぶ (2個運ぶ)</Button>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 fade-in bg-green-50 p-4 rounded-xl border border-green-200">
+                                <div className="text-xl">🎉 全部運び終わりました！</div>
+                                <p className="font-bold text-green-800">
+                                    12個の電子を、2個ずつ運ぶトラックに乗せたので、<br/>
+                                    必要なトラック（XとYの合計）は <b>6分子</b> になります。（問4の答え）
+                                </p>
+                                
+                                <div className="mt-6 pt-4 border-t border-green-200 text-left text-sm">
+                                    <h5 className="font-bold text-gray-700 mb-2">最終的に電子はどうなる？（問5の解説）</h5>
+                                    <p className="text-gray-600 mb-2">
+                                        運ばれた電子は、ミトコンドリアの「電子伝達系」という場所で、最終的に <b>酸素(<Chem formula="O2" />)</b> に渡されます。このとき、水素イオン(<Chem formula="H+" />)とも結合して <b>水(<Chem formula="H2O" />)</b> ができます。
+                                    </p>
+                                    <div className="bg-white p-3 rounded text-center font-bold font-mono">
+                                        12<Chem formula="H+" /> + 12<Chem formula="e-" /> + 3<Chem formula="O2" /> → 6<Chem formula="H2O" />
+                                    </div>
+                                </div>
+                                
+                                <button onClick={reset} className="text-sm text-gray-500 underline mt-2 hover:text-gray-700">もう一度シミュレーションする</button>
+                            </div>
+                        )}
+                    </Card>
+                </div>
+            );
+        }
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('equation');
+
+            const tabs = [
+                { id: 'molecule', label: '1. 分子式パズル', desc: '(問6)' },
+                { id: 'equation', label: '2. 反応式バランサー', desc: '(問2)' },
+                { id: 'electron', label: '3. 電子リレー', desc: '(問4,5)' },
+            ];
+
+            return (
+                <div className="min-h-screen bg-gray-50 pb-12">
+                    {/* ヘッダー */}
+                    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+                        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
+                            <div className="bg-biology text-white p-2 rounded-lg">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold text-gray-800">呼吸とアミノ酸代謝</h1>
+                                <p className="text-xs text-gray-500">ステップアップ理解シミュレーター</p>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-4xl mx-auto px-4 mt-8">
+                        {/* タブナビゲーション */}
+                        <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex-1 min-w-[120px] py-3 px-4 rounded-lg font-bold text-sm transition-all duration-200 
+                                        ${activeTab === tab.id 
+                                            ? 'bg-biology text-white shadow-md transform scale-[1.02]' 
+                                            : 'bg-transparent text-gray-500 hover:bg-gray-50'}`}
+                                >
+                                    {tab.label} <span className="font-normal text-xs opacity-80">{tab.desc}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* コンテンツエリア */}
+                        <div className="min-h-[400px]">
+                            {activeTab === 'molecule' && <MoleculeMath />}
+                            {activeTab === 'equation' && <EquationBalancer />}
+                            {activeTab === 'electron' && <ElectronRelay />}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

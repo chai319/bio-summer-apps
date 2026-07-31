@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026年度 夏期補習 生物Webアプリポータル</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans JP', 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 2.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      text-align: center;
+      max-width: 800px;
+      margin-bottom: 2.5rem;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    p.sub {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 960px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      overflow: hidden;
+    }
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px var(--accent-glow);
+    }
+    .card-icon {
+      font-size: 1.8rem;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    .card h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--text-main);
+    }
+    .card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      line-height: 1.6;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-t: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 0.75rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .btn-text {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>高校生物 夏期補習 Webアプリポータル</h1>
+    <p class="sub">授業・演習・思考探究で活用するシミュレーションWebアプリ集</p>
+  </header>
+
+  <main class="grid">
+    <!-- App 1 -->
+    <a href="resp_ferment_sim.html" class="card">
+      <div>
+        <div class="card-icon"><i class="fa-solid fa-flask"></i></div>
+        <h2>Lv14 呼吸と発酵の化学反応式シミュレーター</h2>
+        <p>「比」の丸暗記から脱却し、単位を消去する「分数思考」で呼吸と発酵の複合計算を高速・正確に解き明かすシミュレーター。</p>
+      </div>
+      <div class="card-footer">
+        <span class="badge">計算・代謝</span>
+        <span class="btn-text">アプリを開く <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <!-- App 2 -->
+    <a href="abo_blood_type_sim.html" class="card">
+      <div>
+        <div class="card-icon" style="color: #f43f5e;"><i class="fa-solid fa-droplet"></i></div>
+        <h2>Lv22 ABO式血液型 遺伝子・酵素・糖鎖伸長シミュレーター</h2>
+        <p>遺伝子発現・酵素反応・減数分裂時の染色体乗換え（交差）から赤血球膜上の糖鎖伸長までのメカニズムを視覚化・演習する総合アプリ。</p>
+      </div>
+      <div class="card-footer">
+        <span class="badge" style="background: rgba(244, 63, 94, 0.1); color: #f43f5e;">遺伝・分子生物学</span>
+        <span class="btn-text" style="color: #f43f5e;">アプリを開く <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <!-- App 3 -->
+    <a href="electrophoresis_recomb_sim.html" class="card">
+      <div>
+        <div class="card-icon" style="color: #a855f7;"><i class="fa-solid fa-dna"></i></div>
+        <h2>Lv21 電気泳動と遺伝子の連鎖・組換えシミュレーター</h2>
+        <p>電気泳動データのパターンから性染色体・ホモ接合を解読し、減数分裂時の染色体の連鎖と乗り換え（交差）をステップ実行・組換え価計算するアプリ。</p>
+      </div>
+      <div class="card-footer">
+        <span class="badge" style="background: rgba(168, 85, 247, 0.1); color: #a855f7;">遺伝・技術解析</span>
+        <span class="btn-text" style="color: #a855f7;">アプリを開く <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <!-- App 4 -->
+    <a href="morning_glory_linkage_sim.html" class="card">
+      <div>
+        <div class="card-icon" style="color: #22c55e;"><i class="fa-solid fa-seedling"></i></div>
+        <h2>Lv20 遺伝の法則をマスターしよう！〜マルバアサガオの交雑〜</h2>
+        <p>不完全優性を含むマルバアサガオの交雑実験を題材に、独立・完全連鎖・組換え価20%における配偶子形成とパネットスクエア計算を段階演習するアプリ。</p>
+      </div>
+      <div class="card-footer">
+        <span class="badge" style="background: rgba(34, 197, 94, 0.1); color: #22c55e;">遺伝・交雑演習</span>
+        <span class="btn-text" style="color: #22c55e;">アプリを開く <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <!-- App 5 -->
+    <a href="calico_cat_genetics.html" class="card">
+      <div>
+        <div class="card-icon" style="color: #f97316;"><i class="fa-solid fa-cat"></i></div>
+        <h2>Lv19 X染色体の不活性化（三毛猫の遺伝）</h2>
+        <p>伴性遺伝とX染色体の不活性化（モザイク現象）を基礎知識からステップ演習！XXX三毛猫やカンガルーの遺伝パターンまで思考ガイドで解説。</p>
+      </div>
+      <div class="card-footer">
+        <span class="badge" style="background: rgba(249, 115, 22, 0.1); color: #f97316;">伴性遺伝・モザイク</span>
+        <span class="btn-text" style="color: #f97316;">アプリを開く <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <!-- App 6 -->
+    <a href="amino_acid_resp_sim.html" class="card">
+      <div>
+        <div class="card-icon" style="color: #10b981;"><i class="fa-solid fa-atom"></i></div>
+        <h2>Lv15 呼吸とアミノ酸代謝 シミュレーター</h2>
+        <p>分子式パズル、化学反応式の原子バランサー、電子運搬トラックの移動モデルで、アミノ酸脱アミノ反応と呼吸の複合計算を完全マスター。</p>
+      </div>
+      <div class="card-footer">
+        <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">代謝・化学平衡</span>
+        <span class="btn-text" style="color: #10b981;">アプリを開く <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <!-- App 7 -->
+    <a href="hardy_weinberg_sim.html" class="card">
+      <div>
+        <div class="card-icon" style="color: #059669;"><i class="fa-solid fa-calculator"></i></div>
+        <h2>Lv4 集団遺伝学 & ハーディ・ワインベルグの法則</h2>
+        <p>ミドリシジミの複対立遺伝子（A, B, O）を題材に、二項展開の平方根公式を用いた解法解説、演習クイズ、遺伝子頻度シミュレーター。</p>
+      </div>
+      <div class="card-footer">
+        <span class="badge" style="background: rgba(5, 150, 105, 0.1); color: #059669;">進化・集団遺伝</span>
+        <span class="btn-text" style="color: #059669;">アプリを開く <i class="fa-solid fa-arrow-right"></i></span>
+      </div>
+    </a>
+  </main>
+</body>
+</html>
