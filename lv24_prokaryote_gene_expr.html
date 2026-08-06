@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>セントラルドグマ Lv24問題「転写・翻訳の同時進行」完全攻略ラボ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        canvas {
+            background: #020617;
+            border-radius: 0.75rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-dna text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                        転写・翻訳 Lv24問題 完全攻略
+                        <span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs px-2 py-0.5 rounded font-mono">原核生物モデル</span>
+                    </h1>
+                    <p class="text-xs text-indigo-400 font-medium">電子顕微鏡像・模試頻出「同一DNA上での転写・翻訳同時進行」学習アプリ</p>
+                </div>
+            </div>
+            
+            <nav class="flex space-x-1 bg-slate-800 p-1 rounded-xl text-sm">
+                <button id="nav-sim" onclick="switchTab('sim')" class="px-4 py-2 rounded-lg font-bold transition-all bg-indigo-600 text-white shadow">
+                    <i class="fa-solid fa-play mr-2"></i>動的シミュレーター
+                </button>
+                <button id="nav-diagram" onclick="switchTab('diagram')" class="px-4 py-2 rounded-lg font-bold transition-all text-slate-300 hover:text-white hover:bg-slate-700">
+                    <i class="fa-solid fa-sitemap mr-2"></i>Lv24 図解・解剖講義
+                </button>
+                <button id="nav-quiz" onclick="switchTab('quiz')" class="px-4 py-2 rounded-lg font-bold transition-all text-slate-300 hover:text-white hover:bg-slate-700">
+                    <i class="fa-solid fa-clipboard-check mr-2"></i>実戦問題演習
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+        <!-- TAB 1: Interactive Simulation -->
+        <section id="tab-sim" class="space-y-6">
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <button id="btn-play" onclick="togglePlay()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold flex items-center transition shadow-lg shadow-emerald-900/30">
+                        <i id="icon-play" class="fa-solid fa-pause mr-2"></i> <span id="text-play">一時停止</span>
+                    </button>
+                    <button onclick="resetSimulation()" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg font-medium flex items-center transition">
+                        <i class="fa-solid fa-rotate-left mr-2"></i> リセット
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-slate-400 font-bold">転写の方向:</span>
+                        <span class="px-3 py-1 bg-cyan-950 text-cyan-300 border border-cyan-700 rounded-full text-xs font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-left"></i> 方向 c (右から左へ移動)
+                        </span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-slate-400 font-bold">翻訳の方向:</span>
+                        <span class="px-3 py-1 bg-amber-950 text-amber-300 border border-amber-700 rounded-full text-xs font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-down"></i> 方向 b (mRNAの先端へ)
+                        </span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-slate-400">移動速度:</span>
+                        <input type="range" id="speed-range" min="1" max="5" value="3" class="w-20 accent-indigo-500 cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Viewport -->
+            <div class="relative w-full bg-slate-950 rounded-2xl border border-slate-800 p-2 overflow-hidden shadow-2xl">
+                <div class="absolute top-4 left-4 z-10 flex gap-2">
+                    <span class="bg-slate-900/90 backdrop-blur border border-slate-700 text-slate-300 px-3 py-1.5 rounded-md text-xs font-medium shadow">
+                        <i class="fa-solid fa-eye text-indigo-400 mr-1.5"></i> リアルタイム動態：RNAポリメラーゼ(イ)が右から左(c)へ移動しながら転写
+                    </span>
+                </div>
+                <canvas id="simCanvas" class="w-full h-[520px] block"></canvas>
+            </div>
+
+            <!-- Explanatory Highlights -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <div class="text-emerald-400 font-bold text-sm mb-1 flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block mr-2"></span> 構造 イ: RNAポリメラーゼ
+                    </div>
+                    <p class="text-xs text-slate-300">
+                        DNA上を<strong>右から左（方向c）へ移動</strong>します。左へ進むほど転写時間が長く経過するため、合成されるmRNA（ア）がどんどん長く伸びていきます。
+                    </p>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <div class="text-cyan-400 font-bold text-sm mb-1 flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-cyan-500 inline-block mr-2"></span> 構造 ア: mRNA (伝令RNA)
+                    </div>
+                    <p class="text-xs text-slate-300">
+                        RNAポリメラーゼから下方に伸びる一本鎖RNA。原核生物では核膜がないため、転写が終わる前（合成途中）からリボソームが取り付きます。
+                    </p>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <div class="text-amber-400 font-bold text-sm mb-1 flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-amber-500 inline-block mr-2"></span> 構造 ウ: リボソーム
+                    </div>
+                    <p class="text-xs text-slate-300">
+                        DNAに近い根元でmRNAに結合し、先端（方向b）へ移動しながらタンパク質（ペプチド鎖）を合成します。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: Diagram Explanation & Lecture -->
+        <section id="tab-diagram" class="hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg space-y-6">
+                <div class="border-b border-slate-800 pb-4">
+                    <span class="px-3 py-1 bg-indigo-900/60 text-indigo-300 rounded-full text-xs font-bold border border-indigo-700">ポイント解説</span>
+                    <h2 class="text-2xl font-bold text-white mt-2">「Lv24」問題図の全構造と矢印の解剖（正確な方向配置）</h2>
+                    <p class="text-slate-300 text-sm mt-1">転写方向が「右から左（c方向）」であるため、<strong>左に行くほどmRNAが長い（早く始まった）</strong>配置になります。</p>
+                </div>
+
+                <!-- Graphic Diagram Canvas Representation with Corrected Left-Right Order -->
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 text-center">
+                    <h3 class="text-indigo-300 font-bold text-sm mb-4">【Lv24 正確な構造図解】</h3>
+                    
+                    <div class="max-w-4xl mx-auto bg-slate-900 border border-slate-700 rounded-xl p-6 relative overflow-x-auto">
+                        <!-- DNA Strand -->
+                        <div class="flex items-center justify-between border-b-4 border-indigo-500 pb-2 mb-8">
+                            <span class="text-xs font-bold text-indigo-300">DNA ────</span>
+                            <span class="text-xs font-bold text-cyan-400 bg-cyan-950 px-3 py-1 rounded border border-cyan-800 flex items-center gap-2">
+                                <i class="fa-solid fa-arrow-left text-sm"></i> 転写が進む方向: c (右 → 左)
+                            </span>
+                            <span class="text-xs font-bold text-indigo-300">──── DNA</span>
+                        </div>
+
+                        <!-- 3 Branches ordered correctly from Left (Longest = Oldest) to Right (Shortest = Newest) -->
+                        <div class="grid grid-cols-3 gap-6 text-left">
+                            <!-- Branch 1 (LEFT: Longest mRNA = First started) -->
+                            <div class="border-l-2 border-dashed border-slate-700 pl-3 bg-slate-900/50 p-2 rounded">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center">イ</span>
+                                    <span class="text-xs text-emerald-400 font-bold">RNAポリメラーゼ</span>
+                                </div>
+                                <div class="ml-3 border-l-4 border-cyan-400 h-44 relative my-2">
+                                    <span class="absolute top-2 left-2 text-[11px] text-cyan-300 font-bold">構造 ア (最も長いmRNA)</span>
+                                    
+                                    <!-- Multiple Ribosomes on long mRNA -->
+                                    <div class="absolute top-4 -left-3 w-6 h-6 rounded-full bg-amber-500 text-slate-900 font-bold text-xs flex items-center justify-center border border-amber-300">ウ</div>
+                                    <div class="absolute top-16 -left-3 w-6 h-6 rounded-full bg-amber-500 text-slate-900 font-bold text-xs flex items-center justify-center border border-amber-300">ウ</div>
+                                    <div class="absolute top-28 -left-3 w-6 h-6 rounded-full bg-amber-500 text-slate-900 font-bold text-xs flex items-center justify-center border border-amber-300">ウ</div>
+
+                                    <!-- Translation Arrow b -->
+                                    <div class="absolute bottom-2 left-4 text-amber-400 text-xs font-bold flex items-center gap-1 bg-amber-950/80 px-2 py-1 rounded border border-amber-800">
+                                        <i class="fa-solid fa-arrow-down"></i> 翻訳の方向: b (先端へ)
+                                    </div>
+                                </div>
+                                <span class="text-[11px] text-amber-300 font-bold bg-slate-800 px-2 py-0.5 rounded inline-block">最も早く転写開始された</span>
+                            </div>
+
+                            <!-- Branch 2 (MIDDLE: Medium mRNA) -->
+                            <div class="border-l-2 border-dashed border-slate-700 pl-3 bg-slate-900/50 p-2 rounded">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center">イ</span>
+                                </div>
+                                <div class="ml-3 border-l-4 border-cyan-400 h-28 relative my-2">
+                                    <span class="absolute top-2 left-2 text-[11px] text-cyan-300">構造 ア (中程度のmRNA)</span>
+                                    <div class="absolute top-4 -left-3 w-6 h-6 rounded-full bg-amber-500 text-slate-900 font-bold text-xs flex items-center justify-center border border-amber-300">ウ</div>
+                                    <div class="absolute top-16 -left-3 w-6 h-6 rounded-full bg-amber-500 text-slate-900 font-bold text-xs flex items-center justify-center border border-amber-300">ウ</div>
+                                </div>
+                                <span class="text-[11px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded inline-block">進行中</span>
+                            </div>
+
+                            <!-- Branch 3 (RIGHT: Shortest mRNA = Just started) -->
+                            <div class="border-l-2 border-dashed border-slate-700 pl-3 bg-slate-900/50 p-2 rounded">
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center">イ</span>
+                                </div>
+                                <div class="ml-3 border-l-4 border-cyan-400 h-14 relative my-2">
+                                    <span class="absolute top-1 left-2 text-[11px] text-cyan-300">構造 ア (短いmRNA)</span>
+                                    <div class="absolute bottom-1 -left-3 w-6 h-6 rounded-full bg-amber-500 text-slate-900 font-bold text-xs flex items-center justify-center border border-amber-300">ウ</div>
+                                </div>
+                                <span class="text-[11px] text-emerald-300 font-bold bg-slate-800 px-2 py-0.5 rounded inline-block">転写開始直後</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Rules Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <h4 class="font-bold text-indigo-300 text-base flex items-center">
+                            <i class="fa-solid fa-circle-question text-emerald-400 mr-2"></i> Q2(1). 転写が進む方向(c)の判別法
+                        </h4>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            mRNA（ア）の長さは<strong>左に行くほど長く</strong>なっています。<br>
+                            最も長いmRNAが最も早くから転写されている（時間が経過している）ため、酵素（イ）は<strong>右から左（cの方向）</strong>に進んでいることがわかります。
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
+                        <h4 class="font-bold text-indigo-300 text-base flex items-center">
+                            <i class="fa-solid fa-circle-question text-amber-400 mr-2"></i> Q2(2). 翻訳が進む方向(b)の判別法
+                        </h4>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            mRNAに付着しているリボソーム（ウ）の場合、<strong>DNAに近いほう（mRNAの根元）に付着しているリボソームが、mRNAの先端に最初に付着したリボソーム</strong>です。<br>
+                            リボソームはmRNA上を先端に向かって移動するため、翻訳の方向は **b** です。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: Quiz & Interactive Problem Solving -->
+        <section id="tab-quiz" class="hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-lg space-y-6">
+                <div class="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <span class="px-3 py-1 bg-amber-900/60 text-amber-300 rounded-full text-xs font-bold border border-amber-700">【Lv24】問題集</span>
+                        <h2 class="text-2xl font-bold text-white mt-1">模試・入試実戦問題演習</h2>
+                        <p class="text-xs text-slate-400 mt-1">提示された解答解説画像データに100%完全準拠</p>
+                    </div>
+                    <div id="quiz-score" class="text-sm font-bold text-slate-300">
+                        正解数: <span id="score-val" class="text-indigo-400 text-2xl font-bold">0</span> / 6
+                    </div>
+                </div>
+
+                <!-- Problem Cards Container -->
+                <div id="quiz-container" class="space-y-6">
+                    <!-- Dynamic rendering by JS -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+        セントラルドグマ Lv24問題完全マスター | 原核生物における転写・翻訳の同時進行
+    </footer>
+
+    <script>
+        let currentTab = 'sim';
+        let isPlaying = true;
+        let animFrameId = null;
+
+        // Simulation Loop State
+        // We track multiple RNA Polymerases moving from Right (x_max) to Left (x_min)
+        let polySpeed = 0.8;
+        
+        // Complex structure: { id, x, mrnaLength, ribosomes: [] }
+        let polymerases = [];
+
+        function initPolymerases(w) {
+            const minX = 80;
+            const maxX = w - 80;
+            const dist = (maxX - minX) / 3;
+
+            polymerases = [
+                { x: minX + dist * 0.4, mrnaLength: 0, ribosomes: [] },
+                { x: minX + dist * 1.4, mrnaLength: 0, ribosomes: [] },
+                { x: minX + dist * 2.4, mrnaLength: 0, ribosomes: [] }
+            ];
+            
+            // Calculate initial mRNA length based on how far left it has traveled from right start
+            polymerases.forEach(p => {
+                const traveled = maxX - p.x;
+                p.mrnaLength = Math.max(10, traveled * 0.75);
+            });
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            ['sim', 'diagram', 'quiz'].forEach(t => {
+                const navBtn = document.getElementById(`nav-${t}`);
+                const tabSec = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    navBtn.className = "px-4 py-2 rounded-lg font-bold transition-all bg-indigo-600 text-white shadow";
+                    tabSec.classList.remove('hidden');
+                } else {
+                    navBtn.className = "px-4 py-2 rounded-lg font-bold transition-all text-slate-300 hover:text-white hover:bg-slate-700";
+                    tabSec.classList.add('hidden');
+                }
+            });
+
+            if (tab === 'sim') {
+                resizeCanvas();
+            }
+        }
+
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = 520;
+            if (polymerases.length === 0) {
+                initPolymerases(canvas.width);
+            }
+            drawSim();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function drawSim() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const minX = 80;
+            const maxX = w - 80;
+
+            // Background fill
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, w, h);
+
+            // 1. DNA Double Strand at Top (Y = 90)
+            const dnaY = 90;
+            
+            // DNA Backbones
+            ctx.strokeStyle = '#6366f1';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(40, dnaY);
+            ctx.lineTo(w - 40, dnaY);
+            ctx.stroke();
+
+            // DNA Labels & Directionality
+            ctx.fillStyle = '#a5b4fc';
+            ctx.font = 'bold 13px "JetBrains Mono"';
+            ctx.fillText("2本鎖 DNA 5' ───", 40, dnaY - 20);
+            ctx.fillText("─── 3'", w - 100, dnaY - 20);
+
+            // Large Direction Arrow for Transcription (c: Right to Left)
+            ctx.strokeStyle = '#22d3ee';
+            ctx.lineWidth = 3;
+            ctx.fillStyle = '#22d3ee';
+            
+            ctx.beginPath();
+            ctx.moveTo(w / 2 + 60, dnaY - 45);
+            ctx.lineTo(w / 2 - 60, dnaY - 45);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(w / 2 - 60, dnaY - 45);
+            ctx.lineTo(w / 2 - 48, dnaY - 51);
+            ctx.lineTo(w / 2 - 48, dnaY - 39);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText("転写が進む方向 (c: 右から左へ進行)", w / 2, dnaY - 56);
+            ctx.textAlign = 'left';
+
+            // 2. Update and Draw RNA Polymerases moving RIGHT -> LEFT
+            const speedMultiplier = parseInt(document.getElementById('speed-range').value);
+            const moveDelta = polySpeed * (speedMultiplier / 3);
+
+            polymerases.forEach((p, idx) => {
+                if (isPlaying) {
+                    p.x -= moveDelta;
+                    // Grow mRNA as it travels left
+                    const traveled = maxX - p.x;
+                    p.mrnaLength = Math.max(10, traveled * 0.75);
+
+                    // If polymerase reaches the far left end, reset it to the far right
+                    if (p.x < minX) {
+                        p.x = maxX;
+                        p.mrnaLength = 5;
+                        p.ribosomes = [];
+                    }
+
+                    // Dynamically attach new Ribosomes near the DNA top (mRNA root) periodically
+                    if (Math.random() < 0.03 * (speedMultiplier / 3) && p.mrnaLength > 30) {
+                        p.ribosomes.push({
+                            progress: 5 // starts near root
+                        });
+                    }
+
+                    // Move existing Ribosomes down along mRNA (direction b)
+                    p.ribosomes.forEach(ribo => {
+                        ribo.progress += 0.8 * (speedMultiplier / 3);
+                    });
+
+                    // Remove ribosomes that reached the bottom tip of mRNA
+                    p.ribosomes = p.ribosomes.filter(ribo => ribo.progress <= p.mrnaLength);
+                }
+
+                const px = p.x;
+                const py = dnaY;
+
+                // Draw RNA Polymerase (イ)
+                ctx.fillStyle = '#10b981';
+                ctx.strokeStyle = '#059669';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(px, py, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Polymerase Label 'イ'
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('イ', px, py);
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+
+                // Draw Growing mRNA Strand (ア) extending downwards
+                const mrnaStartY = py + 20;
+                const mrnaEndY = mrnaStartY + p.mrnaLength;
+
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(px, mrnaStartY);
+                ctx.lineTo(px, mrnaEndY);
+                ctx.stroke();
+
+                // mRNA Label 'ア'
+                ctx.fillStyle = '#22d3ee';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText('ア', px + 12, mrnaStartY + 20);
+
+                // Draw Ribosomes (ウ) moving downwards along this mRNA (Direction b)
+                p.ribosomes.forEach(ribo => {
+                    const ry = mrnaStartY + ribo.progress;
+
+                    // Draw Ribosome Particle
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.strokeStyle = '#d97706';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.ellipse(px, ry, 15, 11, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Ribosome Label 'ウ'
+                    ctx.fillStyle = '#0f172a';
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('ウ', px, ry);
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'alphabetic';
+
+                    // Growing Peptide Chain attached to Ribosome
+                    const peptideLen = ribo.progress * 0.25;
+                    ctx.strokeStyle = '#ec4899';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(px + 15, ry);
+                    ctx.lineTo(px + 25 + peptideLen, ry + 4);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#f472b6';
+                    ctx.beginPath();
+                    ctx.arc(px + 25 + peptideLen, ry + 4, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Draw Arrow for Translation Direction (b) on the longest mRNA
+                if (idx === 0) {
+                    const midY = mrnaStartY + p.mrnaLength / 2;
+                    if (p.mrnaLength > 80) {
+                        ctx.strokeStyle = '#f59e0b';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(px - 18, midY - 20);
+                        ctx.lineTo(px - 18, midY + 20);
+                        ctx.stroke();
+
+                        ctx.fillStyle = '#f59e0b';
+                        ctx.beginPath();
+                        ctx.moveTo(px - 18, midY + 20);
+                        ctx.lineTo(px - 23, midY + 12);
+                        ctx.lineTo(px - 13, midY + 12);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        ctx.font = 'bold 11px sans-serif';
+                        ctx.fillText('翻訳方向 b', px - 82, midY + 4);
+                    }
+                }
+            });
+
+            if (isPlaying) {
+                animFrameId = requestAnimationFrame(drawSim);
+            }
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const text = document.getElementById('text-play');
+            const icon = document.getElementById('icon-play');
+
+            if (isPlaying) {
+                text.innerText = "一時停止";
+                icon.className = "fa-solid fa-pause mr-2";
+                drawSim();
+            } else {
+                text.innerText = "再生";
+                icon.className = "fa-solid fa-play mr-2";
+                if (animFrameId) cancelAnimationFrame(animFrameId);
+            }
+        }
+
+        function resetSimulation() {
+            initPolymerases(canvas.width);
+            drawSim();
+        }
+
+        // Quiz Data - 100% Matches the uploaded solution image texts and answers
+        const quizData = [
+            {
+                id: 1,
+                title: "問1: 転写・翻訳に関わる構造の名称",
+                text: "図のDNAに直接付着しているイ、糸状の構造物ア、およびアに付着している粒子ウの名称の組み合わせとして正しいものはどれか。",
+                options: [
+                    "① ア: DNA / イ: リボソーム / ウ: RNAポリメラーゼ",
+                    "② ア: mRNA / イ: RNAポリメラーゼ / ウ: リボソーム",
+                    "③ ア: tRNA / イ: RNAポリメラーゼ / ウ: リボソーム",
+                    "④ ア: mRNA / イ: リボソーム / ウ: RNAポリメラーゼ"
+                ],
+                correct: 1, // ②
+                explanation: "<strong>【正解: ②】</strong><br>図のDNAに直接付着しているイは **RNAポリメラーゼ (RNA合成酵素)**、アの糸状の構造物は **mRNA**、それに付着しているウは **リボソーム** である。よって、**②** が正しい。"
+            },
+            {
+                id: 21,
+                title: "問2 (1): 転写が進んでいる方向",
+                text: "図において、転写が進んでいる方向（c または d）として正しいものはどれか。",
+                options: [
+                    "① 方向 d (右方向)",
+                    "② 方向 a (上方向)",
+                    "③ 方向 c (左方向)",
+                    "④ 方向 b (下方向)"
+                ],
+                correct: 2, // ③
+                explanation: "<strong>【正解: ③】</strong><br>mRNA(ア)の長さは**左に行くほど長く**なっている。最も長いmRNAが、最もはやくから転写されているmRNAであるため、転写は **cの方向（左方向）** に進んでいることがわかる。"
+            },
+            {
+                id: 22,
+                title: "問2 (2): 翻訳が進んでいる方向",
+                text: "図において、リボソーム（ウ）がmRNA（ア）上を移動して翻訳を進めている方向（a または b）として正しいものはどれか。",
+                options: [
+                    "① 方向 a (DNAに近づく方向)",
+                    "② 方向 b (DNAから離れる方向 / mRNAの先端方向)",
+                    "③ 方向 c (左方向)",
+                    "④ 方向 d (右方向)"
+                ],
+                correct: 1, // ②
+                explanation: "<strong>【正解: ②】</strong><br>mRNAに付着しているリボソーム(ウ)の場合、**DNAに近いほうに付着しているリボソームが、mRNAの先端に最初に付着したリボソーム**である。よって、翻訳の方向は **b** である。"
+            },
+            {
+                id: 3,
+                title: "問3: 翻訳・リボソームに関する記述の正誤",
+                text: "リボソームおよびタンパク質合成（翻訳）に関する記述として【正しいもの】を一つ選べ。",
+                options: [
+                    "① リボソームとmRNAの結合には、ATPが必要である。",
+                    "② リボソーム上で、mRNAのコドンとtRNAのアンチコドンはペプチド結合する。",
+                    "③ タンパク質合成が進行しているリボソーム内部には、tRNAは一つしか存在していない。",
+                    "④ リボソームはmRNA上を移動しながら、tRNAが運んできたアミノ酸どうしをペプチド結合で連結していく。"
+                ],
+                correct: 3, // ④
+                explanation: `<strong>【正解: ④】</strong><br><br>
+                <strong>【各選択肢の解説】</strong><br>
+                ・<strong>× ①</strong>: リボソームとmRNAの結合には開始因子などのタンパク質は必要であるが、<strong>ATPは必要ない</strong>。<br>
+                ・<strong>× ②</strong>: ペプチド結合ではなく、相補的な塩基どうしの<strong>水素結合</strong>である。<br>
+                ・<strong>× ③</strong>: リボソーム内には、合成中のポリペプチドと結合したtRNAと、次のアミノ酸と結合したtRNAが並んで存在しているので誤り。リボソームの内部にtRNAが結合する部位は<strong>三つ(A, P, E)</strong>ある。<br>
+                ・<strong>〇 ④</strong>: 正しい記述。<br>
+                ・<strong>× ⑤(参考)</strong>: リボソームにmRNAの終止コドンが入ると、tRNAが入る部位に<strong>終結因子(解離因子)</strong>と呼ばれるタンパク質が入り込み、完成したポリペプチドが分離する。`
+            },
+            {
+                id: 41,
+                title: "問4 (1): 原核細胞の転写・翻訳の特徴",
+                text: "原核細胞における遺伝子発現の特徴として正しい記述はどれか。",
+                options: [
+                    "① 転写と翻訳は核膜によって完全に隔てられて行われる。",
+                    "② 転写されたmRNAはスプライシングを受けてから翻訳される。",
+                    "③ 1本のmRNAには常に1つのリボソームしか結合できない。",
+                    "④ 原核細胞は核膜をもたず、転写の途中から翻訳が始まる。"
+                ],
+                correct: 3, // ④
+                explanation: "<strong>【正解: ④】</strong><br>原核細胞は核膜をもたず、転写の途中から翻訳が始まる (<strong>④</strong>)。"
+            },
+            {
+                id: 42,
+                title: "問4 (2)・(3): 真核生物と原核生物の転写調節",
+                text: "真核生物の転写開始および両生物に共通する転写調節に関する記述 (2)・(3) の正解の組み合わせとして正しいものはどれか。<br> (2) 真核生物の場合、RNAポリメラーゼは（ ① ）とともにプロモーターに結合する。<br> (3) 原核細胞も真核細胞も、（ ② ）が転写調節領域に結合することで転写が調節される。",
+                options: [
+                    "① (2): ① 多くの基本転写因子とともに転写複合体をつくって / (3): ② 調節タンパク質",
+                    "② (2): ① 解離因子 / (3): ② リボソーム",
+                    "③ (2): ① スプライソソーム / (3): ② ATP",
+                    "④ (2): ① tRNA / (3): ② オペロン構造"
+                ],
+                correct: 0, // ①
+                explanation: "<strong>【正解: (2)①, (3)②】</strong><br>・<strong>(2)</strong>: 真核生物の場合、RNAポリメラーゼは<strong>多くの基本転写因子とともに転写複合体をつくってプロモーターに結合する (①)</strong>。<br>・<strong>(3)</strong>: 原核細胞も真核細胞も、<strong>調節タンパク質が転写調節領域に結合することで、転写が調節される (②)</strong>。<br><br><strong>※補足解説:</strong><br>・<strong>× ③(問題記述)</strong>: 原核細胞も真核細胞も、一つのリボソームに結合するmRNAは1本である。1本のmRNAに複数のリボソームが結合すること(ポリソーム)と混同しないようにしよう。<br>・<strong>× ⑤(問題記述)</strong>: アミノ酸どうしのペプチド結合を触媒しているのは、リボソームに含まれるタンパク質とrRNAによって構成される酵素であり、tRNAではない。<br>・<strong>× ⑥(問題記述)</strong>: リボソームはrRNAとタンパク質からなる。脂質からなるというのは誤り。"
+            }
+        ];
+
+        const userScore = {};
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = "";
+
+            quizData.forEach((q) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4 shadow-md";
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-4">
+                        <h3 class="font-bold text-lg text-indigo-300">${q.title}</h3>
+                        <span id="q-status-${q.id}" class="text-xs px-2.5 py-1 rounded bg-slate-800 text-slate-400 font-bold border border-slate-700">未解答</span>
+                    </div>
+
+                    <p class="text-sm text-slate-200 leading-relaxed font-medium">${q.text}</p>
+
+                    <div class="space-y-2">
+                        ${q.options.map((opt, oIdx) => `
+                            <button onclick="checkAnswer(${q.id}, ${oIdx})" class="w-full text-left p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500 rounded-lg text-xs sm:text-sm text-slate-300 transition flex items-center justify-between group">
+                                <span>${opt}</span>
+                                <i class="fa-regular fa-circle text-slate-600 group-hover:text-indigo-400"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <div id="q-exp-${q.id}" class="hidden p-4 rounded-lg bg-indigo-950/60 border border-indigo-800 text-xs sm:text-sm text-indigo-200 space-y-2">
+                        <div class="font-bold text-amber-300 flex items-center">
+                            <i class="fa-solid fa-lightbulb text-amber-400 mr-2 text-base"></i> 解答解説（問題集 完全準拠）
+                        </div>
+                        <p class="leading-relaxed text-slate-200">${q.explanation}</p>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function checkAnswer(qId, selectedIdx) {
+            const q = quizData.find(item => item.id === qId);
+            if (!q) return;
+
+            const isCorrect = selectedIdx === q.correct;
+            userScore[qId] = isCorrect;
+
+            const statusEl = document.getElementById(`q-status-${qId}`);
+            const expEl = document.getElementById(`q-exp-${qId}`);
+
+            if (isCorrect) {
+                statusEl.className = "text-xs px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-700 font-bold";
+                statusEl.innerText = "正解！";
+            } else {
+                statusEl.className = "text-xs px-2.5 py-1 rounded bg-red-950 text-red-400 border border-red-700 font-bold";
+                statusEl.innerText = "不正解";
+            }
+
+            expEl.classList.remove('hidden');
+            updateTotalScore();
+        }
+
+        function updateTotalScore() {
+            let correctCount = 0;
+            Object.values(userScore).forEach(val => {
+                if (val === true) correctCount++;
+            });
+            document.getElementById('score-val').innerText = correctCount;
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            renderQuiz();
+        };
+    </script>
+</body>
+</html>
