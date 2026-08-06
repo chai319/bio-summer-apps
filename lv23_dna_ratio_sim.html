@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNAの構造・塩基計算 マスターシミュレーター (lv23)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .dna-strand {
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        .glow-blue {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.35);
+        }
+        .glow-emerald {
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30">
+                    <i class="fa-solid fa-dna text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 via-indigo-300 to-pink-400 bg-clip-text text-transparent">
+                        DNA塩基計算 マスターラボ <span class="text-xs px-2 py-0.5 rounded-full bg-blue-900/60 text-blue-300 border border-blue-700 ml-2">lv23特化</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">高校生物：核酸の長さ・塩基割合・転写・1本鎖判定をシミュレーションで完全マスター</p>
+                </div>
+            </div>
+
+            <!-- Tab Buttons -->
+            <nav class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-sm overflow-x-auto max-w-full">
+                <button onclick="switchTab('step1')" id="btn-step1" class="tab-btn px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 bg-blue-600 text-white">
+                    <i class="fa-solid fa-ruler"></i> Step 1: DNAの長さ
+                </button>
+                <button onclick="switchTab('step2')" id="btn-step2" class="tab-btn px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie"></i> Step 2: 塩基数と割合
+                </button>
+                <button onclick="switchTab('step3')" id="btn-step3" class="tab-btn px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center gap-2">
+                    <i class="fa-solid fa-link"></i> Step 3: H鎖・H'鎖・RNA
+                </button>
+                <button onclick="switchTab('step4')" id="btn-step4" class="tab-btn px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center gap-2">
+                    <i class="fa-solid fa-vial"></i> Step 4: 1本鎖/RNA判定
+                </button>
+                <button onclick="switchTab('quiz')" id="btn-quiz" class="tab-btn px-4 py-2 rounded-lg font-medium text-pink-400 hover:bg-pink-950/40 border border-pink-500/30 transition flex items-center gap-2 ml-1">
+                    <i class="fa-solid fa-graduation-cap"></i> 問題(lv23)に挑戦
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <section id="step1" class="tab-content block space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 glow-blue">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm">1</span>
+                    <h2 class="text-xl font-bold text-white">単位換算とDNAの長さ計算シミュレーター</h2>
+                </div>
+                <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                    DNAの長さ問題の最大の関門は「単位変換」です。<br>
+                    <strong>10ヌクレオチド対（＝1回転）= 3.4 nm</strong> という基本ルールを使って、ヌクレオチド数から全体の長さを計算してみましょう。
+                </p>
+
+                <!-- Unit Reference Box -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center gap-3">
+                        <i class="fa-solid fa-arrows-left-right text-blue-400 text-2xl"></i>
+                        <div>
+                            <div class="text-xs text-slate-400">1 nm（ナノメートル）</div>
+                            <div class="text-base font-bold code-font text-blue-300">10⁻³ µm = 10⁻⁶ mm</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center gap-3">
+                        <i class="fa-solid fa-microscope text-purple-400 text-2xl"></i>
+                        <div>
+                            <div class="text-xs text-slate-400">1 µm（マイクロメートル）</div>
+                            <div class="text-base font-bold code-font text-purple-300">10⁻³ mm = 10³ nm</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center gap-3">
+                        <i class="fa-solid fa-eye text-emerald-400 text-2xl"></i>
+                        <div>
+                            <div class="text-xs text-slate-400">1 mm（ミリメートル）</div>
+                            <div class="text-base font-bold code-font text-emerald-300">10³ µm = 10⁶ nm</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Calculator Component -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-950 p-6 rounded-xl border border-slate-800">
+                    <div class="space-y-5">
+                        <h3 class="font-bold text-blue-400 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> パラメータを設定する
+                        </h3>
+
+                        <div>
+                            <label class="block text-sm text-slate-300 mb-1">
+                                全ヌクレオチド数（2本鎖合計）: 
+                                <span id="s1-total-nucleotides-val" class="font-bold text-indigo-400 code-font">7,600,000 個</span>
+                                <span class="text-xs text-slate-400">(7.6 × 10⁶ 個)</span>
+                            </label>
+                            <input type="range" id="s1-nucleotide-slider" min="1000000" max="20000000" step="200000" value="7600000" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                            <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>1×10⁶ 個</span>
+                                <span>問題の値(7.6×10⁶)</span>
+                                <span>20×10⁶ 個</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-slate-300 mb-1">1回転あたりの塩基対数 & 長さ</label>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">10 対（塩基対）</div>
+                                <div class="p-3 bg-slate-900 rounded-lg border border-slate-800">3.4 nm</div>
+                            </div>
+                        </div>
+
+                        <!-- Calculation steps card -->
+                        <div class="p-4 bg-slate-900/90 rounded-xl border border-blue-900/40 text-xs space-y-2">
+                            <div class="font-bold text-slate-200 border-b border-slate-800 pb-1 flex justify-between">
+                                <span>順を追った計算ロジック</span>
+                                <span class="text-blue-400"><i class="fa-solid fa-calculator"></i></span>
+                            </div>
+                            <div class="flex justify-between text-slate-300">
+                                <span>① ヌクレオチド対数:</span>
+                                <span class="code-font font-semibold text-indigo-300" id="s1-step1-txt">7.6×10⁶ ÷ 2 = 3.8×10⁶ 対</span>
+                            </div>
+                            <div class="flex justify-between text-slate-300">
+                                <span>② 長さ (nm):</span>
+                                <span class="code-font font-semibold text-indigo-300" id="s1-step2-txt">(3.8×10⁶ ÷ 10) × 3.4 = 1.292×10⁶ nm</span>
+                            </div>
+                            <div class="flex justify-between text-slate-300">
+                                <span>③ 単位を mm に変換:</span>
+                                <span class="code-font font-semibold text-emerald-400" id="s1-step3-txt">1.292×10⁶ × 10⁻⁶ = 1.292 mm</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Output -->
+                    <div class="flex flex-col justify-between items-center bg-slate-900 p-6 rounded-xl border border-slate-800 text-center">
+                        <div class="w-full">
+                            <span class="text-xs uppercase tracking-wider text-slate-400">計算結果 (DNA全長)</span>
+                            <div id="s1-result-mm" class="text-4xl font-extrabold text-emerald-400 code-font my-3">
+                                1.292 <span class="text-xl text-slate-300">mm</span>
+                            </div>
+                            <div class="text-xs text-slate-400 mb-4">
+                                （およそ <span id="s1-approx-val" class="text-indigo-300 font-bold">1.3 mm</span> / 身近なサイズ：シャープペンの芯の太さの2.5倍程度）
+                            </div>
+                        </div>
+
+                        <!-- Canvas Animation for Helix Strand -->
+                        <div class="w-full h-32 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 relative flex items-center justify-center">
+                            <canvas id="s1-canvas" class="w-full h-full"></canvas>
+                            <div class="absolute bottom-2 right-2 text-[10px] text-slate-500 bg-slate-900/80 px-2 py-0.5 rounded">DNA 3D Helix Viz</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="step2" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 glow-blue">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm">2</span>
+                    <h2 class="text-xl font-bold text-white">シャルガフの法則と全体の塩基数シミュレーター</h2>
+                </div>
+                <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                    2本鎖DNAでは、必ず <strong>AはTと(2重水素結合)</strong>、<strong>GはCと(3重水素結合)</strong> が対になります。<br>
+                    したがって、2本鎖全体では <span class="text-blue-400 font-bold">A % = T %</span> 、<span class="text-emerald-400 font-bold">G % = C %</span> が常に成り立ちます。
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-950 p-6 rounded-xl border border-slate-800">
+                    <div class="space-y-5">
+                        <h3 class="font-bold text-blue-400 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie"></i> G + C の合計割合を設定する
+                        </h3>
+
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-slate-300">G + C の合計割合:</span>
+                                <span id="s2-gc-sum-val" class="font-bold text-emerald-400 code-font">48 %</span>
+                            </div>
+                            <input type="range" id="s2-gc-slider" min="10" max="90" step="2" value="48" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                            <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>10% (ATリッチ)</span>
+                                <span>問題の値(48%)</span>
+                                <span>90% (GCリッチ)</span>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-900 rounded-xl space-y-3 text-sm">
+                            <div class="font-bold text-slate-200 border-b border-slate-800 pb-2">
+                                塩基割合の自動導出ステップ
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>① A + T の合計割合:</span>
+                                <span id="s2-at-sum-val" class="code-font font-bold text-blue-400">100 - 48 = 52%</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>② チミン(T)単独の割合:</span>
+                                <span id="s2-t-rate-val" class="code-font font-bold text-indigo-400">52 ÷ 2 = 26%</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>③ グアニン(G)単独の割合:</span>
+                                <span id="s2-g-rate-val" class="code-font font-bold text-emerald-400">48 ÷ 2 = 24%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Breakdown Card -->
+                    <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 flex flex-col justify-between space-y-4">
+                        <h4 class="font-bold text-slate-200 text-sm">2本鎖DNA全体の塩基割合 & 個数</h4>
+
+                        <!-- Percentage Bar -->
+                        <div class="space-y-1">
+                            <div class="h-6 w-full rounded-lg overflow-hidden flex code-font text-[11px] text-slate-950 font-bold">
+                                <div id="s2-bar-a" style="width:26%" class="bg-blue-400 flex items-center justify-center">A: 26%</div>
+                                <div id="s2-bar-t" style="width:26%" class="bg-indigo-400 flex items-center justify-center">T: 26%</div>
+                                <div id="s2-bar-g" style="width:24%" class="bg-emerald-400 flex items-center justify-center">G: 24%</div>
+                                <div id="s2-bar-c" style="width:24%" class="bg-teal-400 flex items-center justify-center">C: 24%</div>
+                            </div>
+                        </div>
+
+                        <!-- Count Results (Question 2 answer preview) -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center">
+                                <div class="text-xs text-slate-400">アデニン (A) 個数</div>
+                                <div id="s2-count-a" class="text-lg font-bold text-blue-400 code-font">1.98×10⁶ 個</div>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center border-indigo-500/50">
+                                <div class="text-xs text-indigo-300 font-medium">チミン (T) 個数 (問2)</div>
+                                <div id="s2-count-t" class="text-lg font-bold text-indigo-400 code-font">1.98×10⁶ 個</div>
+                                <div class="text-[10px] text-slate-500">≒ 2.0 × 10⁶ 個</div>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center">
+                                <div class="text-xs text-slate-400">グアニン (G) 個数</div>
+                                <div id="s2-count-g" class="text-lg font-bold text-emerald-400 code-font">1.82×10⁶ 個</div>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 text-center">
+                                <div class="text-xs text-slate-400">シトシン (C) 個数</div>
+                                <div id="s2-count-c" class="text-lg font-bold text-teal-400 code-font">1.82×10⁶ 個</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="step3" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 glow-blue">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm">3</span>
+                    <h2 class="text-xl font-bold text-white">H鎖・対をなす鎖（H'鎖）・転写RNA の塩基割合シミュレーター</h2>
+                </div>
+                <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                    高校生が最も間違いやすいポイント！<br>
+                    <strong>「2本鎖全体の割合」は「H鎖の割合」と「H'鎖の割合」の「平均値」</strong>になります。<br>
+                    また、<strong>H鎖の A % ＝ H'鎖の T % ＝ 転写されたRNAの U %</strong> になる点に注目しましょう！
+                </p>
+
+                <!-- Interactive Double Strand Breakdown -->
+                <div class="space-y-6">
+                    <!-- Controls -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">H鎖の A (アデニン) の割合</label>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="s3-ha-slider" min="10" max="40" value="28" class="w-full h-2 bg-slate-800 rounded appearance-none accent-blue-500">
+                                <span id="s3-ha-val" class="code-font text-blue-400 font-bold text-base min-w-[3rem]">28%</span>
+                            </div>
+                            <span class="text-[11px] text-slate-500">問題の条件：H鎖のAは 28%</span>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">H鎖の C (シトシン) の割合</label>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="s3-hc-slider" min="10" max="40" value="22" class="w-full h-2 bg-slate-800 rounded appearance-none accent-teal-500">
+                                <span id="s3-hc-val" class="code-font text-teal-400 font-bold text-base min-w-[3rem]">22%</span>
+                            </div>
+                            <span class="text-[11px] text-slate-500">問題の条件：H鎖のCは 22%</span>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left border-collapse bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+                            <thead class="text-xs uppercase bg-slate-900 text-slate-400 border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3">構造 / 鎖</th>
+                                    <th class="p-3 text-center text-blue-400">A (アデニン)</th>
+                                    <th class="p-3 text-center text-indigo-400">T (チミン)</th>
+                                    <th class="p-3 text-center text-emerald-400">G (グアニン)</th>
+                                    <th class="p-3 text-center text-teal-400">C (シトシン)</th>
+                                    <th class="p-3 text-center text-pink-400">U (ウラシル)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800 code-font">
+                                <!-- Whole DNA -->
+                                <tr class="bg-slate-900/50">
+                                    <td class="p-3 font-sans font-semibold text-slate-200">2本鎖DNA全体 (平均)</td>
+                                    <td class="p-3 text-center font-bold text-blue-300">26%</td>
+                                    <td class="p-3 text-center font-bold text-indigo-300">26%</td>
+                                    <td class="p-3 text-center font-bold text-emerald-300">24%</td>
+                                    <td class="p-3 text-center font-bold text-teal-300">24%</td>
+                                    <td class="p-3 text-center text-slate-600">ー</td>
+                                </tr>
+                                <!-- H strand -->
+                                <tr class="bg-slate-950">
+                                    <td class="p-3 font-sans text-slate-300 flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> H 鎖 (基準)
+                                    </td>
+                                    <td class="p-3 text-center font-bold text-blue-400" id="s3-cell-ha">28%</td>
+                                    <td class="p-3 text-center font-bold text-indigo-400" id="s3-cell-ht">24%</td>
+                                    <td class="p-3 text-center font-bold text-emerald-400" id="s3-cell-hg">26%</td>
+                                    <td class="p-3 text-center font-bold text-teal-400" id="s3-cell-hc">22%</td>
+                                    <td class="p-3 text-center text-slate-600">ー</td>
+                                </tr>
+                                <!-- H' strand -->
+                                <tr class="bg-slate-950">
+                                    <td class="p-3 font-sans text-slate-300 flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> 対をなす鎖 (H'鎖)
+                                    </td>
+                                    <td class="p-3 text-center font-bold text-blue-400" id="s3-cell-h2a">24%</td>
+                                    <td class="p-3 text-center font-bold text-indigo-400" id="s3-cell-h2t">28%</td>
+                                    <td class="p-3 text-center font-bold text-emerald-400" id="s3-cell-h2g">22%</td>
+                                    <td class="p-3 text-center font-bold text-teal-400" id="s3-cell-h2c">26%</td>
+                                    <td class="p-3 text-center text-slate-600">ー</td>
+                                </tr>
+                                <!-- RNA -->
+                                <tr class="bg-pink-950/20 border-t-2 border-pink-500/30">
+                                    <td class="p-3 font-sans font-semibold text-pink-300 flex items-center gap-2">
+                                        <i class="fa-solid fa-code-branch text-pink-400"></i> H鎖から転写されたRNA
+                                    </td>
+                                    <td class="p-3 text-center font-bold text-blue-400" id="s3-cell-rna-a">24%</td>
+                                    <td class="p-3 text-center text-slate-600">0%</td>
+                                    <td class="p-3 text-center font-bold text-emerald-400" id="s3-cell-rna-g">22%</td>
+                                    <td class="p-3 text-center font-bold text-teal-400" id="s3-cell-rna-c">26%</td>
+                                    <td class="p-3 text-center font-bold text-pink-400 bg-pink-500/10" id="s3-cell-rna-u">28%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Question 3 Choices Explainer -->
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-3">
+                        <h4 class="font-bold text-slate-200 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-circle-question text-indigo-400"></i> 問3の各選択肢の正誤確認
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                            <div class="p-3 bg-slate-900 rounded-lg border border-emerald-900/50 flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+                                <div><strong>① H'鎖の A = 24%:</strong> 正しい！ (全体平均26% × 2 - H鎖のA 28% = 24%)</div>
+                            </div>
+                            <div class="p-3 bg-slate-900 rounded-lg border border-red-900/50 flex items-start gap-2 bg-red-950/20">
+                                <i class="fa-solid fa-circle-xmark text-red-400 mt-0.5"></i>
+                                <div><strong class="text-red-300">② H'鎖の C = 24%: 誤り！</strong> (正しくは <span id="s3-h2c-err-val" class="font-bold text-amber-300">26%</span>。全体平均24% × 2 - H鎖C 22% = 26%)</div>
+                            </div>
+                            <div class="p-3 bg-slate-900 rounded-lg border border-emerald-900/50 flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+                                <div><strong>③ H鎖の T = 24%:</strong> 正しい！ (H'鎖のAと同じ)</div>
+                            </div>
+                            <div class="p-3 bg-slate-900 rounded-lg border border-emerald-900/50 flex items-start gap-2">
+                                <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i>
+                                <div><strong>④ H鎖の G = 26%:</strong> 正しい！ (H'鎖のCと同じ)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="step4" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 glow-blue">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm">4</span>
+                    <h2 class="text-xl font-bold text-white">1本鎖 / 2本鎖 / DNA / RNA 判定アナライザー</h2>
+                </div>
+                <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                    ウイルスの核酸塩基組成データから、遺伝物質のタイプを見破る判定アルゴリズムです。<br>
+                    判定フローに従って、ア〜オのウイルスを分析してみましょう！
+                </p>
+
+                <!-- Flowchart visual -->
+                <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 mb-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-center">
+                    <div class="p-3 bg-slate-900 rounded-lg border border-blue-500/30 flex-1">
+                        <div class="font-bold text-blue-400 mb-1">Check 1: U (ウラシル)</div>
+                        <div>U = 0% ➔ <span class="text-blue-300 font-bold">DNA</span><br>U > 0% ➔ <span class="text-pink-300 font-bold">RNA</span></div>
+                    </div>
+                    <i class="fa-solid fa-arrow-right text-slate-600 hidden md:block"></i>
+                    <div class="p-3 bg-slate-900 rounded-lg border border-purple-500/30 flex-1">
+                        <div class="font-bold text-purple-400 mb-1">Check 2: 相補性 (A vs T/U, G vs C)</div>
+                        <div>A ≒ T(U) かつ G ≒ C ➔ <span class="text-emerald-300 font-bold">2本鎖</span><br>一致しない ➔ <span class="text-amber-300 font-bold">1本鎖</span></div>
+                    </div>
+                </div>
+
+                <!-- Virus Table Analyzer -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left border-collapse bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+                        <thead class="text-xs uppercase bg-slate-900 text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">ウイルス</th>
+                                <th class="p-3 text-center">A (%)</th>
+                                <th class="p-3 text-center">C (%)</th>
+                                <th class="p-3 text-center">G (%)</th>
+                                <th class="p-3 text-center">T (%)</th>
+                                <th class="p-3 text-center">U (%)</th>
+                                <th class="p-3 text-center">自動判定結果</th>
+                                <th class="p-3 text-center">問4該当</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 code-font text-xs">
+                            <tr class="hover:bg-slate-900/50">
+                                <td class="p-3 font-bold font-sans text-slate-200">ア</td>
+                                <td class="p-3 text-center">30.3</td>
+                                <td class="p-3 text-center">19.5</td>
+                                <td class="p-3 text-center">19.5</td>
+                                <td class="p-3 text-center">30.7</td>
+                                <td class="p-3 text-center text-slate-600">0.0</td>
+                                <td class="p-3 text-center"><span class="px-2 py-1 rounded bg-blue-900/50 text-blue-300 border border-blue-700">2本鎖DNA</span></td>
+                                <td class="p-3 text-center text-slate-500">ー</td>
+                            </tr>
+                            <tr class="bg-amber-950/20 hover:bg-amber-950/30 border-l-4 border-amber-500">
+                                <td class="p-3 font-bold font-sans text-amber-300">イ</td>
+                                <td class="p-3 text-center">24.6</td>
+                                <td class="p-3 text-center">18.5</td>
+                                <td class="p-3 text-center">24.1</td>
+                                <td class="p-3 text-center">32.8</td>
+                                <td class="p-3 text-center text-slate-600">0.0</td>
+                                <td class="p-3 text-center"><span class="px-2 py-1 rounded bg-amber-900/60 text-amber-300 border border-amber-500 font-bold">1本鎖DNA</span></td>
+                                <td class="p-3 text-center font-bold text-amber-300">① 1本鎖DNA (②イ)</td>
+                            </tr>
+                            <tr class="bg-pink-950/20 hover:bg-pink-950/30 border-l-4 border-pink-500">
+                                <td class="p-3 font-bold font-sans text-pink-300">ウ</td>
+                                <td class="p-3 text-center">31.1</td>
+                                <td class="p-3 text-center">15.6</td>
+                                <td class="p-3 text-center">29.2</td>
+                                <td class="p-3 text-center text-slate-600">0.0</td>
+                                <td class="p-3 text-center">24.1</td>
+                                <td class="p-3 text-center"><span class="px-2 py-1 rounded bg-pink-900/60 text-pink-300 border border-pink-500 font-bold">1本鎖RNA</span></td>
+                                <td class="p-3 text-center font-bold text-pink-300">② 1本鎖RNA (③ウ)</td>
+                            </tr>
+                            <tr class="hover:bg-slate-900/50">
+                                <td class="p-3 font-bold font-sans text-slate-200">エ</td>
+                                <td class="p-3 text-center">26.0</td>
+                                <td class="p-3 text-center">24.0</td>
+                                <td class="p-3 text-center">24.0</td>
+                                <td class="p-3 text-center">26.0</td>
+                                <td class="p-3 text-center text-slate-600">0.0</td>
+                                <td class="p-3 text-center"><span class="px-2 py-1 rounded bg-blue-900/50 text-blue-300 border border-blue-700">2本鎖DNA</span></td>
+                                <td class="p-3 text-center text-slate-500">ー</td>
+                            </tr>
+                            <tr class="hover:bg-slate-900/50">
+                                <td class="p-3 font-bold font-sans text-slate-200">オ</td>
+                                <td class="p-3 text-center">28.0</td>
+                                <td class="p-3 text-center">22.0</td>
+                                <td class="p-3 text-center">22.1</td>
+                                <td class="p-3 text-center text-slate-600">0.0</td>
+                                <td class="p-3 text-center">27.9</td>
+                                <td class="p-3 text-center"><span class="px-2 py-1 rounded bg-purple-900/50 text-purple-300 border border-purple-700">2本鎖RNA</span></td>
+                                <td class="p-3 text-center text-slate-500">ー</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="quiz" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900 border border-pink-500/30 rounded-2xl p-6 glow-emerald">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
+                    <div>
+                        <span class="text-xs font-bold text-pink-400 uppercase tracking-widest">実力テスト</span>
+                        <h2 class="text-2xl font-black text-white">lv23「22. 核酸の構造」完全攻略演習</h2>
+                    </div>
+                    <button onclick="resetQuiz()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition">
+                        <i class="fa-solid fa-rotate-left"></i> リセット
+                    </button>
+                </div>
+
+                <!-- Quiz Questions Grid -->
+                <div class="space-y-8">
+                    <!-- Question 1 -->
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4">
+                        <div class="font-bold text-base text-slate-200 flex items-start gap-3">
+                            <span class="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-xs">問 1</span>
+                            <div>この2本鎖DNAの全長は何 mm か。最も適当なものを一つ選べ。</div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                            <button onclick="checkAnswer(1, 1)" class="q1-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">① 1.3 mm</button>
+                            <button onclick="checkAnswer(1, 2)" class="q1-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">② 2.6 mm</button>
+                            <button onclick="checkAnswer(1, 3)" class="q1-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">③ 1.3 × 10 mm</button>
+                        </div>
+                        <div id="q1-feedback" class="hidden p-4 rounded-xl text-sm"></div>
+                    </div>
+
+                    <!-- Question 2 -->
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4">
+                        <div class="font-bold text-base text-slate-200 flex items-start gap-3">
+                            <span class="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-xs">問 2</span>
+                            <div>この2本鎖DNAに含まれるチミンの数として最も適当なものを一つ選べ。</div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                            <button onclick="checkAnswer(2, 4)" class="q2-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">④ 1.8 × 10⁶ 個</button>
+                            <button onclick="checkAnswer(2, 5)" class="q2-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">⑤ 2.0 × 10⁶ 個</button>
+                            <button onclick="checkAnswer(2, 2)" class="q2-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">② 1.8 × 10⁵ 個</button>
+                        </div>
+                        <div id="q2-feedback" class="hidden p-4 rounded-xl text-sm"></div>
+                    </div>
+
+                    <!-- Question 3 -->
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4">
+                        <div class="font-bold text-base text-slate-200 flex items-start gap-3">
+                            <span class="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-xs">問 3</span>
+                            <div>この2本鎖DNAに関する記述として<strong>誤っているもの</strong>を一つ選べ。</div>
+                        </div>
+                        <div class="grid grid-cols-1 gap-2 text-sm">
+                            <button onclick="checkAnswer(3, 1)" class="q3-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">① H鎖と対をなす鎖では、この鎖の全塩基数のうち 24% がアデニンである。</button>
+                            <button onclick="checkAnswer(3, 2)" class="q3-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">② H鎖と対をなす鎖では、この鎖の全塩基数のうち 24% がシトシンである。</button>
+                            <button onclick="checkAnswer(3, 3)" class="q3-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">③ H鎖を構成する全塩基のうち 24% がチミンで占められている。</button>
+                        </div>
+                        <div id="q3-feedback" class="hidden p-4 rounded-xl text-sm"></div>
+                    </div>
+
+                    <!-- Question 4 -->
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4">
+                        <div class="font-bold text-base text-slate-200 flex items-start gap-3">
+                            <span class="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-xs">問 4</span>
+                            <div>遺伝物質として「1本鎖のDNA」をもつもの、および「1本鎖のRNA」をもつものの正しいペアはどれか。</div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            <button onclick="checkAnswer(4, 1)" class="q4-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">1本鎖DNA: イ (②), 1本鎖RNA: ウ (③)</button>
+                            <button onclick="checkAnswer(4, 2)" class="q4-btn p-3 bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 text-left transition">1本鎖DNA: ア (①), 1本鎖RNA: オ (⑤)</button>
+                        </div>
+                        <div id="q4-feedback" class="hidden p-4 rounded-xl text-sm"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="border-t border-slate-800 bg-slate-950 py-4 mt-8 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4">
+            だいすきゼミ 生物 lv23「核酸の構造」インタラクティブ学習シミュレーター
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-blue-600', 'text-white');
+                activeBtn.classList.remove('text-slate-400');
+            }
+
+            if(tabId === 'step1') {
+                renderHelixAnimation();
+            }
+        }
+
+        // STEP 1 Logic
+        const sliderNuc = document.getElementById('s1-nucleotide-slider');
+        function updateStep1() {
+            const val = parseInt(sliderNuc.value);
+            document.getElementById('s1-total-nucleotides-val').innerText = val.toLocaleString() + ' 個';
+            
+            const pairs = val / 2;
+            const lengthNm = (pairs / 10) * 3.4;
+            const lengthMm = lengthNm * 1e-6;
+
+            document.getElementById('s1-step1-txt').innerText = `${(val/1e6).toFixed(2)}×10⁶ ÷ 2 = ${(pairs/1e6).toFixed(2)}×10⁶ 対`;
+            document.getElementById('s1-step2-txt').innerText = `(${(pairs/1e6).toFixed(2)}×10⁶ ÷ 10) × 3.4 = ${(lengthNm/1e6).toFixed(4)}×10⁶ nm`;
+            document.getElementById('s1-step3-txt').innerText = `${(lengthNm/1e6).toFixed(4)}×10⁶ × 10⁻⁶ = ${lengthMm.toFixed(3)} mm`;
+            
+            document.getElementById('s1-result-mm').innerHTML = `${lengthMm.toFixed(3)} <span class="text-xl text-slate-300">mm</span>`;
+            document.getElementById('s1-approx-val').innerText = `${lengthMm.toFixed(1)} mm`;
+        }
+        if(sliderNuc) sliderNuc.addEventListener('input', updateStep1);
+
+        // STEP 2 Logic
+        const sliderGc = document.getElementById('s2-gc-slider');
+        function updateStep2() {
+            const gcSum = parseInt(sliderGc.value);
+            const atSum = 100 - gcSum;
+            const tRate = atSum / 2;
+            const gRate = gcSum / 2;
+            const totalNuc = 7600000;
+
+            document.getElementById('s2-gc-sum-val').innerText = gcSum + ' %';
+            document.getElementById('s2-at-sum-val').innerText = `100 - ${gcSum} = ${atSum}%`;
+            document.getElementById('s2-t-rate-val').innerText = `${atSum} ÷ 2 = ${tRate}%`;
+            document.getElementById('s2-g-rate-val').innerText = `${gcSum} ÷ 2 = ${gRate}%`;
+
+            // Bar update
+            document.getElementById('s2-bar-a').style.width = tRate + '%';
+            document.getElementById('s2-bar-a').innerText = `A: ${tRate}%`;
+            document.getElementById('s2-bar-t').style.width = tRate + '%';
+            document.getElementById('s2-bar-t').innerText = `T: ${tRate}%`;
+            document.getElementById('s2-bar-g').style.width = gRate + '%';
+            document.getElementById('s2-bar-g').innerText = `G: ${gRate}%`;
+            document.getElementById('s2-bar-c').style.width = gRate + '%';
+            document.getElementById('s2-bar-c').innerText = `C: ${gRate}%`;
+
+            // Counts
+            const countA = (totalNuc * (tRate / 100) / 1e6).toFixed(2);
+            const countG = (totalNuc * (gRate / 100) / 1e6).toFixed(2);
+
+            document.getElementById('s2-count-a').innerText = `${countA}×10⁶ 個`;
+            document.getElementById('s2-count-t').innerText = `${countA}×10⁶ 個`;
+            document.getElementById('s2-count-g').innerText = `${countG}×10⁶ 個`;
+            document.getElementById('s2-count-c').innerText = `${countG}×10⁶ 個`;
+        }
+        if(sliderGc) sliderGc.addEventListener('input', updateStep2);
+
+        // STEP 3 Logic
+        const sliderHa = document.getElementById('s3-ha-slider');
+        const sliderHc = document.getElementById('s3-hc-slider');
+
+        function updateStep3() {
+            const ha = parseInt(sliderHa.value);
+            const hc = parseInt(sliderHc.value);
+
+            // Double strand whole average: A=T=26%, G=C=24%
+            const meanA = 26;
+            const meanC = 24;
+
+            // H' strand calculations
+            const h2a = (meanA * 2) - ha; // H' strand A
+            const h2c = (meanC * 2) - hc; // H' strand C
+
+            // H strand complement
+            const ht = h2a; // H strand T = H' strand A
+            const hg = h2c; // H strand G = H' strand C
+
+            const h2t = ha;
+            const h2g = hc;
+
+            document.getElementById('s3-ha-val').innerText = ha + '%';
+            document.getElementById('s3-hc-val').innerText = hc + '%';
+
+            // H Strand cells
+            document.getElementById('s3-cell-ha').innerText = ha + '%';
+            document.getElementById('s3-cell-ht').innerText = ht + '%';
+            document.getElementById('s3-cell-hg').innerText = hg + '%';
+            document.getElementById('s3-cell-hc').innerText = hc + '%';
+
+            // H' Strand cells
+            document.getElementById('s3-cell-h2a').innerText = h2a + '%';
+            document.getElementById('s3-cell-h2t').innerText = h2t + '%';
+            document.getElementById('s3-cell-h2g').innerText = h2g + '%';
+            document.getElementById('s3-cell-h2c').innerText = h2c + '%';
+
+            // RNA cells (complement of H strand)
+            document.getElementById('s3-cell-rna-a').innerText = ht + '%'; // Complement of H(T)
+            document.getElementById('s3-cell-rna-g').innerText = hc + '%'; // Complement of H(C)
+            document.getElementById('s3-cell-rna-c').innerText = hg + '%'; // Complement of H(G)
+            document.getElementById('s3-cell-rna-u').innerText = ha + '%'; // Complement of H(A)
+
+            document.getElementById('s3-h2c-err-val').innerText = h2c + '%';
+        }
+
+        if(sliderHa && sliderHc) {
+            sliderHa.addEventListener('input', updateStep3);
+            sliderHc.addEventListener('input', updateStep3);
+        }
+
+        // Canvas DNA 3D Helix Animation
+        let animId;
+        function renderHelixAnimation() {
+            const canvas = document.getElementById('s1-canvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            let time = 0;
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const width = canvas.width;
+                const height = canvas.height;
+                const centerY = height / 2;
+                const radius = 25;
+                const speed = 0.05;
+
+                for (let x = 0; x < width; x += 12) {
+                    const angle = time + x * 0.03;
+                    const y1 = centerY + Math.sin(angle) * radius;
+                    const y2 = centerY - Math.sin(angle) * radius;
+
+                    // Base pair line
+                    ctx.beginPath();
+                    ctx.moveTo(x, y1);
+                    ctx.lineTo(x, y2);
+                    ctx.strokeStyle = "rgba(148, 163, 184, 0.2)";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Strand 1 node
+                    ctx.beginPath();
+                    ctx.arc(x, y1, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = "#3b82f6";
+                    ctx.fill();
+
+                    // Strand 2 node
+                    ctx.beginPath();
+                    ctx.arc(x, y2, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = "#ec4899";
+                    ctx.fill();
+                }
+
+                time += speed;
+                animId = requestAnimationFrame(draw);
+            }
+            if (animId) cancelAnimationFrame(animId);
+            draw();
+        }
+
+        // Quiz Logic
+        const answers = {
+            1: { correct: 1, explanation: "正解は ① 1.3 mm です。<br>7.6×10⁶ 個のヌクレオチド = 3.8×10⁶ ヌクレオチド対。<br>(3.8×10⁶ ÷ 10) × 3.4 nm = 1.292×10⁶ nm = 1.292 mm ≒ 1.3 mm となります。" },
+            2: { correct: 5, explanation: "正解は ⑤ 2.0 × 10⁶ 個 です。<br>(G+C)=48% より (A+T)=52%、T単独は 26%。<br>7.6×10⁶ × 0.26 = 1.976×10⁶ ≒ 2.0×10⁶ 個 となります。" },
+            3: { correct: 2, explanation: "正解は ② です。<br>全体でCは24%なので、2本鎖平均も24%。H鎖のCが22%なら、対をなすH'鎖のCは (24% × 2 - 22%) = 26% となり、24%という記述は誤りです。" },
+            4: { correct: 1, explanation: "正解は 「1本鎖DNA: イ, 1本鎖RNA: ウ」 です。<br>イはU=0%でT>0%だがA≠T(24.6% vs 32.8%)で1本鎖DNA。<br>ウはU=24.1%>0%でU>0%かつA≠U(31.1% vs 24.1%)で1本鎖RNAです。" }
+        };
+
+        function checkAnswer(qNum, selected) {
+            const feedbackEl = document.getElementById(`q${qNum}-feedback`);
+            const btns = document.querySelectorAll(`.q${qNum}-btn`);
+            const qData = answers[qNum];
+
+            btns.forEach(btn => btn.disabled = true);
+
+            if (selected === qData.correct) {
+                feedbackEl.className = "p-4 rounded-xl text-sm bg-emerald-950/60 border border-emerald-500/50 text-emerald-200 block";
+                feedbackEl.innerHTML = `<div class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-circle-check"></i> 正解！</div>${qData.explanation}`;
+            } else {
+                feedbackEl.className = "p-4 rounded-xl text-sm bg-red-950/60 border border-red-500/50 text-red-200 block";
+                feedbackEl.innerHTML = `<div class="font-bold text-red-400 mb-1"><i class="fa-solid fa-circle-xmark"></i> 不正解...</div>${qData.explanation}`;
+            }
+        }
+
+        function resetQuiz() {
+            for (let qNum = 1; qNum <= 4; qNum++) {
+                const feedbackEl = document.getElementById(`q${qNum}-feedback`);
+                if (feedbackEl) {
+                    feedbackEl.className = "hidden p-4 rounded-xl text-sm";
+                    feedbackEl.innerHTML = "";
+                }
+                const btns = document.querySelectorAll(`.q${qNum}-btn`);
+                btns.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            updateStep1();
+            updateStep2();
+            updateStep3();
+        });
+    </script>
+</body>
+</html>
