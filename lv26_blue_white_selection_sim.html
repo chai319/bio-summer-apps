@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブルーホワイトセレクション完全理解インタラクティブ・ラボ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Inter:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Zen Maru Gothic', 'Inter', sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+        }
+
+        /* Lab Petri Dish Styling */
+        .petri-dish-container {
+            background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+        }
+
+        .petri-dish {
+            background: radial-gradient(circle, rgba(241, 245, 249, 0.95) 0%, rgba(203, 213, 225, 0.85) 100%);
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.15), 0 10px 30px rgba(0,0,0,0.5);
+            border: 6px solid rgba(255, 255, 255, 0.6);
+            transition: all 0.5s ease;
+        }
+
+        .colony {
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+            cursor: pointer;
+        }
+        .colony:hover {
+            transform: scale(1.6);
+            z-index: 30;
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
+        }
+
+        /* Pulse animations for attention */
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.9); }
+        }
+        .glow-active {
+            animation: glow-pulse 2s infinite;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <span class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black px-3 py-1 rounded-xl text-xs tracking-wider shadow">Lv26 徹底理解</span>
+                <h1 class="text-lg md:text-xl font-black tracking-wide flex items-center gap-2 text-white">
+                    <i class="fa-solid fa-vial-circle-check text-blue-400"></i>
+                    ブルーホワイトセレクション（遺伝子導入）体感ラボ
+                </h1>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <nav class="flex bg-slate-800/80 p-1 rounded-xl border border-slate-700/60 text-xs font-bold">
+                <button id="tab-lab" onclick="switchTab('lab')" class="px-4 py-2 rounded-lg transition bg-blue-600 text-white shadow-md flex items-center gap-1.5">
+                    <i class="fa-solid fa-flask"></i> 実験シミュレーター
+                </button>
+                <button id="tab-matrix" onclick="switchTab('matrix')" class="px-4 py-2 rounded-lg transition text-slate-400 hover:text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-sitemap"></i> 3タイプの運命図解
+                </button>
+                <button id="tab-quiz" onclick="switchTab('quiz')" class="px-4 py-2 rounded-lg transition text-slate-400 hover:text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-graduation-cap"></i> 問題挑戦 (問1〜4)
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto p-4 md:p-6 flex-grow space-y-6">
+
+        <!-- ================= TAB 1: INTERACTIVE LAB ================= -->
+        <section id="section-lab" class="space-y-6">
+
+            <!-- Top Flow Banner -->
+            <div class="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 backdrop-blur-md">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-bold text-blue-400 uppercase tracking-widest"><i class="fa-solid fa-diagram-project mr-1"></i> 実験の流れをつかもう</span>
+                    <span id="current-step-indicator" class="text-xs bg-blue-500/20 text-blue-300 font-bold px-2.5 py-0.5 rounded-full border border-blue-500/30">
+                        ステップ 1 / 3
+                    </span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold">
+                    <button id="step-btn-1" onclick="setLabStep(1)" class="p-3 rounded-xl border-2 border-blue-500 bg-blue-600/20 text-blue-300 transition flex flex-col items-center gap-1">
+                        <span>① 遺伝子Xの組み込み</span>
+                        <span class="text-[10px] opacity-70 font-normal">制限酵素✂️でlacZを切断</span>
+                    </button>
+                    <button id="step-btn-2" onclick="setLabStep(2)" class="p-3 rounded-xl border border-slate-700 bg-slate-900/50 text-slate-400 transition flex flex-col items-center gap-1">
+                        <span>② 大腸菌への導入</span>
+                        <span class="text-[10px] opacity-70 font-normal">3種類の菌ができる</span>
+                    </button>
+                    <button id="step-btn-3" onclick="setLabStep(3)" class="p-3 rounded-xl border border-slate-700 bg-slate-900/50 text-slate-400 transition flex flex-col items-center gap-1">
+                        <span>③ 培地でスクリーニング</span>
+                        <span class="text-[10px] opacity-70 font-normal">アンピシリン & 青白判定</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Left Column: Step Control & Plasmid Inspector (5 Cols) -->
+                <div class="lg:col-span-5 space-y-6">
+
+                    <!-- STEP 1 & 2 DYNAMIC PANEL: Plasmid Construction View -->
+                    <div id="panel-plasmid-builder" class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                            <h3 class="font-bold text-white flex items-center gap-2 text-sm">
+                                <i class="fa-solid fa-dna text-purple-400"></i> プラスミド変形アニメーション
+                            </h3>
+                            <span id="gene-insert-badge" class="text-xs px-2.5 py-1 rounded-full font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                                元のプラスミド
+                            </span>
+                        </div>
+
+                        <!-- Plasmid Dynamic SVG Graphic -->
+                        <div class="relative w-full h-56 bg-slate-950 rounded-xl flex items-center justify-center p-2 overflow-hidden border border-slate-800">
+                            
+                            <svg id="plasmid-svg" viewBox="0 0 240 240" class="w-52 h-52 transition-all duration-700">
+                                <!-- Background Glow Ring -->
+                                <circle cx="120" cy="120" r="80" fill="none" stroke="#1e293b" stroke-width="18"/>
+                                
+                                <!-- AmpR Gene Segment (Green Shield) -->
+                                <path id="svg-ampr" d="M 40,120 A 80,80 0 0,1 120,40" fill="none" stroke="#22c55e" stroke-width="20" stroke-linecap="round"/>
+                                <text x="50" y="70" fill="#4ade80" font-size="12" font-weight="900">Ampʳ</text>
+                                <text x="35" y="85" fill="#94a3b8" font-size="8">抗生物質耐性</text>
+
+                                <!-- lacZ Gene Segment (Blue Lamp) -->
+                                <path id="svg-lacz-left" d="M 120,40 A 80,80 0 0,1 200,120" fill="none" stroke="#3b82f6" stroke-width="20" stroke-linecap="round" class="transition-all duration-500"/>
+                                <text id="svg-lacz-text" x="155" y="70" fill="#60a5fa" font-size="12" font-weight="900">lacZ</text>
+                                <text id="svg-lacz-sub" x="145" y="85" fill="#94a3b8" font-size="8">青色発色スイッチ</text>
+
+                                <!-- Gene X Insert Portion (Purple Segment - hidden initially) -->
+                                <g id="svg-geneX-group" class="opacity-0 transition-all duration-700 transform scale-95 origin-center">
+                                    <!-- Insert Gene X Block -->
+                                    <path d="M 150,55 A 80,80 0 0,1 185,90" fill="none" stroke="#a855f7" stroke-width="24"/>
+                                    <text x="175" y="65" fill="#c084fc" font-size="11" font-weight="900">遺伝子X</text>
+                                    <!-- Broken Cracks in lacZ -->
+                                    <line x1="145" y1="50" x2="155" y2="60" stroke="#ef4444" stroke-width="3"/>
+                                    <line x1="180" y1="85" x2="190" y2="95" stroke="#ef4444" stroke-width="3"/>
+                                </g>
+
+                                <!-- Cut Indicator Scissors -->
+                                <g id="svg-scissors" class="transition-all duration-500">
+                                    <line x1="160" y1="35" x2="175" y2="20" stroke="#f43f5e" stroke-width="3" stroke-dasharray="3,3"/>
+                                    <text x="150" y="15" fill="#f43f5e" font-size="10" font-weight="bold">✂️ 酵素A切断部位</text>
+                                </g>
+                            </svg>
+
+                            <!-- Explanatory Tooltip overlay -->
+                            <div id="plasmid-status-desc" class="absolute bottom-2 left-2 right-2 bg-slate-900/90 border border-slate-700 text-xs text-slate-200 p-2.5 rounded-lg text-center backdrop-blur-md">
+                                <span class="text-amber-400 font-bold">【基本構造】</span><br>
+                                Ampʳ（耐性バリア）と lacZ（青色スイッチ）を持つプラスミドです。
+                            </div>
+                        </div>
+
+                        <!-- Action Toggle Buttons inside Step 1 -->
+                        <div id="step1-controls" class="space-y-2 pt-2">
+                            <label class="text-xs font-bold text-slate-400 block">切り替えてプラスミドの変化を確かめよう：</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="setPlasmidType('non_recombinant')" id="btn-plasmid-normal" class="py-2.5 px-3 rounded-xl border border-blue-500 bg-blue-600/30 text-white font-bold text-xs transition flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check text-blue-400"></i> 非組み換え（元通り）
+                                </button>
+                                <button onclick="setPlasmidType('recombinant')" id="btn-plasmid-recombinant" class="py-2.5 px-3 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 font-bold text-xs transition flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-puzzle-piece text-purple-400"></i> 組み換え体（遺伝子X挿入）
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CULTURE ENVIRONMENT CONTROLS (Step 3 Screening Swithes) -->
+                    <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                            <h3 class="font-bold text-white flex items-center gap-2 text-sm">
+                                <i class="fa-solid fa-sliders text-emerald-400"></i> 培地（シャーレ）の条件設定
+                            </h3>
+                            <span class="text-[10px] text-slate-400">スイッチで即時変化</span>
+                        </div>
+
+                        <div class="space-y-3">
+                            <!-- Switch 1: Ampicillin -->
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-700">
+                                <div class="space-y-0.5">
+                                    <div class="font-bold text-xs text-white flex items-center gap-1.5">
+                                        <i class="fa-solid fa-shield-virus text-red-400"></i> アンピシリン (抗生物質)
+                                    </div>
+                                    <p class="text-[11px] text-slate-400">プラスミドを持たない大腸菌を殺菌する</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="toggle-amp" class="sr-only peer" checked onchange="updatePetriDish()">
+                                    <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                </label>
+                            </div>
+
+                            <!-- Switch 2: X-gal Substrate -->
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/80 border border-slate-700">
+                                <div class="space-y-0.5">
+                                    <div class="font-bold text-xs text-white flex items-center gap-1.5">
+                                        <i class="fa-solid fa-vial-circle-check text-blue-400"></i> 発色基質 (無色)
+                                    </div>
+                                    <p class="text-[11px] text-slate-400">正常なlacZ酵素があると青色に変色する</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="toggle-substrate" class="sr-only peer" checked onchange="updatePetriDish()">
+                                    <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Question 4 Alert Highlight Box -->
+                        <div id="amp-off-warning" class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 hidden transition-all">
+                            <div class="font-bold flex items-center gap-1.5 mb-1 text-amber-400">
+                                <i class="fa-solid fa-triangle-exclamation"></i> 【問4の現象を観察中！】
+                            </div>
+                            アンピシリンをOFFにすると、プラスミドを持っていない普通の大腸菌（未導入菌）が爆発的に増殖します！未導入菌はlacZを持たないため<b>すべて「白色コロニー」</b>になります。
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Petri Dish Screen & Colony Microscope Inspector (7 Cols) -->
+                <div class="lg:col-span-7 space-y-6">
+
+                    <!-- PETRI DISH VIEW CONTAINER -->
+                    <div class="petri-dish-container p-6 rounded-2xl border border-slate-700 flex flex-col items-center relative">
+                        <div class="w-full flex justify-between items-center mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <h3 class="font-bold text-white text-sm">寒天培地シャーレ（リアルタイム結果）</h3>
+                            </div>
+                            <span class="text-xs text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
+                                👈 コロニーをタップしてミクロ解剖！
+                            </span>
+                        </div>
+
+                        <!-- Main Petri Dish Plate Graphics -->
+                        <div class="relative my-2">
+                            <div id="petri-dish" class="petri-dish w-72 h-72 sm:w-80 sm:h-80 rounded-full relative overflow-hidden flex items-center justify-center transition-all">
+                                <!-- Agar Base Watermark Text -->
+                                <div id="plate-watermark" class="text-slate-400/20 font-black text-2xl select-none pointer-events-none text-center tracking-widest">
+                                    AGAR PLATE
+                                </div>
+                                
+                                <!-- Dynamic Colonies Layer -->
+                                <div id="colonies-container" class="absolute inset-0"></div>
+                            </div>
+                        </div>
+
+                        <!-- Colony Summary Counters -->
+                        <div class="w-full grid grid-cols-3 gap-2 text-center text-xs pt-3 border-t border-slate-800 mt-2">
+                            <div class="p-2.5 bg-blue-950/60 rounded-xl border border-blue-800/50">
+                                <div class="text-blue-400 font-bold">青色コロニー</div>
+                                <div id="count-blue" class="text-lg font-black text-blue-300">0</div>
+                                <div class="text-[10px] text-slate-400">非組み換え菌 (lacZ○)</div>
+                            </div>
+                            <div class="p-2.5 bg-slate-800/80 rounded-xl border border-slate-700">
+                                <div class="text-slate-200 font-bold">白色コロニー</div>
+                                <div id="count-white" class="text-lg font-black text-white">0</div>
+                                <div id="count-white-desc" class="text-[10px] text-slate-400">組み換え菌 (lacZ×)</div>
+                            </div>
+                            <div class="p-2.5 bg-rose-950/40 rounded-xl border border-rose-900/40">
+                                <div class="text-rose-400 font-bold">死滅 (生えない)</div>
+                                <div id="count-dead" class="text-lg font-black text-rose-300">0</div>
+                                <div class="text-[10px] text-slate-400">プラスミド未導入菌</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COLONY MICROSCOPE INSPECTION CARD -->
+                    <div id="inspection-card" class="bg-slate-800/90 p-5 rounded-2xl border-2 border-dashed border-slate-600 transition-all">
+                        
+                        <!-- Initial Placeholder -->
+                        <div id="inspection-placeholder" class="text-center text-slate-400 py-6 space-y-2">
+                            <i class="fa-solid fa-microscope text-4xl text-blue-400/60 animate-bounce"></i>
+                            <p class="text-xs font-bold text-slate-300">シャーレの上のコロニー（円）をクリックしてください</p>
+                            <p class="text-[11px] text-slate-500">その大腸菌の中身（プラスミド・耐性・酵素）を顕微鏡ビューで解剖観察できます！</p>
+                        </div>
+
+                        <!-- Active Detail View -->
+                        <div id="inspection-detail" class="hidden space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                                <div class="flex items-center gap-2.5">
+                                    <span id="inspect-color-badge" class="w-5 h-5 rounded-full inline-block border-2 border-white shadow"></span>
+                                    <div>
+                                        <h4 id="inspect-title" class="font-black text-white text-sm">---</h4>
+                                        <span id="inspect-subtitle" class="text-[11px] text-slate-400 block">---</span>
+                                    </div>
+                                </div>
+                                <span id="inspect-tag" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-700 text-slate-200 border border-slate-600">
+                                    ---
+                                </span>
+                            </div>
+
+                            <!-- Microscope Visual Breakdown -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                
+                                <!-- Internal Element 1: AmpR -->
+                                <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-700 space-y-1">
+                                    <div class="text-slate-400 font-bold flex items-center justify-between">
+                                        <span>🛡️ Ampʳ (アンピシリン耐性)</span>
+                                        <span id="inspect-ampr-status" class="font-black">---</span>
+                                    </div>
+                                    <p id="inspect-ampr-desc" class="text-[10px] text-slate-400">---</p>
+                                </div>
+
+                                <!-- Internal Element 2: lacZ -->
+                                <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-700 space-y-1">
+                                    <div class="text-slate-400 font-bold flex items-center justify-between">
+                                        <span>🔵 lacZ (ラクターゼ酵素)</span>
+                                        <span id="inspect-lacz-status" class="font-black">---</span>
+                                    </div>
+                                    <p id="inspect-lacz-desc" class="text-[10px] text-slate-400">---</p>
+                                </div>
+                            </div>
+
+                            <!-- Logical Reason Flowchart -->
+                            <div class="bg-blue-950/40 p-3.5 rounded-xl border border-blue-800/40 text-xs space-y-2">
+                                <div class="font-bold text-blue-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-lightbulb text-amber-400"></i> なぜこの判定・色になるのか？
+                                </div>
+                                <p id="inspect-explanation" class="text-slate-300 leading-relaxed text-[11px]">
+                                    ---
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ================= TAB 2: 3 TYPES MATRIX EXPLANATION ================= -->
+        <section id="section-matrix" class="hidden space-y-6">
+            
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-6">
+                <div class="border-b border-slate-700 pb-4">
+                    <h2 class="text-xl font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sitemap text-blue-400"></i>
+                        ブルーホワイトセレクション 大腸菌3タイプの運命整理
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">
+                        混合液の中には「3つの状態の大腸菌」が混ざっています。それぞれの運命を一目瞭然で比較しよう！
+                    </p>
+                </div>
+
+                <!-- 3 Bacterial Types Comparison Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    <!-- Type 1: Recombinant (White Colony) -->
+                    <div class="bg-slate-900 p-5 rounded-2xl border-2 border-purple-500/50 space-y-3 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-purple-600 text-white font-black text-[10px] px-3 py-1 rounded-bl-xl uppercase">
+                            目的の株★
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-white text-slate-900 font-black flex items-center justify-center text-lg border-2 border-slate-300 shadow">
+                                白
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">① 組み換え菌</h3>
+                                <p class="text-[10px] text-purple-300">プラスミド ＋ 遺伝子X挿入</p>
+                            </div>
+                        </div>
+                        <ul class="text-xs space-y-2 text-slate-300 pt-2 border-t border-slate-800">
+                            <li class="flex items-center gap-1.5 text-emerald-400">
+                                <i class="fa-solid fa-check"></i> Ampʳ：<b>あり</b>（アンピシリンに勝つ）
+                            </li>
+                            <li class="flex items-center gap-1.5 text-rose-400">
+                                <i class="fa-solid fa-xmark"></i> lacZ：<b>遺伝子Xで壊れている！</b>
+                            </li>
+                            <li class="flex items-center gap-1.5 text-slate-300">
+                                <i class="fa-solid fa-palette"></i> 色：酵素がないため<b>「白色」</b>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Type 2: Non-Recombinant (Blue Colony) -->
+                    <div class="bg-slate-900 p-5 rounded-2xl border-2 border-blue-500/50 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white font-black flex items-center justify-center text-lg border-2 border-blue-400 shadow">
+                                青
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">② 非組み換え菌</h3>
+                                <p class="text-[10px] text-blue-300">プラスミドのみ（元通り閉じた）</p>
+                            </div>
+                        </div>
+                        <ul class="text-xs space-y-2 text-slate-300 pt-2 border-t border-slate-800">
+                            <li class="flex items-center gap-1.5 text-emerald-400">
+                                <i class="fa-solid fa-check"></i> Ampʳ：<b>あり</b>（アンピシリンに勝つ）
+                            </li>
+                            <li class="flex items-center gap-1.5 text-blue-400">
+                                <i class="fa-solid fa-check"></i> lacZ：<b>正常に作動！</b>
+                            </li>
+                            <li class="flex items-center gap-1.5 text-slate-300">
+                                <i class="fa-solid fa-palette"></i> 色：基質を分解して<b>「青色」</b>に発色
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Type 3: Untransformed (Dead or White) -->
+                    <div class="bg-slate-900 p-5 rounded-2xl border-2 border-slate-700 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-slate-800 text-rose-400 font-black flex items-center justify-center text-lg border border-slate-600 shadow">
+                                ✕
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-white text-sm">③ プラスミド未導入菌</h3>
+                                <p class="text-[10px] text-slate-400">プラスミドを全く取り込まなかった菌</p>
+                            </div>
+                        </div>
+                        <ul class="text-xs space-y-2 text-slate-300 pt-2 border-t border-slate-800">
+                            <li class="flex items-center gap-1.5 text-rose-400">
+                                <i class="fa-solid fa-xmark"></i> Ampʳ：<b>なし（アンピシリンで死滅）</b>
+                            </li>
+                            <li class="flex items-center gap-1.5 text-slate-500">
+                                <i class="fa-solid fa-minus"></i> lacZ：なし
+                            </li>
+                            <li class="flex items-center gap-1.5 text-slate-300">
+                                <i class="fa-solid fa-skull"></i> 運命：アンピシリン培地では<b>全滅</b>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+
+                <!-- Restriction Enzyme Bond Cutting Explanation (Question 2 Concept) -->
+                <div class="bg-gradient-to-r from-slate-900 to-blue-950 p-5 rounded-2xl border border-blue-800/60 space-y-3">
+                    <h3 class="font-bold text-blue-300 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-scissors text-rose-400"></i> 【問2対策】制限酵素Aが切断する2種類の化学結合
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800">
+                            <span class="font-bold text-emerald-400 block mb-1">❶ ヌクレオチド鎖の骨格（縦の結合）</span>
+                            糖とリン酸の間の強力な共有結合（ホスホジエステル結合）を切断します。
+                        </div>
+                        <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800">
+                            <span class="font-bold text-blue-400 block mb-1">❷ 対向する塩基同士（横の結合）</span>
+                            A-TやG-Cの間の水素結合を離して、ギザギザの「粘着末端」を作ります。
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 italic">
+                        ⇒ したがって問2の正解は **「③ リン酸と糖の結合および塩基と塩基の結合」** となります。
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ================= TAB 3: QUIZ PRACTICE ================= -->
+        <section id="section-quiz" class="hidden space-y-6">
+            
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-6">
+                <div class="border-b border-slate-700 pb-4 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap text-blue-400"></i>
+                            問題演習（Lv26 33. 遺伝子導入）
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">シミュレーターで学んだ思考を使って、入試問題を解いてみよう！</p>
+                    </div>
+                    <span id="quiz-score-badge" class="bg-blue-600/30 text-blue-300 border border-blue-500/40 font-bold px-3 py-1.5 rounded-xl text-xs">
+                        正解数: 0 / 4
+                    </span>
+                </div>
+
+                <!-- Questions List -->
+                <div class="space-y-6">
+
+                    <!-- Q1 -->
+                    <div class="p-5 rounded-2xl border border-slate-700 bg-slate-900/60 space-y-3">
+                        <div class="flex items-start gap-2">
+                            <span class="bg-blue-600 text-white font-bold px-2 py-0.5 rounded text-xs mt-0.5">問1</span>
+                            <p class="font-bold text-white text-sm">
+                                酵素A（DNAを切断するハサミ）と、酵素B（切断面をつなぐのり）の名称として最も適当なものをそれぞれ選べ。
+                            </p>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="text-xs text-slate-400">酵素A（ハサミ）の選択:</div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                <button onclick="checkQuiz(1, 'A', 1)" class="q1a-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">① RNAポリメラーゼ</button>
+                                <button onclick="checkQuiz(1, 'A', 2)" class="q1a-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">② カターゼ</button>
+                                <button onclick="checkQuiz(1, 'A', 3)" id="q1a-opt-3" class="q1a-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">③ 制限酵素</button>
+                                <button onclick="checkQuiz(1, 'A', 5)" class="q1a-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">⑤ DNAポリメラーゼ</button>
+                            </div>
+                            <div class="text-xs text-slate-400 pt-1">酵素B（のり）の選択:</div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                <button onclick="checkQuiz(1, 'B', 4)" class="q1b-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">④ 消化酵素</button>
+                                <button onclick="checkQuiz(1, 'B', 6)" class="q1b-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">⑥ マルターゼ</button>
+                                <button onclick="checkQuiz(1, 'B', 7)" id="q1b-opt-7" class="q1b-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">⑦ DNAリガーゼ</button>
+                                <button onclick="checkQuiz(1, 'B', 8)" class="q1b-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">⑧ ATPアーゼ</button>
+                            </div>
+                        </div>
+                        <div id="q1-exp" class="hidden p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300">
+                            <b>正解: 酵素A＝③制限酵素, 酵素B＝⑦DNAリガーゼ</b><br>
+                            特定配列を切る「ハサミ」が制限酵素、断片同士を結ぶ「のり」がDNAリガーゼです。
+                        </div>
+                    </div>
+
+                    <!-- Q2 -->
+                    <div class="p-5 rounded-2xl border border-slate-700 bg-slate-900/60 space-y-3">
+                        <div class="flex items-start gap-2">
+                            <span class="bg-blue-600 text-white font-bold px-2 py-0.5 rounded text-xs mt-0.5">問2</span>
+                            <p class="font-bold text-white text-sm">
+                                酵素A（制限酵素）で切断される結合として最も適当なものを一選択せよ。
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                            <button onclick="checkQuiz(2, null, 1)" class="q2-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">① 塩基と塩基の結合と塩基とリン酸の結合</button>
+                            <button onclick="checkQuiz(2, null, 2)" class="q2-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">② 糖と塩基の結合</button>
+                            <button onclick="checkQuiz(2, null, 3)" id="q2-opt-3" class="q2-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">③ リン酸と糖の結合および塩基と塩基の結合</button>
+                            <button onclick="checkQuiz(2, null, 4)" class="q2-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">④ 塩基と塩基の結合</button>
+                        </div>
+                        <div id="q2-exp" class="hidden p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300">
+                            <b>正解: ③ リン酸と糖の結合および塩基と塩基の結合</b><br>
+                            ヌクレオチド鎖の縦の骨格（リン酸-糖の共有結合）と、対向塩基間の横の水素結合の両方が切断されます。
+                        </div>
+                    </div>
+
+                    <!-- Q3 -->
+                    <div class="p-5 rounded-2xl border border-slate-700 bg-slate-900/60 space-y-3">
+                        <div class="flex items-start gap-2">
+                            <span class="bg-blue-600 text-white font-bold px-2 py-0.5 rounded text-xs mt-0.5">問3</span>
+                            <p class="font-bold text-white text-sm">
+                                図4の「青色」と「白色」のコロニーは、それぞれどのような大腸菌が増殖したものか選べ。
+                            </p>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="text-xs text-blue-400 font-bold">【青色コロニーの正体】</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                <button onclick="checkQuiz(3, 'blue', 4)" id="q3b-opt-4" class="q3b-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">④ 遺伝子Xが組みこまれなかったプラスミドを取りこんだ大腸菌</button>
+                                <button onclick="checkQuiz(3, 'blue', 3)" class="q3b-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">③ 遺伝子Xが組みこまれたプラスミドを取りこんだ大腸菌</button>
+                            </div>
+                            <div class="text-xs text-slate-200 font-bold pt-1">【白色コロニーの正体】</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                                <button onclick="checkQuiz(3, 'white', 3)" id="q3w-opt-3" class="q3w-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">③ 遺伝子Xが組みこまれたプラスミドを取りこんだ大腸菌</button>
+                                <button onclick="checkQuiz(3, 'white', 4)" class="q3w-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">④ 遺伝子Xが組みこまれなかったプラスミドを取りこんだ大腸菌</button>
+                            </div>
+                        </div>
+                        <div id="q3-exp" class="hidden p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300">
+                            <b>正解: 青色＝④非組み換え菌, 白色＝③組み換え菌</b><br>
+                            遺伝子Xが入らないとlacZが正常なため青色。遺伝子Xが入るとlacZが分断され酵素が作れず白色になります。
+                        </div>
+                    </div>
+
+                    <!-- Q4 -->
+                    <div class="p-5 rounded-2xl border border-slate-700 bg-slate-900/60 space-y-3">
+                        <div class="flex items-start gap-2">
+                            <span class="bg-blue-600 text-white font-bold px-2 py-0.5 rounded text-xs mt-0.5">問4</span>
+                            <p class="font-bold text-white text-sm">
+                                アンピシリンを含まない培地で実験を行った場合、図4と比較してどのようになるか。
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                            <button onclick="checkQuiz(4, null, 1)" class="q4-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">① 青色のコロニーだけが多くなる。</button>
+                            <button onclick="checkQuiz(4, null, 2)" class="q4-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">② 青色と白色のコロニーがともに多くなる。</button>
+                            <button onclick="checkQuiz(4, null, 3)" id="q4-opt-3" class="q4-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">③ 白色のコロニーだけが多くなる。</button>
+                            <button onclick="checkQuiz(4, null, 4)" class="q4-btn p-2.5 bg-slate-800 border border-slate-700 rounded-xl hover:border-blue-400 text-left text-slate-300">④ 同じ結果になる。</button>
+                        </div>
+                        <div id="q4-exp" class="hidden p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300">
+                            <b>正解: ③ 白色のコロニーだけが多くなる。</b><br>
+                            アンピシリンがないと、全体の大半を占める「プラスミド未導入の普通の大腸菌」も増殖できるようになります。未導入菌はlacZを持たないため「白色」となり、白色コロニーだけが爆発的に増えます！
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 text-slate-500 text-xs py-4 text-center mt-auto">
+        <p>高校生物「遺伝子導入とスクリーニング」完全マスターツール</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // State Management
+        let currentLabStep = 1; // 1, 2, 3
+        let activePlasmidType = 'non_recombinant'; // 'non_recombinant' or 'recombinant'
+        let quizState = { q1a: false, q1b: false, q2: false, q3b: false, q3w: false, q4: false };
+
+        // Colonies Data Set (Types: 1=Recombinant, 2=Non-Recombinant, 3=Untransformed)
+        const colonyData = [
+            // Type 1: Recombinant (White when Amp is ON)
+            { id: 1, type: 1, x: 30, y: 35 },
+            { id: 2, type: 1, x: 65, y: 25 },
+            { id: 3, type: 1, x: 45, y: 65 },
+            { id: 4, type: 1, x: 75, y: 60 },
+            // Type 2: Non-Recombinant (Blue when Amp and Substrate ON)
+            { id: 5, type: 2, x: 25, y: 60 },
+            { id: 6, type: 2, x: 50, y: 30 },
+            { id: 7, type: 2, x: 70, y: 40 },
+            { id: 8, type: 2, x: 35, y: 80 },
+            // Type 3: Untransformed Bacteria (Dies if Amp ON, Explosive White if Amp OFF)
+            { id: 9, type: 3, x: 15, y: 20 },
+            { id: 10, type: 3, x: 80, y: 20 },
+            { id: 11, type: 3, x: 85, y: 75 },
+            { id: 12, type: 3, x: 55, y: 80 },
+            { id: 13, type: 3, x: 20, y: 40 },
+            { id: 14, type: 3, x: 40, y: 15 },
+            { id: 15, type: 3, x: 60, y: 85 },
+            { id: 16, type: 3, x: 10, y: 70 },
+            { id: 17, type: 3, x: 88, y: 45 },
+            { id: 18, type: 3, x: 35, y: 45 },
+            { id: 19, type: 3, x: 65, y: 48 },
+            { id: 20, type: 3, x: 48, y: 88 }
+        ];
+
+        // UI Tab Switcher
+        function switchTab(tab) {
+            document.getElementById('section-lab').classList.add('hidden');
+            document.getElementById('section-matrix').classList.add('hidden');
+            document.getElementById('section-quiz').classList.add('hidden');
+
+            document.getElementById('tab-lab').className = "px-4 py-2 rounded-lg transition text-slate-400 hover:text-white flex items-center gap-1.5";
+            document.getElementById('tab-matrix').className = "px-4 py-2 rounded-lg transition text-slate-400 hover:text-white flex items-center gap-1.5";
+            document.getElementById('tab-quiz').className = "px-4 py-2 rounded-lg transition text-slate-400 hover:text-white flex items-center gap-1.5";
+
+            document.getElementById(`section-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = "px-4 py-2 rounded-lg transition bg-blue-600 text-white shadow-md flex items-center gap-1.5";
+        }
+
+        // Lab Step Handler
+        function setLabStep(step) {
+            currentLabStep = step;
+            
+            // Update Step Buttons
+            for (let i = 1; i <= 3; i++) {
+                const btn = document.getElementById(`step-btn-${i}`);
+                if (i === step) {
+                    btn.className = "p-3 rounded-xl border-2 border-blue-500 bg-blue-600/20 text-blue-300 transition flex flex-col items-center gap-1 font-bold shadow-md";
+                } else {
+                    btn.className = "p-3 rounded-xl border border-slate-700 bg-slate-900/50 text-slate-400 transition flex flex-col items-center gap-1";
+                }
+            }
+
+            document.getElementById('current-step-indicator').innerText = `ステップ ${step} / 3`;
+
+            if (step === 1) {
+                setPlasmidType('non_recombinant');
+            } else if (step === 2) {
+                setPlasmidType('recombinant');
+            }
+
+            updatePetriDish();
+        }
+
+        // Plasmid Construction View Switcher
+        function setPlasmidType(type) {
+            activePlasmidType = type;
+            const badge = document.getElementById('gene-insert-badge');
+            const desc = document.getElementById('plasmid-status-desc');
+            const btnNorm = document.getElementById('btn-plasmid-normal');
+            const btnRec = document.getElementById('btn-plasmid-recombinant');
+            const geneGroup = document.getElementById('svg-geneX-group');
+            const laczText = document.getElementById('svg-lacz-text');
+            const laczSub = document.getElementById('svg-lacz-sub');
+
+            if (type === 'non_recombinant') {
+                btnNorm.className = "py-2.5 px-3 rounded-xl border-2 border-blue-500 bg-blue-600/30 text-white font-bold text-xs transition flex items-center justify-center gap-1.5";
+                btnRec.className = "py-2.5 px-3 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 font-bold text-xs transition flex items-center justify-center gap-1.5";
+                
+                badge.innerText = "非組み換え（元通り）";
+                badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30";
+                desc.innerHTML = '<span class="text-blue-400 font-bold">【非組み換えプラスミド】</span><br>遺伝子Xが入らず元通り接続。Ampʳ（耐性）とlacZ（正常）の両方が機能！';
+                geneGroup.style.opacity = '0';
+                laczText.style.fill = '#60a5fa';
+                laczSub.innerText = '青色発色スイッチ (正常)';
+            } else {
+                btnNorm.className = "py-2.5 px-3 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 font-bold text-xs transition flex items-center justify-center gap-1.5";
+                btnRec.className = "py-2.5 px-3 rounded-xl border-2 border-purple-500 bg-purple-600/30 text-white font-bold text-xs transition flex items-center justify-center gap-1.5";
+                
+                badge.innerText = "組み換え体 (遺伝子X挿入)";
+                badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30";
+                desc.innerHTML = '<span class="text-purple-400 font-bold">【組み換えプラスミド】</span><br>lacZの途中に遺伝子Xが挿入！Ampʳ（耐性）は正常だがlacZは破壊されて不活性化！';
+                geneGroup.style.opacity = '1';
+                laczText.style.fill = '#ef4444';
+                laczSub.innerText = 'スイッチ分断！(不活性化)';
+            }
+        }
+
+        // Petri Dish Colonies Render Engine
+        function updatePetriDish() {
+            const isAmpOn = document.getElementById('toggle-amp').checked;
+            const isSubstrateOn = document.getElementById('toggle-substrate').checked;
+            const container = document.getElementById('colonies-container');
+            const ampWarning = document.getElementById('amp-off-warning');
+            
+            container.innerHTML = '';
+
+            if (!isAmpOn) {
+                ampWarning.classList.remove('hidden');
+            } else {
+                ampWarning.classList.add('hidden');
+            }
+
+            let countBlue = 0;
+            let countWhite = 0;
+            let countDead = 0;
+
+            colonyData.forEach(col => {
+                let isAlive = true;
+                let colorClass = '';
+
+                if (col.type === 3) { // Untransformed
+                    if (isAmpOn) {
+                        isAlive = false;
+                    } else {
+                        isAlive = true;
+                        colorClass = 'bg-slate-100 border-slate-300 shadow-md'; // White
+                    }
+                } else if (col.type === 1) { // Recombinant (lacZ broken)
+                    isAlive = true;
+                    colorClass = 'bg-white border-slate-200 shadow-lg'; // White
+                } else if (col.type === 2) { // Non-recombinant (lacZ active)
+                    isAlive = true;
+                    if (isSubstrateOn) {
+                        colorClass = 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/50'; // Blue
+                    } else {
+                        colorClass = 'bg-slate-100 border-slate-300 shadow-md'; // White
+                    }
+                }
+
+                if (!isAlive) {
+                    countDead++;
+                } else {
+                    if (colorClass.includes('bg-blue-600')) {
+                        countBlue++;
+                    } else {
+                        countWhite++;
+                    }
+
+                    // Create DOM Colony Element
+                    const colonyEl = document.createElement('div');
+                    colonyEl.className = `colony absolute w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 ${colorClass}`;
+                    colonyEl.style.left = `${col.x}%`;
+                    colonyEl.style.top = `${col.y}%`;
+                    colonyEl.onclick = () => inspectColony(col.type, colorClass.includes('bg-blue-600'));
+                    container.appendChild(colonyEl);
+                }
+            });
+
+            document.getElementById('count-blue').innerText = countBlue;
+            document.getElementById('count-white').innerText = countWhite;
+            document.getElementById('count-dead').innerText = countDead;
+
+            const whiteDesc = document.getElementById('count-white-desc');
+            if (!isAmpOn) {
+                whiteDesc.innerText = '組み換え菌 ＋ 大量の未導入菌';
+                whiteDesc.className = 'text-[10px] text-amber-400 font-bold';
+            } else {
+                whiteDesc.innerText = '組み換え菌 (lacZ×)';
+                whiteDesc.className = 'text-[10px] text-slate-400';
+            }
+        }
+
+        // Colony Inspection Inspector
+        function inspectColony(type, isBlue) {
+            const isAmpOn = document.getElementById('toggle-amp').checked;
+            const isSubstrateOn = document.getElementById('toggle-substrate').checked;
+
+            document.getElementById('inspection-placeholder').classList.add('hidden');
+            document.getElementById('inspection-detail').classList.remove('hidden');
+
+            const colorBadge = document.getElementById('inspect-color-badge');
+            const title = document.getElementById('inspect-title');
+            const subtitle = document.getElementById('inspect-subtitle');
+            const tag = document.getElementById('inspect-tag');
+            const amprStatus = document.getElementById('inspect-ampr-status');
+            const amprDesc = document.getElementById('inspect-ampr-desc');
+            const laczStatus = document.getElementById('inspect-lacz-status');
+            const laczDesc = document.getElementById('inspect-lacz-desc');
+            const exp = document.getElementById('inspect-explanation');
+
+            if (type === 1) { // Recombinant
+                colorBadge.className = "w-5 h-5 rounded-full inline-block border-2 border-slate-300 bg-white shadow";
+                title.innerText = "① 組み換え大腸菌（目的株★）";
+                subtitle.innerText = "プラスミド ＋ 遺伝子Xが正しく挿入された株";
+                tag.className = "text-xs font-bold px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40";
+                tag.innerText = "白色コロニー";
+
+                amprStatus.innerText = "正常 (耐性あり)";
+                amprStatus.className = "font-black text-emerald-400";
+                amprDesc.innerText = "アンピシリン存在下でも死滅せず生存できます。";
+
+                laczStatus.innerText = "破壊・分断 (機能停止)";
+                laczStatus.className = "font-black text-rose-400";
+                laczDesc.innerText = "遺伝子Xの割り込み挿入により、β-ガラクトシダーゼが作れません。";
+
+                exp.innerHTML = `
+                    <b>【白い理由】</b><br>
+                    プラスミドを持ちアンピシリン耐性で生き残りますが、<span class="text-rose-400 font-bold">lacZが破壊されたため発色酵素が作れません</span>。基質があっても無色のままで<b>「白色」</b>になります。これこそが目的の株です！
+                `;
+            } else if (type === 2) { // Non-recombinant
+                if (isBlue) {
+                    colorBadge.className = "w-5 h-5 rounded-full inline-block border-2 border-blue-400 bg-blue-600 shadow-lg shadow-blue-500/50";
+                    tag.className = "text-xs font-bold px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40";
+                    tag.innerText = "青色コロニー";
+                } else {
+                    colorBadge.className = "w-5 h-5 rounded-full inline-block border-2 border-slate-300 bg-white shadow";
+                    tag.className = "text-xs font-bold px-3 py-1 rounded-full bg-slate-700 text-slate-300 border border-slate-600";
+                    tag.innerText = "白色コロニー (基質なし)";
+                }
+
+                title.innerText = "② 非組み換え大腸菌";
+                subtitle.innerText = "プラスミドのみを取り込んだ株（元通り環状化）";
+
+                amprStatus.innerText = "正常 (耐性あり)";
+                amprStatus.className = "font-black text-emerald-400";
+                amprDesc.innerText = "アンピシリン存在下でも生存可能。";
+
+                laczStatus.innerText = "正常 (酵素作動)";
+                laczStatus.className = "font-black text-blue-400";
+                laczDesc.innerText = "lacZが正常なため、β-ガラクトシダーゼ酵素を盛んに合成します。";
+
+                exp.innerHTML = `
+                    <b>【青い理由】</b><br>
+                    lacZが正常なためβ-ガラクトシダーゼが合成され、培地中の無色基質（X-gal）を分解して<span class="text-blue-400 font-bold">青色物質</span>に変えます。（※基質がない場合は無色のままです）
+                `;
+            } else if (type === 3) { // Untransformed
+                colorBadge.className = "w-5 h-5 rounded-full inline-block border-2 border-slate-300 bg-slate-200 shadow";
+                title.innerText = "③ プラスミド未導入大腸菌";
+                subtitle.innerText = "プラスミドを全く受け取らなかった野生株大腸菌";
+                tag.className = "text-xs font-bold px-3 py-1 rounded-full bg-slate-700 text-slate-300 border border-slate-600";
+                tag.innerText = isAmpOn ? "死滅 (生えない)" : "白色コロニー (大量増殖)";
+
+                amprStatus.innerText = "なし (感受性)";
+                amprStatus.className = "font-black text-rose-400";
+                amprDesc.innerText = "アンピシリンがあると細胞壁が崩壊して死滅します。";
+
+                laczStatus.innerText = "なし";
+                laczStatus.className = "font-black text-slate-500";
+                laczDesc.innerText = "プラスミド由来のlacZ遺伝子を持ちません。";
+
+                exp.innerHTML = isAmpOn ? `
+                    <b>【生えない理由】</b><br>
+                    プラスミドを取り込んでいないため抗生物質耐性（Ampʳ）を持たず、<span class="text-rose-400 font-bold">アンピシリンにより完全に死滅</span>します。
+                ` : `
+                    <b>【大量の白になる理由（問4）】</b><br>
+                    アンピシリンがない培地では死滅せず大量増殖します。lacZを持たないため<span class="text-amber-400 font-bold">すべて白色コロニー</span>になり、シャーレ一面を覆い尽くします。
+                `;
+            }
+        }
+
+        // Quiz Checker Engine
+        function checkQuiz(qNum, target, choice) {
+            const exp = document.getElementById(`q${qNum}-exp`);
+
+            if (qNum === 1) {
+                if (target === 'A') {
+                    quizState.q1a = (choice === 3);
+                    document.querySelectorAll('.q1a-btn').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-600/20'));
+                    if (choice === 3) document.getElementById('q1a-opt-3').classList.add('border-blue-500', 'bg-blue-600/20');
+                } else if (target === 'B') {
+                    quizState.q1b = (choice === 7);
+                    document.querySelectorAll('.q1b-btn').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-600/20'));
+                    if (choice === 7) document.getElementById('q1b-opt-7').classList.add('border-blue-500', 'bg-blue-600/20');
+                }
+                if (quizState.q1a && quizState.q1b) exp.classList.remove('hidden');
+            } else if (qNum === 2) {
+                quizState.q2 = (choice === 3);
+                document.querySelectorAll('.q2-btn').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-600/20'));
+                if (choice === 3) document.getElementById('q2-opt-3').classList.add('border-blue-500', 'bg-blue-600/20');
+                exp.classList.remove('hidden');
+            } else if (qNum === 3) {
+                if (target === 'blue') {
+                    quizState.q3b = (choice === 4);
+                    document.querySelectorAll('.q3b-btn').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-600/20'));
+                    if (choice === 4) document.getElementById('q3b-opt-4').classList.add('border-blue-500', 'bg-blue-600/20');
+                } else if (target === 'white') {
+                    quizState.q3w = (choice === 3);
+                    document.querySelectorAll('.q3w-btn').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-600/20'));
+                    if (choice === 3) document.getElementById('q3w-opt-3').classList.add('border-blue-500', 'bg-blue-600/20');
+                }
+                if (quizState.q3b && quizState.q3w) exp.classList.remove('hidden');
+            } else if (qNum === 4) {
+                quizState.q4 = (choice === 3);
+                document.querySelectorAll('.q4-btn').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-600/20'));
+                if (choice === 3) document.getElementById('q4-opt-3').classList.add('border-blue-500', 'bg-blue-600/20');
+                exp.classList.remove('hidden');
+            }
+
+            // Update Total Quiz Score Counter
+            let totalCorrect = 0;
+            if (quizState.q1a && quizState.q1b) totalCorrect++;
+            if (quizState.q2) totalCorrect++;
+            if (quizState.q3b && quizState.q3w) totalCorrect++;
+            if (quizState.q4) totalCorrect++;
+
+            document.getElementById('quiz-score-badge').innerText = `正解数: ${totalCorrect} / 4`;
+        }
+
+        // Initialize Application
+        window.onload = function() {
+            setLabStep(1);
+            updatePetriDish();
+        };
+    </script>
+</body>
+</html>
