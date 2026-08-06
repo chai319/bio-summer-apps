@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lv27 遺伝暗号の解読シミュレーター</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap');
+    body {
+      font-family: 'M PLUS Rounded 1c', sans-serif;
+      background-color: #f0f4f8;
+    }
+    .glow-effect {
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+    }
+    canvas {
+      touch-action: none;
+    }
+  </style>
+</head>
+<body class="text-slate-800 pb-12">
+
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white py-6 px-4 shadow-lg mb-6">
+    <div class="max-w-6xl mx-mx-auto flex flex-col md:flex-row justify-between items-center max-w-6xl mx-auto">
+      <div>
+        <span class="bg-yellow-400 text-slate-900 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider mb-2 inline-block shadow">Lv27 高校生物</span>
+        <h1 class="text-2xl md:text-3xl font-extrabold flex items-center gap-2">
+          <i class="fa-solid fa-dna text-yellow-300"></i> 遺伝暗号の解読ビジュアルシミュレーター
+        </h1>
+        <p class="text-indigo-100 text-sm mt-1">ニーレンバーグとコラーナの実験 — 鎖の伸長とグラフの連動を体感しよう！</p>
+      </div>
+      <div class="mt-4 md:mt-0 flex gap-2">
+        <button id="btn-guide-modal" onclick="toggleGuideModal()" class="bg-white/20 hover:bg-white/30 text-white font-bold px-4 py-2 rounded-xl backdrop-blur-md transition flex items-center gap-2 border border-white/30 text-sm">
+          <i class="fa-solid fa-circle-question"></i> 実験の背景解説
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- 左側制御 & タブ選択 (12列中4列 / 大画面) -->
+    <div class="lg:col-span-4 flex flex-col gap-5">
+      
+      <!-- 実験切り替えカード -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <h2 class="text-lg font-bold text-slate-700 mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-vial-circle-check text-indigo-500"></i> 実験テーマを選択
+        </h2>
+        <div class="space-y-2">
+          <button id="tab-exp1" onclick="switchExperiment('UC')" class="w-full text-left p-3 rounded-xl border-2 transition flex flex-col gap-1 border-indigo-500 bg-indigo-50 text-indigo-900 font-bold">
+            <div class="flex justify-between items-center">
+              <span>【問1・問2】UC繰り返し (UCUCUC...)</span>
+              <span class="text-xs bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-md">必須問題</span>
+            </div>
+            <p class="text-xs font-normal text-slate-600">ロイシン(Leu)とセリン(Ser)の交互結合とグラフ条件(A,B,C)</p>
+          </button>
+
+          <button id="tab-exp2" onclick="switchExperiment('GUAA')" class="w-full text-left p-3 rounded-xl border-2 border-slate-200 hover:border-indigo-300 transition flex flex-col gap-1 text-slate-700">
+            <div class="flex justify-between items-center">
+              <span class="font-bold">【問3】GUAA繰り返し (GUAAGUAA...)</span>
+              <span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">終止コドン</span>
+            </div>
+            <p class="text-xs font-normal text-slate-500">なぜ最長でも3つのアミノ酸で止まってしまうのか？</p>
+          </button>
+
+          <button id="tab-exp3" onclick="switchExperiment('UUC')" class="w-full text-left p-3 rounded-xl border-2 border-slate-200 hover:border-indigo-300 transition flex flex-col gap-1 text-slate-700">
+            <div class="flex justify-between items-center">
+              <span class="font-bold">【図1参考】UUC繰り返し (UUCUUC...)</span>
+              <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">3読枠</span>
+            </div>
+            <p class="text-xs font-normal text-slate-500">読枠の違いによってPhe, Leu, Serの3種のホモポリマーが作成</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- 実験条件の設定 (UC繰り返しの場合の条件 A, B, C スイッチ) -->
+      <div id="uc-conditions-panel" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <h3 class="text-md font-bold text-slate-700 mb-3 flex items-center justify-between">
+          <span><i class="fa-solid fa-sliders text-purple-500"></i> UC繰り返しの試薬条件 (問1)</span>
+        </h3>
+        <div class="space-y-2">
+          <label class="flex items-center p-2.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 transition gap-3">
+            <input type="radio" name="uc-cond" value="C" checked onchange="changeUCCondition('C')" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+            <div>
+              <span class="text-xs font-bold bg-green-500 text-white px-1.5 py-0.5 rounded mr-1">条件 (C)</span>
+              <span class="font-bold text-sm text-slate-800">14C-ロイシン + セリン</span>
+              <p class="text-xs text-slate-500">両方のアミノ酸が存在する（グラフ①）</p>
+            </div>
+          </label>
+
+          <label class="flex items-center p-2.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 transition gap-3">
+            <input type="radio" name="uc-cond" value="B" onchange="changeUCCondition('B')" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+            <div>
+              <span class="text-xs font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded mr-1">条件 (B)</span>
+              <span class="font-bold text-sm text-slate-800">14C-ロイシン のみ (セリン無)</span>
+              <p class="text-xs text-slate-500">Ser欠乏ですぐ伸長停止（グラフ②/③）</p>
+            </div>
+          </label>
+
+          <label class="flex items-center p-2.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 transition gap-3">
+            <input type="radio" name="uc-cond" value="A" onchange="changeUCCondition('A')" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+            <div>
+              <span class="text-xs font-bold bg-slate-400 text-white px-1.5 py-0.5 rounded mr-1">条件 (A)</span>
+              <span class="font-bold text-sm text-slate-800">14C-ロイシン のみ (人工RNA無)</span>
+              <p class="text-xs text-slate-500">mRNAが無いので全く伸びない（グラフ③）</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- GUAAモードでの読枠選択 -->
+      <div id="guaa-conditions-panel" class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hidden">
+        <h3 class="text-md font-bold text-slate-700 mb-3">
+          <i class="fa-solid fa-magnifying-glass-chart text-amber-500"></i> 開始読枠(フレーム)を選択
+        </h3>
+        <div class="space-y-2">
+          <button onclick="changeGuaaFrame(0)" id="fbtn-0" class="w-full text-left p-2.5 rounded-lg border-2 border-amber-500 bg-amber-50 text-xs font-bold text-amber-900">
+            フレーム1: GUA - AAG - UAA(終止!) -> 3個で終了
+          </button>
+          <button onclick="changeGuaaFrame(1)" id="fbtn-1" class="w-full text-left p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700">
+            フレーム2: UAA(終止!) -> 1個目(0個)でいきなり停止
+          </button>
+          <button onclick="changeGuaaFrame(2)" id="fbtn-2" class="w-full text-left p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700">
+            フレーム3: AAG - UAA(終止!) -> 2個で終了
+          </button>
+        </div>
+      </div>
+
+      <!-- 操作ボタンコントロール -->
+      <div class="bg-slate-900 text-white rounded-2xl p-5 shadow-lg flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Simulation Control</span>
+          <span id="status-badge" class="bg-emerald-500 text-slate-900 text-xs font-extrabold px-2.5 py-0.5 rounded-full">準備完了</span>
+        </div>
+        
+        <div class="flex gap-2">
+          <button id="btn-play" onclick="togglePlay()" class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold py-3 px-4 rounded-xl shadow transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-play"></i> 実験スタート
+          </button>
+          <button onclick="resetSim()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-xl transition">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+        </div>
+
+        <!-- スピード調整 -->
+        <div class="flex items-center gap-3 pt-2">
+          <span class="text-xs text-slate-400 font-bold whitespace-nowrap">速度:</span>
+          <input type="range" id="speed-range" min="0.5" max="3" step="0.5" value="1" class="w-full accent-emerald-400">
+          <span id="speed-label" class="text-xs text-emerald-400 font-mono font-bold">1x</span>
+        </div>
+      </div>
+
+      <!-- 問4の答え合わせまとめカード -->
+      <div class="bg-gradient-to-br from-purple-900 to-indigo-900 text-white rounded-2xl p-5 shadow-md">
+        <h3 class="font-bold text-yellow-300 text-sm flex items-center gap-2 mb-2">
+          <i class="fa-solid fa-key"></i> 問4：コドン対応決定のまとめパズル
+        </h3>
+        <p class="text-xs text-indigo-200 leading-relaxed mb-3">
+          実験結果を論理パズルのように組み合わせることで、コドンが指定するアミノ酸が一意に決まります！
+        </p>
+        <div class="space-y-1.5 text-xs font-mono">
+          <div class="bg-white/10 p-2 rounded flex justify-between items-center">
+            <span class="text-yellow-200 font-bold">UCU</span>
+            <span class="text-emerald-300 font-bold">→ セリン (Ser)</span>
+          </div>
+          <div class="bg-white/10 p-2 rounded flex justify-between items-center">
+            <span class="text-yellow-200 font-bold">CUC</span>
+            <span class="text-cyan-300 font-bold">→ ロイシン (Leu)</span>
+          </div>
+          <div class="bg-white/10 p-2 rounded flex justify-between items-center">
+            <span class="text-yellow-200 font-bold">UUC</span>
+            <span class="text-pink-300 font-bold">→ フェニルアラニン (Phe)</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 右側：キャンバス & グラフ連動画面 (12列中8列) -->
+    <div class="lg:col-span-8 flex flex-col gap-6">
+
+      <!-- リボソーム翻訳のアニメーションCanvas -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 relative overflow-hidden">
+        <div class="flex justify-between items-center mb-2 px-1">
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-microscope text-indigo-600"></i> ミクロ視点：リボソームでのポリペプチド鎖伸長
+          </h2>
+          <span class="text-xs bg-slate-100 text-slate-600 font-mono px-2 py-1 rounded">
+            RNA: <span id="rna-sequence-display" class="font-bold text-indigo-600">UCUCUCUCUC...</span>
+          </span>
+        </div>
+
+        <!-- 描画領域 -->
+        <div class="w-full h-64 bg-slate-900 rounded-xl relative shadow-inner overflow-hidden border border-slate-800">
+          <canvas id="micro-canvas" class="w-full h-full block"></canvas>
+          
+          <!-- オーバーレイ解説テキスト -->
+          <div id="micro-overlay-msg" class="absolute bottom-3 left-3 right-3 bg-slate-900/80 backdrop-blur-sm border border-slate-700 text-xs text-indigo-200 p-2.5 rounded-lg flex items-center gap-2">
+            <i class="fa-solid fa-lightbulb text-yellow-400 text-base flex-shrink-0"></i>
+            <span id="overlay-text">「実験スタート」を押すと、リボソームがコドンを読み取り、対応するtRNAがアミノ酸を運んできます。</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 実験グラフCanvas (取り込み量 vs 時間) -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-2 px-1">
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-rose-500"></i> マクロ視点：¹⁴C 放射性アミノ酸の取り込みグラフ (時間連動)
+          </h2>
+          <span class="text-xs text-slate-500 font-mono">
+            反応時間: <span id="sim-time-display" class="font-bold text-slate-800">0.0</span> / 30 [分]
+          </span>
+        </div>
+
+        <!-- グラフキャンバス -->
+        <div class="w-full h-64 bg-white rounded-xl relative border border-slate-200">
+          <canvas id="graph-canvas" class="w-full h-full block"></canvas>
+        </div>
+
+        <!-- リアルタイムコメント -->
+        <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+          <i class="fa-solid fa-circle-info text-amber-600 mt-0.5"></i>
+          <div id="graph-explanation">
+            <strong>グラフのポイント:</strong> ポリペプチド鎖が途切れず長く伸びるほど、取り込まれた放射性アミノ酸 (¹⁴C-ロイシン等) の検出量が増えてグラフが急上昇します！
+          </div>
+        </div>
+      </div>
+
+      <!-- 入試問題解説カード（高校生に寄り添った丁寧な解説） -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <h3 class="font-bold text-slate-800 text-md mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-graduation-cap text-indigo-600"></i> Lv27 入試問題の解き方ワンポイント講座
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
+            <span class="font-bold text-indigo-600">【問1 & 問2】なぜ(C)だけグラフが上がるの？</span>
+            <p class="text-slate-600 leading-relaxed">
+              人工RNA「UCUCUC...」は、コドン「UCU」と「CUC」が交互に並んでいます。そのため、ポリペプチド鎖を作るには<b>セリン(Ser)</b>と<b>ロイシン(Leu)</b>の両方が不可欠です。どちらか片方でも欠けると翻訳が途中で止まるため、¹⁴C-ロイシンは鎖に取り込まれずグラフはほぼ0のまま（条件B）になります。
+            </p>
+          </div>
+
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
+            <span class="font-bold text-amber-600">【問3】GUAA繰り返しが最長3アミノ酸の理由</span>
+            <p class="text-slate-600 leading-relaxed">
+              「GUAAGUAAGUAA...」の配列表記をコドン(3文字)ずつ区切ってみましょう。<br>
+              ① GUA - AAG - <b>UAA</b> (終止!)<br>
+              ② <b>UAA</b> (最初から終止!)<br>
+              ③ AAG - <b>UAA</b> (終止!)<br>
+              どの読枠から開始しても、最大でも4番目のコドンまでに必ず終止コドン「UAA」が出現するため、長鎖ポリペプチドになれません。
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- 背景解説モーダル -->
+  <div id="modal-guide" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 relative max-h-[90vh] overflow-y-auto">
+      <button onclick="toggleGuideModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-bold">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      
+      <h3 class="text-xl font-extrabold text-slate-800 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-dna text-indigo-600"></i> 遺伝暗号の解読歴史（ニーレンバーグ & コラーナ）
+      </h3>
+
+      <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
+        <p>
+          1960年代初頭、どの塩基配列(コドン)がどのアミノ酸に対応しているかはまだ分かっていませんでした。
+        </p>
+        <div class="bg-indigo-50 border-l-4 border-indigo-500 p-3 rounded-r-lg text-indigo-950 font-medium">
+          <strong>ニーレンバーグの発見（1961年）：</strong><br>
+          ウラシル(U)だけの人工RNA（UUUUUU...）に放射性同位元素 ¹⁴C で標識したフェニルアラニンを加えるとポリペプチドが合成された！→ <b>UUU = フェニルアラニン</b> と確定。
+        </div>
+        <div class="bg-purple-50 border-l-4 border-purple-500 p-3 rounded-r-lg text-purple-950 font-medium">
+          <strong>コラーナの実験（繰り返しの人工RNA）：</strong><br>
+          2塩基（UCUC...）や3塩基（UUCUUC...）の繰り返し人工RNAを使って、交互配列や読枠のズレからコドンを次々と突き止めました。
+        </div>
+        <p>
+          このシミュレータでは、当時の研究者が実験室で見た「放射線カウンターのグラフ上昇」と「分子レベルの翻訳現象」をリアルタイムに体験できます。
+        </p>
+      </div>
+
+      <div class="mt-6 text-right">
+        <button onclick="toggleGuideModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2 rounded-xl text-xs transition">
+          理解できた！閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ---------------------------------------------------
+       1. シミュレーション状態管理・定数
+    --------------------------------------------------- */
+    let currentExp = 'UC'; // 'UC', 'GUAA', 'UUC'
+    let ucCondition = 'C';  // 'A', 'B', 'C'
+    let guaaFrame = 0;      // 0, 1, 2
+
+    let isPlaying = false;
+    let simTime = 0; // 0 ~ 30 (分)
+    let speed = 1.0;
+    let animFrameId = null;
+
+    // アミノ酸定義と色コード
+    const AMINO_ACIDS = {
+      Phe: { name: 'フェニルアラニン', color: '#ec4899', short: 'Phe' }, // Pink
+      Leu: { name: 'ロイシン',         color: '#06b6d4', short: 'Leu' }, // Cyan
+      Ser: { name: 'セリン',           color: '#10b981', short: 'Ser' }, // Emerald
+      STOP:{ name: '【終止コドン】',   color: '#ef4444', short: 'STOP'}  // Red
+    };
+
+    // キャンバス参照
+    const microCanvas = document.getElementById('micro-canvas');
+    const microCtx = microCanvas.getContext('2d');
+    const graphCanvas = document.getElementById('graph-canvas');
+    const graphCtx = graphCanvas.getContext('2d');
+
+    /* ---------------------------------------------------
+       2. 初期化 & リサイズ処理
+    --------------------------------------------------- */
+    window.addEventListener('load', () => {
+      resizeCanvases();
+      resetSim();
+      window.addEventListener('resize', resizeCanvases);
+
+      // スピードイベント
+      document.getElementById('speed-range').addEventListener('input', (e) => {
+        speed = parseFloat(e.target.value);
+        document.getElementById('speed-label').innerText = speed + 'x';
+      });
+    });
+
+    function resizeCanvases() {
+      const mParent = microCanvas.parentElement;
+      microCanvas.width = mParent.clientWidth;
+      microCanvas.height = mParent.clientHeight;
+
+      const gParent = graphCanvas.parentElement;
+      graphCanvas.width = gParent.clientWidth;
+      graphCanvas.height = gParent.clientHeight;
+
+      renderAll();
+    }
+
+    /* ---------------------------------------------------
+       3. UI状態更新関数
+    --------------------------------------------------- */
+    function switchExperiment(type) {
+      currentExp = type;
+      isPlaying = false;
+      
+      // タブのスタイル更新
+      ['UC', 'GUAA', 'UUC'].forEach(t => {
+        const btn = document.getElementById(`tab-exp${t === 'UC' ? 1 : t === 'GUAA' ? 2 : 3}`);
+        if (t === type) {
+          btn.className = "w-full text-left p-3 rounded-xl border-2 border-indigo-500 bg-indigo-50 text-indigo-900 font-bold transition flex flex-col gap-1";
+        } else {
+          btn.className = "w-full text-left p-3 rounded-xl border-2 border-slate-200 hover:border-indigo-300 transition flex flex-col gap-1 text-slate-700";
+        }
+      });
+
+      // パネル表示制御
+      document.getElementById('uc-conditions-panel').style.display = (type === 'UC') ? 'block' : 'none';
+      document.getElementById('guaa-conditions-panel').style.display = (type === 'GUAA') ? 'block' : 'none';
+
+      // 表示シーケンス名の更新
+      const rnaSeqDisp = document.getElementById('rna-sequence-display');
+      if (type === 'UC') rnaSeqDisp.innerText = "UCUCUCUCUC...";
+      else if (type === 'GUAA') rnaSeqDisp.innerText = "GUAAGUAAGUAA...";
+      else if (type === 'UUC') rnaSeqDisp.innerText = "UUCUUCUUCUUC...";
+
+      resetSim();
+    }
+
+    function changeUCCondition(cond) {
+      ucCondition = cond;
+      resetSim();
+    }
+
+    function changeGuaaFrame(frame) {
+      guaaFrame = frame;
+      [0, 1, 2].forEach(f => {
+        const btn = document.getElementById(`fbtn-${f}`);
+        if (f === frame) {
+          btn.className = "w-full text-left p-2.5 rounded-lg border-2 border-amber-500 bg-amber-50 text-xs font-bold text-amber-900";
+        } else {
+          btn.className = "w-full text-left p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700";
+        }
+      });
+      resetSim();
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      const playBtn = document.getElementById('btn-play');
+      const badge = document.getElementById('status-badge');
+
+      if (isPlaying) {
+        playBtn.innerHTML = `<i class="fa-solid fa-pause"></i> 一時停止`;
+        playBtn.className = "flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold py-3 px-4 rounded-xl shadow transition flex items-center justify-center gap-2";
+        badge.innerText = "実験実行中...";
+        badge.className = "bg-emerald-400 text-slate-900 text-xs font-extrabold px-2.5 py-0.5 rounded-full animate-pulse";
+        animateLoop();
+      } else {
+        playBtn.innerHTML = `<i class="fa-solid fa-play"></i> 実験スタート`;
+        playBtn.className = "flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold py-3 px-4 rounded-xl shadow transition flex items-center justify-center gap-2";
+        badge.innerText = "一時停止中";
+        badge.className = "bg-amber-400 text-slate-900 text-xs font-extrabold px-2.5 py-0.5 rounded-full";
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+      }
+    }
+
+    function resetSim() {
+      isPlaying = false;
+      simTime = 0;
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+
+      const playBtn = document.getElementById('btn-play');
+      const badge = document.getElementById('status-badge');
+      playBtn.innerHTML = `<i class="fa-solid fa-play"></i> 実験スタート`;
+      playBtn.className = "flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold py-3 px-4 rounded-xl shadow transition flex items-center justify-center gap-2";
+      badge.innerText = "準備完了";
+      badge.className = "bg-slate-500 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full";
+
+      document.getElementById('sim-time-display').innerText = "0.0";
+      renderAll();
+    }
+
+    function toggleGuideModal() {
+      const modal = document.getElementById('modal-guide');
+      modal.classList.toggle('hidden');
+    }
+
+    /* ---------------------------------------------------
+       4. メインアニメーションループ
+    --------------------------------------------------- */
+    function animateLoop() {
+      if (!isPlaying) return;
+
+      simTime += 0.1 * speed;
+      if (simTime > 30) {
+        simTime = 30;
+        isPlaying = false;
+        document.getElementById('status-badge').innerText = "実験完了";
+        document.getElementById('status-badge').className = "bg-blue-500 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full";
+      }
+
+      document.getElementById('sim-time-display').innerText = simTime.toFixed(1);
+
+      renderAll();
+
+      if (isPlaying) {
+        animFrameId = requestAnimationFrame(animateLoop);
+      }
+    }
+
+    function renderAll() {
+      drawMicroView();
+      drawGraphView();
+      updateExplanations();
+    }
+
+    /* ---------------------------------------------------
+       5. ミクロ描画（リボソーム＆ポリペプチド鎖）
+    --------------------------------------------------- */
+    function drawMicroView() {
+      const w = microCanvas.width;
+      const h = microCanvas.height;
+      microCtx.clearRect(0, 0, w, h);
+
+      // 背景グリッド風演出
+      microCtx.strokeStyle = '#1e293b';
+      microCtx.lineWidth = 1;
+      for (let x = 0; x < w; x += 30) {
+        microCtx.beginPath(); microCtx.moveTo(x, 0); microCtx.lineTo(x, h); microCtx.stroke();
+      }
+
+      // RNAの文字配列と生成されるアミノ酸配列の取得
+      const { seq, chain, isBlocked, blockReason } = getSimulationStateAtTime(simTime);
+
+      const centerY = h * 0.55;
+      const rnaY = centerY + 25;
+
+      // --- 1. RNA鎖の描画 ---
+      microCtx.strokeStyle = '#64748b';
+      microCtx.lineWidth = 4;
+      microCtx.beginPath();
+      microCtx.moveTo(20, rnaY);
+      microCtx.lineTo(w - 20, rnaY);
+      microCtx.stroke();
+
+      // 塩基の文字
+      const startX = 60;
+      const charWidth = 22;
+      microCtx.font = 'bold 13px monospace';
+      microCtx.textAlign = 'center';
+
+      for (let i = 0; i < seq.length; i++) {
+        const x = startX + i * charWidth;
+        if (x > w - 30) break;
+
+        // コドン（3塩基）ごとの背景ハイライト
+        const codonIndex = Math.floor(i / 3);
+        if (codonIndex % 2 === 0) {
+          microCtx.fillStyle = '#1e293b';
+          microCtx.fillRect(x - 10, rnaY - 12, charWidth, 24);
+        }
+
+        microCtx.fillStyle = (seq[i] === 'U') ? '#38bdf8' : (seq[i] === 'C') ? '#f43f5e' : (seq[i] === 'A') ? '#f59e0b' : '#10b981';
+        microCtx.fillText(seq[i], x, rnaY + 5);
+      }
+
+      // --- 2. リボソームの描画（背景・真ん中） ---
+      const activeCodonIndex = Math.min(chain.length, Math.floor(chain.length));
+      const ribosomeX = startX + activeCodonIndex * 3 * charWidth + 30;
+
+      // 大サブユニット (上)
+      microCtx.fillStyle = 'rgba(99, 102, 241, 0.35)';
+      microCtx.strokeStyle = '#818cf8';
+      microCtx.lineWidth = 2;
+      microCtx.beginPath();
+      microCtx.ellipse(ribosomeX, centerY - 25, 50, 35, 0, 0, Math.PI * 2);
+      microCtx.fill();
+      microCtx.stroke();
+
+      // 小サブユニット (下)
+      microCtx.fillStyle = 'rgba(129, 140, 248, 0.25)';
+      microCtx.beginPath();
+      microCtx.ellipse(ribosomeX, centerY + 25, 45, 20, 0, 0, Math.PI * 2);
+      microCtx.fill();
+      microCtx.stroke();
+
+      microCtx.fillStyle = '#a5b4fc';
+      microCtx.font = '10px sans-serif';
+      microCtx.fillText("リボソーム", ribosomeX, centerY + 30);
+
+      // --- 3. ポリペプチド鎖 (伸びるアミノ酸の丸) ---
+      const chainStartY = centerY - 55;
+      chain.forEach((aaKey, idx) => {
+        const aa = AMINO_ACIDS[aaKey] || { name: '?', color: '#94a3b8', short: aaKey };
+        const circleX = ribosomeX - (idx + 1) * 32;
+        const circleY = chainStartY - Math.sin(idx * 0.5) * 8;
+
+        if (circleX > 30) {
+          // 結合ペプチド線
+          if (idx > 0) {
+            const prevX = ribosomeX - idx * 32;
+            const prevY = chainStartY - Math.sin((idx - 1) * 0.5) * 8;
+            microCtx.strokeStyle = '#cbd5e1';
+            microCtx.lineWidth = 3;
+            microCtx.beginPath();
+            microCtx.moveTo(prevX, prevY);
+            microCtx.lineTo(circleX, circleY);
+            microCtx.stroke();
+          }
+
+          // 14C標識があるかの判定（14C-ロイシンの場合ピカピカ光る）
+          const isLabeled14C = isAminoAcid14CLabeled(aaKey);
+
+          // 発光エフェクト
+          if (isLabeled14C) {
+            microCtx.fillStyle = 'rgba(239, 68, 68, 0.4)';
+            microCtx.beginPath();
+            microCtx.arc(circleX, circleY, 18 + Math.sin(Date.now() * 0.01) * 3, 0, Math.PI * 2);
+            microCtx.fill();
+          }
+
+          // アミノ酸本体
+          microCtx.fillStyle = aa.color;
+          microCtx.beginPath();
+          microCtx.arc(circleX, circleY, 14, 0, Math.PI * 2);
+          microCtx.fill();
+          microCtx.strokeStyle = isLabeled14C ? '#ef4444' : '#ffffff';
+          microCtx.lineWidth = isLabeled14C ? 3 : 1.5;
+          microCtx.stroke();
+
+          // アミノ酸名テキスト
+          microCtx.fillStyle = '#ffffff';
+          microCtx.font = 'bold 10px sans-serif';
+          microCtx.fillText(aa.short, circleX, circleY + 3.5);
+
+          // 14Cバッジ
+          if (isLabeled14C) {
+            microCtx.fillStyle = '#ef4444';
+            microCtx.beginPath();
+            microCtx.arc(circleX + 10, circleY - 10, 6, 0, Math.PI * 2);
+            microCtx.fill();
+            microCtx.fillStyle = '#fff';
+            microCtx.font = '8px sans-serif';
+            microCtx.fillText('14C', circleX + 10, circleY - 8);
+          }
+        }
+      });
+
+      // 停止メッセージ
+      if (isBlocked) {
+        microCtx.fillStyle = '#f87171';
+        microCtx.font = 'bold 12px sans-serif';
+        microCtx.fillText(`⚠️ 伸長停止: ${blockReason}`, ribosomeX, centerY - 80);
+      }
+    }
+
+    /* ---------------------------------------------------
+       6. マクログラフ描画（14C取り込み量 vs 時間）
+    --------------------------------------------------- */
+    function drawGraphView() {
+      const w = graphCanvas.width;
+      const h = graphCanvas.height;
+      graphCtx.clearRect(0, 0, w, h);
+
+      const padding = { top: 25, right: 30, bottom: 35, left: 45 };
+      const graphW = w - padding.left - padding.right;
+      const graphH = h - padding.top - padding.bottom;
+
+      // 軸の描画
+      graphCtx.strokeStyle = '#94a3b8';
+      graphCtx.lineWidth = 1.5;
+
+      // Y軸
+      graphCtx.beginPath();
+      graphCtx.moveTo(padding.left, padding.top);
+      graphCtx.lineTo(padding.left, h - padding.bottom);
+      graphCtx.lineTo(w - padding.right, h - padding.bottom);
+      graphCtx.stroke();
+
+      // 目盛り線 & ラベル (Y軸: 0 ~ 3.0 μmol/mL)
+      graphCtx.font = '10px sans-serif';
+      graphCtx.fillStyle = '#64748b';
+      graphCtx.textAlign = 'right';
+      for (let yVal = 0; yVal <= 3; yVal += 1) {
+        const y = h - padding.bottom - (yVal / 3.0) * graphH;
+        graphCtx.fillText(yVal.toFixed(1), padding.left - 6, y + 3);
+        
+        // 薄いグリッド線
+        graphCtx.strokeStyle = '#f1f5f9';
+        graphCtx.beginPath();
+        graphCtx.moveTo(padding.left, y);
+        graphCtx.lineTo(w - padding.right, y);
+        graphCtx.stroke();
+      }
+
+      // X軸目盛り (0 ~ 30分)
+      graphCtx.textAlign = 'center';
+      for (let xVal = 0; xVal <= 30; xVal += 10) {
+        const x = padding.left + (xVal / 30) * graphW;
+        graphCtx.fillText(x, x, h - padding.bottom + 15);
+      }
+
+      // 軸タイトル
+      graphCtx.fillStyle = '#475569';
+      graphCtx.font = 'bold 10px sans-serif';
+      graphCtx.fillText("反応時間 [分]", padding.left + graphW / 2, h - 5);
+      
+      graphCtx.save();
+      graphCtx.translate(12, padding.top + graphH / 2);
+      graphCtx.rotate(-Math.PI / 2);
+      graphCtx.fillText("¹⁴Cのポリペプチド鎖への取り込み [μmol/mL]", 0, 0);
+      graphCtx.restore();
+
+      // --- 実験ごとのカーブを描画 ---
+      if (currentExp === 'UC') {
+        // 条件(C): 長鎖合成が進む（曲線①）
+        drawCurve(padding, graphW, graphH, (t) => calculateIncorpUC('C', t), '#6366f1', '① (C) 14C-Leu + Ser (合成進行)', ucCondition === 'C');
+        // 条件(B): アミノ酸欠乏でごくわずか（曲線②）
+        drawCurve(padding, graphW, graphH, (t) => calculateIncorpUC('B', t), '#f59e0b', '② (B) 14C-Leu のみ', ucCondition === 'B');
+        // 条件(A): 人工RNAなしでゼロ（曲線③）
+        drawCurve(padding, graphW, graphH, (t) => calculateIncorpUC('A', t), '#94a3b8', '③ (A) RNAなし', ucCondition === 'A');
+      } else if (currentExp === 'GUAA') {
+        drawCurve(padding, graphW, graphH, (t) => calculateIncorpGUAA(guaaFrame, t), '#d97706', `GUAA (フレーム${guaaFrame + 1}: 最長3アミノ酸停止)`, true);
+      } else if (currentExp === 'UUC') {
+        drawCurve(padding, graphW, graphH, (t) => calculateIncorpUUC(t), '#059669', 'UUC繰り返し (単独重合体合成)', true);
+      }
+
+      // 現在時間プロット点の描画
+      const currentYVal = getCurrentIncorpValue(simTime);
+      const currX = padding.left + (simTime / 30) * graphW;
+      const currY = h - padding.bottom - (currentYVal / 3.0) * graphH;
+
+      graphCtx.fillStyle = '#ef4444';
+      graphCtx.beginPath();
+      graphCtx.arc(currX, currY, 6, 0, Math.PI * 2);
+      graphCtx.fill();
+      graphCtx.strokeStyle = '#ffffff';
+      graphCtx.lineWidth = 2;
+      graphCtx.stroke();
+    }
+
+    function drawCurve(padding, graphW, graphH, func, color, label, isActive) {
+      const h = graphCanvas.height;
+      graphCtx.strokeStyle = color;
+      graphCtx.lineWidth = isActive ? 3 : 1;
+      graphCtx.globalAlpha = isActive ? 1.0 : 0.3;
+
+      graphCtx.beginPath();
+      for (let t = 0; t <= 30; t += 0.5) {
+        const val = func(t);
+        const x = padding.left + (t / 30) * graphW;
+        const y = h - padding.bottom - (val / 3.0) * graphH;
+
+        if (t === 0) graphCtx.moveTo(x, y);
+        else graphCtx.lineTo(x, y);
+      }
+      graphCtx.stroke();
+
+      // ラベル描画（右端付近）
+      const endVal = func(30);
+      const endX = padding.left + graphW - 5;
+      const endY = h - padding.bottom - (endVal / 3.0) * graphH - 5;
+      graphCtx.fillStyle = color;
+      graphCtx.font = isActive ? 'bold 11px sans-serif' : '10px sans-serif';
+      graphCtx.textAlign = 'right';
+      graphCtx.fillText(label, endX, Math.max(padding.top + 10, endY));
+
+      graphCtx.globalAlpha = 1.0;
+    }
+
+    /* ---------------------------------------------------
+       7. 実験ロジック・数値データ計算
+    --------------------------------------------------- */
+    function getSimulationStateAtTime(t) {
+      let seq = "";
+      let chain = [];
+      let isBlocked = false;
+      let blockReason = "";
+
+      if (currentExp === 'UC') {
+        seq = "UCUCUCUCUCUCUCUCUCUCUCUC";
+        if (ucCondition === 'A') {
+          isBlocked = true;
+          blockReason = "人工RNAが存在しません";
+        } else if (ucCondition === 'B') {
+          // Serがないため最初のCUC(Leu)だけ、またはUCU(Ser)で停止
+          const maxAA = Math.min(Math.floor(t / 2), 1);
+          if (maxAA >= 1) chain.push('Leu');
+          if (t > 2) {
+            isBlocked = true;
+            blockReason = "セリン(Ser) tRNA が存在しないため伸長停止！";
+          }
+        } else if (ucCondition === 'C') {
+          const totalAA = Math.min(Math.floor(t / 1.5), 12);
+          for (let i = 0; i < totalAA; i++) {
+            chain.push(i % 2 === 0 ? 'Ser' : 'Leu');
+          }
+        }
+      } else if (currentExp === 'GUAA') {
+        const fullSeq = "GUAAGUAAGUAAGUAAGUAA";
+        seq = fullSeq.substring(guaaFrame);
+
+        if (guaaFrame === 0) {
+          // GUA(アミノ酸) - AAG(アミノ酸) - AGU(アミノ酸) - UAA(STOP)
+          const totalAA = Math.min(Math.floor(t / 2), 3);
+          const possible = ['Leu', 'Phe', 'Ser'];
+          for (let i = 0; i < totalAA; i++) chain.push(possible[i]);
+          if (totalAA >= 3) {
+            isBlocked = true;
+            blockReason = "4番目のコドン UAA（終止コドン）に到達！";
+          }
+        } else if (guaaFrame === 1) {
+          // UAA から始まるため 0 個で停止
+          isBlocked = true;
+          blockReason = "1番目のコドンが UAA（終止コドン）！";
+        } else if (guaaFrame === 2) {
+          // AAG - AGU - UAA (2個で停止)
+          const totalAA = Math.min(Math.floor(t / 2), 2);
+          for (let i = 0; i < totalAA; i++) chain.push('Phe');
+          if (totalAA >= 2) {
+            isBlocked = true;
+            blockReason = "3番目のコドン UAA（終止コドン）に到達！";
+          }
+        }
+      } else if (currentExp === 'UUC') {
+        seq = "UUCUUCUUCUUCUUCUUCUUCUUC";
+        const totalAA = Math.min(Math.floor(t / 1.5), 10);
+        for (let i = 0; i < totalAA; i++) {
+          chain.push('Phe'); // 代表してPhe
+        }
+      }
+
+      return { seq, chain, isBlocked, blockReason };
+    }
+
+    function isAminoAcid14CLabeled(aaKey) {
+      if (currentExp === 'UC') {
+        return aaKey === 'Leu'; // 条件A,B,Cともに14C-ロイシン
+      }
+      return true;
+    }
+
+    // グラフ曲線計算関数 (S字シグモイド風)
+    function calculateIncorpUC(cond, t) {
+      if (cond === 'A') return 0.05;
+      if (cond === 'B') return 0.35 * (1 - Math.exp(-t / 2));
+      // C: 大きく伸びる
+      return 2.4 / (1 + Math.exp(-(t - 8) / 2.5));
+    }
+
+    function calculateIncorpGUAA(frame, t) {
+      if (frame === 1) return 0.02;
+      if (frame === 2) return 0.2 * (1 - Math.exp(-t / 3));
+      return 0.45 * (1 - Math.exp(-t / 3)); // 3アミノ酸分で頭打ち
+    }
+
+    function calculateIncorpUUC(t) {
+      return 2.3 / (1 + Math.exp(-(t - 7) / 2.5));
+    }
+
+    function getCurrentIncorpValue(t) {
+      if (currentExp === 'UC') return calculateIncorpUC(ucCondition, t);
+      if (currentExp === 'GUAA') return calculateIncorpGUAA(guaaFrame, t);
+      if (currentExp === 'UUC') return calculateIncorpUUC(t);
+      return 0;
+    }
+
+    /* ---------------------------------------------------
+       8. 解説メッセージのリアルタイム更新
+    --------------------------------------------------- */
+    function updateExplanations() {
+      const overlayText = document.getElementById('overlay-text');
+      const graphExp = document.getElementById('graph-explanation');
+
+      if (currentExp === 'UC') {
+        if (ucCondition === 'C') {
+          overlayText.innerHTML = `<b>【条件C】</b> 14C-ロイシン と 非標識セリン の両方があるため、<b>Ser-Leu-Ser-Leu...</b> と順調に伸びていきます！`;
+          graphExp.innerHTML = `<strong>グラフ解説 (①):</strong> ロイシンとセリンが交互に結合して長鎖ポリペプチドが合成されるため、¹⁴C-ロイシンが多量に取り込まれてグラフが急上昇します！`;
+        } else if (ucCondition === 'B') {
+          overlayText.innerHTML = `<b>【条件B】</b> セリンが存在しないため、次のコドン UCU を読んだところで<b>tRNAが来ず翻訳がストップ</b>します！`;
+          graphExp.innerHTML = `<strong>グラフ解説 (②):</strong> セリンがないため1〜2個目のアミノ酸で合成が停止し、¹⁴C-ロイシンはほとんど取り込まれません（平坦なグラフ）。`;
+        } else {
+          overlayText.innerHTML = `<b>【条件A】</b> 人工RNA（UCUC...）が存在しないため、タンパク質合成自体が一切起こりません。`;
+          graphExp.innerHTML = `<strong>グラフ解説 (③):</strong> 鋳型となるRNAがないため取り込み量はゼロになります。`;
+        }
+      } else if (currentExp === 'GUAA') {
+        overlayText.innerHTML = `<b>【GUAA繰り返し】</b> どの位置から読み始めても、4番目までに必ず<b>終止コドン UAA</b> が現れて翻訳が強制終了します！`;
+        graphExp.innerHTML = `<strong>グラフ解説 (問3):</strong> 長いポリペプチドができないため、取り込み量は非常に低い値（最長3個分）で頭打ちになります。`;
+      } else {
+        overlayText.innerHTML = `<b>【UUC繰り返し】</b> 読枠を1文字ずつずらすと、<b>UUC(Phe)</b> / <b>UCU(Ser)</b> / <b>CUU(Leu)</b> の3通りの単独重合体（ホモポリマー）ができます。`;
+        graphExp.innerHTML = `<strong>グラフ解説 (図1):</strong> それぞれのアミノ酸を加えた場合にそれぞれ単独のポリペプチド鎖が合成されます。`;
+      }
+    }
+  </script>
+</body>
+</html>
