@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>バイオ・ラボ 61 ～分子思考シミュレーター～</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+        .glow-effect {
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+        }
+        .pulse-subtle {
+            animation: pulseSubtle 2s infinite alternate;
+        }
+        @keyframes pulseSubtle {
+            0% { transform: scale(1); opacity: 0.9; }
+            100% { transform: scale(1.02); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="bg-slate-900/90 border-b border-slate-800 backdrop-blur sticky top-0 z-50 px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-dna"></i>
+            </div>
+            <div>
+                <h1 class="text-lg md:text-xl font-bold bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-300 bg-clip-text text-transparent">バイオ・ラボ 61</h1>
+                <p class="text-xs text-slate-400">タンパク質の機能解析・分子思考シミュレーター</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-hint-modal" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 rounded-lg text-xs md:text-sm font-semibold border border-cyan-500/30 transition flex items-center gap-1.5">
+                <i class="fa-regular fa-lightbulb"></i> <span class="hidden sm:inline">問題整理・</span>ヒント
+            </button>
+            <span class="text-xs bg-cyan-950 text-cyan-300 border border-cyan-800 px-2.5 py-1 rounded-full font-medium">滋賀県立大 Lv.28</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- Left Column: Navigation & Quiz (5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-4">
+
+            <!-- Question Selector Tabs -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2 flex gap-1 overflow-x-auto shadow-md">
+                <button class="q-tab px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex-1 text-center whitespace-nowrap bg-cyan-600 text-white shadow" data-q="overview">全体像</button>
+                <button class="q-tab px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex-1 text-center whitespace-nowrap text-slate-400 hover:bg-slate-800" data-q="q1">問1</button>
+                <button class="q-tab px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex-1 text-center whitespace-nowrap text-slate-400 hover:bg-slate-800" data-q="q2">問2</button>
+                <button class="q-tab px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex-1 text-center whitespace-nowrap text-slate-400 hover:bg-slate-800" data-q="q3">問3</button>
+                <button class="q-tab px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex-1 text-center whitespace-nowrap text-slate-400 hover:bg-slate-800" data-q="q4">問4</button>
+                <button class="q-tab px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex-1 text-center whitespace-nowrap text-slate-400 hover:bg-slate-800" data-q="q5">問5</button>
+            </div>
+
+            <!-- Thinking Coach Panel -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-xl backdrop-blur relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl"></div>
+
+                <!-- Avatar & Coach Comment -->
+                <div class="flex items-start gap-3 border-b border-slate-800 pb-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 flex-shrink-0 flex items-center justify-center text-slate-900 text-lg font-bold shadow">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">思考ナビゲーター</span>
+                        <p id="coach-text" class="text-xs sm:text-sm text-slate-200 mt-0.5 leading-relaxed">
+                            プラスチックを分解する微生物の実験問題だよ！「10万＝7万＋3万」という分子量のパズルに注目しよう！
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Question Details Area -->
+                <div id="q-content-container" class="space-y-3 text-xs sm:text-sm">
+                    <!-- Dynamic Content Inserted Here -->
+                </div>
+            </div>
+
+            <!-- Interactive Essay Builder (For Q3/Q4) -->
+            <div id="essay-builder-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3 hidden">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 論理的記述ビルダー
+                    </h3>
+                    <span id="word-count" class="text-xs text-slate-400">文字数: 0字</span>
+                </div>
+                <p class="text-xs text-slate-400">キーワードをタップして「原因 $\rightarrow$ 構造の不可 $\rightarrow$ 機能の変化」のロジックを作ろう！</p>
+
+                <!-- Word Chips Area -->
+                <div id="word-chips" class="flex flex-wrap gap-1.5 p-2 bg-slate-950/60 rounded-xl border border-slate-800">
+                    <!-- Dynamic Chips -->
+                </div>
+
+                <!-- Constructed Text Box -->
+                <div id="constructed-text" class="p-3 bg-slate-950 rounded-xl border border-cyan-900/50 min-h-[60px] text-xs text-cyan-200 leading-relaxed">
+                    ここに文章が組み立てられます...
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <button id="btn-clear-text" class="px-2.5 py-1 text-xs text-slate-400 hover:text-slate-200 transition">
+                        <i class="fa-solid fa-rotate-left"></i> リセット
+                    </button>
+                    <button id="btn-check-essay" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold transition">
+                        模範解答と比較
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Canvas & Control Simulation (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-4">
+
+            <!-- Simulation Canvas Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 flex flex-col gap-3 shadow-xl relative overflow-hidden">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        <h2 class="text-sm font-bold text-slate-200">分子顕微鏡シミュレーター</h2>
+                    </div>
+                    <!-- Status Badge -->
+                    <div id="sim-status-badge" class="text-xs bg-slate-800 text-slate-300 border border-slate-700 px-2.5 py-0.5 rounded-full">
+                        野生型 (正常)
+                    </div>
+                </div>
+
+                <!-- Canvas Box -->
+                <div class="relative w-full aspect-[4/3] bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+                    <canvas id="sim-canvas" class="w-full h-full block cursor-pointer"></canvas>
+
+                    <!-- Legend Overlay -->
+                    <div class="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur border border-slate-800 p-2 rounded-lg text-[10px] text-slate-300 flex flex-wrap gap-2">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> 菌体</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> B (70k 分解)</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span> C (30k 吸着)</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block"></span> 酵素α (100k)</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-slate-400 inline-block"></span> プラスチック</span>
+                    </div>
+
+                    <!-- Canvas Play Pause Overlay -->
+                    <button id="btn-toggle-sim" class="absolute top-2 right-2 w-8 h-8 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-300 flex items-center justify-center border border-slate-700 text-xs transition">
+                        <i class="fa-solid fa-pause"></i>
+                    </button>
+                </div>
+
+                <!-- Simulation Control Panel -->
+                <div class="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-3">
+                    <div class="text-xs font-bold text-slate-300 flex items-center justify-between">
+                        <span><i class="fa-solid fa-sliders text-cyan-400"></i> 実験条件スイッチ</span>
+                        <span class="text-[11px] text-slate-400">トグル操作で変異を試す</span>
+                    </div>
+
+                    <!-- Toggle Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <!-- Gene A Switch -->
+                        <div class="bg-slate-900 border border-slate-800 p-2 rounded-lg flex items-center justify-between">
+                            <span class="text-xs text-slate-300 font-medium">遺伝子 A</span>
+                            <button id="btn-gene-a" class="px-2 py-1 rounded text-xs font-bold bg-emerald-600 text-white transition">正常</button>
+                        </div>
+                        <!-- Gene B Switch -->
+                        <div class="bg-slate-900 border border-slate-800 p-2 rounded-lg flex items-center justify-between">
+                            <span class="text-xs text-slate-300 font-medium">遺伝子 B</span>
+                            <select id="select-gene-b" class="bg-slate-800 text-cyan-300 text-xs border border-slate-700 rounded px-1.5 py-1 focus:outline-none">
+                                <option value="wt">野生型</option>
+                                <option value="del">欠失</option>
+                                <option value="m1">変異①</option>
+                                <option value="m2">変異②</option>
+                                <option value="m3">変異③</option>
+                                <option value="m4">変異④(S失)</option>
+                                <option value="m5">変異⑤(STOP)</option>
+                            </select>
+                        </div>
+                        <!-- Gene C Switch -->
+                        <div class="bg-slate-900 border border-slate-800 p-2 rounded-lg flex items-center justify-between col-span-2 sm:col-span-1">
+                            <span class="text-xs text-slate-300 font-medium">遺伝子 C</span>
+                            <select id="select-gene-c" class="bg-slate-800 text-cyan-300 text-xs border border-slate-700 rounded px-1.5 py-1 focus:outline-none">
+                                <option value="wt">野生型</option>
+                                <option value="del">欠失</option>
+                                <option value="c3">変異(③相当)</option>
+                                <option value="c4">変異(④相当)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Add Plastic Button -->
+                    <div class="flex items-center justify-between pt-1">
+                        <button id="btn-add-plastic" class="w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-bold transition shadow-md flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-plus-circle"></i> プラスチック粒子を投入して分解テスト
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Reaction Summary Meter Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex justify-around items-center text-center">
+                <div>
+                    <span class="text-[10px] text-slate-400 block uppercase font-bold">酵素α (10万)</span>
+                    <span id="meter-alpha" class="text-base sm:text-lg font-black text-cyan-400">確認できた</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <div>
+                    <span class="text-[10px] text-slate-400 block uppercase font-bold">プラスチック分解能</span>
+                    <span id="meter-degrade" class="text-base sm:text-lg font-black text-emerald-400">あり (標準)</span>
+                </div>
+                <div class="h-8 w-px bg-slate-800"></div>
+                <div>
+                    <span class="text-[10px] text-slate-400 block uppercase font-bold">プラスチック吸着</span>
+                    <span id="meter-adhere" class="text-base sm:text-lg font-black text-amber-400">高 (磁石効果)</span>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Hint Modal -->
+    <div id="hint-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 flex flex-col gap-4 shadow-2xl relative">
+            <button id="btn-close-modal" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="text-base font-bold text-cyan-400 flex items-center gap-2">
+                <i class="fa-solid fa-book-bookmark"></i> 問題整理ノート（実験結果のマップ）
+            </h3>
+            <div class="space-y-2 text-xs text-slate-300 leading-relaxed overflow-y-auto max-h-[60vh] pr-1">
+                <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800">
+                    <strong class="text-cyan-300 block mb-1">【基本データ】</strong>
+                    ・酵素α = 分子量 100,000<br>
+                    ・遺伝子B由来 = 70,000（プラスチックを切り刻む「分解」担当）<br>
+                    ・遺伝子C由来 = 30,000（プラスチックにくっつく「吸着」担当）<br>
+                    ・遺伝子A由来 = 90,000（BとCを作らせる「転写因子」）
+                </div>
+                <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800">
+                    <strong class="text-amber-300 block mb-1">【欠失実験のポイント】</strong>
+                    ・<strong>A欠失</strong>：BもCも作られない $\rightarrow$ 分解能なし<br>
+                    ・<strong>B欠失</strong>：7万（ハサミ）がない $\rightarrow$ 分解能なし<br>
+                    ・<strong>C欠失</strong>：3万（磁石）がない $\rightarrow$ B単体でプカプカ漂い、たまに触れたプラスチックを微弱に分解！
+                </div>
+                <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800">
+                    <strong class="text-emerald-300 block mb-1">【ワンポイント記述のコツ】</strong>
+                    遺伝子変異の記述問題は「<strong>原因（1塩基置換/S-S結合消失など） $\rightarrow$ 構造変化（立体構造/翻訳中断） $\rightarrow$ 機能変化（結合不能/分解能低下）</strong>」の3段階コンボで書くと満点！
+                </div>
+            </div>
+            <button id="btn-modal-ok" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition">
+                理解できた！ラボに戻る
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        const state = {
+            activeQ: 'overview',
+            geneA: true, // true: Normal, false: Defective
+            geneB: 'wt', // wt, del, m1, m2, m3, m4, m5
+            geneC: 'wt', // wt, del, c3, c4
+            simRunning: true,
+            constructedEssay: [],
+            wordLimit: 160
+        };
+
+        // Questions Data
+        const questionsData = {
+            overview: {
+                title: "問題の全貌：タンパク質コンプレックスの解明",
+                text: "プラスチックを分解する新種の微生物が発見された！この微生物はプラスチックが存在すると「酵素α（分子量100,000）」を分泌する。各遺伝子A, B, Cの役割をシミュレーターで観察して突き止めよう。",
+                coach: "まずは下の実験スイッチを色々いじって、酵素αが作られる条件や分解能の変化を画面で確認してみよう！",
+                hasEssay: false
+            },
+            q1: {
+                title: "問1：遺伝子Aの役割（40字以内）",
+                text: "遺伝子Aを欠失させると、遺伝子Bと遺伝子Cが転写されなくなった。遺伝子Aはどのような働きをするタンパク質をコードしているか？",
+                coach: "AをOFFにしてみよう。DNAからmRNAが出てこなくなるね！つまりAはBとCの『転写を促進するタンパク質（転写因子）』だよ。",
+                answer: "遺伝子Bと遺伝子Cの転写を促進するタンパク質（転写因子）。",
+                hasEssay: false
+            },
+            q2: {
+                title: "問2：遺伝子Bの変異体①～⑤の分類",
+                text: "遺伝子Bに1塩基置換の変異を導入した。①～⑤の性質を示す理由を考えて、遺伝子Bの機能を答えよ。",
+                coach: "酵素α(10万)は「7万(B) + 3万(C)」でできている！Bそのものは『プラスチック分解能をもち、C由来のタンパク質と結合して酵素αを形成する』機能を持つよ！",
+                answer: "プラスチック分解能をもち、遺伝子C由来のタンパク質と結合して酵素αを形成する。",
+                hasEssay: false
+            },
+            q3: {
+                title: "問3：変異④（システインの置換）の理由（160字以内）",
+                text: "変異④では特定のシステイン（Sを含む）が別のアミノ酸に換わっていた。問2の④の性質が生じた原因を160字以内で説明せよ。",
+                coach: "SといえばS-S結合（ジスルフイド結合）！結合が作れない $\rightarrow$ 立体構造が壊れてCと合体不可 $\rightarrow$ プラスチックに吸着できないがB単体で漂って分解するため『微弱』になるんだ！",
+                answer: "一塩基置換によってシステインが失われてジスルフイド結合ができなくなることにより、遺伝子B由来のタンパク質の立体構造が変化して、遺伝子C由来のタンパク質と酵素αを形成できなくなった。その結果、遺伝子B由来のタンパク質のプラスチック分解能に変化はないが、プラスチックへの吸着能力が失われるため、プラスチック分解能は低下した。",
+                hasEssay: true,
+                limit: 160,
+                chips: [
+                    "一塩基置換により", "システインが失われ", "ジスルフイド結合が形成できず",
+                    "立体構造が変化し", "C由来のタンパク質と結合できず", "酵素αを形成できない。",
+                    "B自体の分解活性はあるが", "プラスチックへの吸着能が失われ", "分解能が低下した。"
+                ]
+            },
+            q4: {
+                title: "問4：変異⑤（7万タンパク質消失）の理由（120字以内）",
+                text: "変異⑤では、分子量約70,000のタンパク質が確認できなかった。なぜこのようなことが起こったのか、120字以内で説明せよ。",
+                coach: "1塩基の変わりで7万のタンパク質が丸ごと消える定番パターン！コドンが『終止コドン』に変わって、途中で翻訳が打ち切られたからだね！",
+                answer: "一塩基置換を含むコドンが終止コドンを示すようになり、それ以降が翻訳されなくなることによって、アミノ酸配列が通常よりも短く、プラスチック分解能を欠如したタンパク質が合成されたため。",
+                hasEssay: true,
+                limit: 120,
+                chips: [
+                    "一塩基置換により", "コドンが終止コドンとなり", "それ以降が翻訳されず",
+                    "アミノ酸配列が通常より短くなり", "プラスチック分解能を欠いた", "不完全なタンパク質となったため。"
+                ]
+            },
+            q5: {
+                title: "問5：遺伝子Cに対する変異（3つ選ぶ）",
+                text: "遺伝子Cについて問2と同様の変異実験を行った。当てはまる3つを①～⑤から選べ。",
+                coach: "Cは『吸着（磁石）』担当！B（分解ハサミ）が無事なら、Cに障害があってもB単体でプカプカ浮いて微弱分解できる（④）し、吸着力が弱まるだけ（③）の場合もあるね。答えは①, ③, ④！",
+                answer: "①, ③, ④",
+                hasEssay: false
+            }
+        };
+
+        // Canvas Animation System
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Particles
+        let plastics = [];
+        let proteinsB = [];
+        let proteinsC = [];
+        let alphaEnzymes = [];
+
+        class PlasticParticle {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 100) + 50;
+                this.y = Math.random() * (canvas.height - 100) + 50;
+                this.radius = Math.random() * 12 + 16;
+                this.hp = 100;
+                this.maxHp = 100;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * (this.hp / this.maxHp), 0, Math.PI * 2);
+                ctx.fillStyle = '#64748b';
+                ctx.fill();
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // HP label
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = '9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(Math.ceil(this.hp) + '%', this.x, this.y + 3);
+            }
+        }
+
+        class ProteinParticle {
+            constructor(type, x, y) {
+                this.type = type; // 'B' or 'C' or 'Alpha'
+                this.x = x || Math.random() * canvas.width;
+                this.y = y || Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.target = null;
+                this.attached = false;
+                this.ssBroken = false; // For Q3
+            }
+
+            update() {
+                if (this.attached && this.target) {
+                    this.x = this.target.x + (Math.cos(Date.now() * 0.003) * 15);
+                    this.y = this.target.y + (Math.sin(Date.now() * 0.003) * 15);
+
+                    // Degrade Plastic
+                    let rate = (this.type === 'Alpha') ? 0.25 : 0.04; // Alpha is fast, solo B is weak
+                    this.target.hp -= rate;
+                    if (this.target.hp <= 0) {
+                        this.attached = false;
+                        this.target = null;
+                    }
+                    return;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce walls
+                if (this.x < 10 || this.x > canvas.width - 10) this.vx *= -1;
+                if (this.y < 10 || this.y > canvas.height - 10) this.vy *= -1;
+
+                // Find plastic target
+                if (!this.target && plastics.length > 0) {
+                    for (let p of plastics) {
+                        let dist = Math.hypot(p.x - this.x, p.y - this.y);
+                        // Alpha attracts strongly
+                        if (this.type === 'Alpha' && dist < 120) {
+                            this.x += (p.x - this.x) * 0.03;
+                            this.y += (p.y - this.y) * 0.03;
+                            if (dist < p.radius + 10) {
+                                this.attached = true;
+                                this.target = p;
+                            }
+                        } else if (this.type === 'B' && dist < p.radius + 10) {
+                            // Solo B touches plastic randomly
+                            this.attached = true;
+                            this.target = p;
+                        }
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                if (this.type === 'Alpha') {
+                    // Enzyme Alpha (100k = B[70k] + C[30k])
+                    ctx.beginPath();
+                    ctx.arc(-6, 0, 10, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f59e0b'; // B part
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(8, 0, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = '#38bdf8'; // C part
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#a855f7';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(-16, -12, 32, 24);
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 8px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('α(100k)', 0, -14);
+                } else if (this.type === 'B') {
+                    // Protein B (70k)
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+                    ctx.fillStyle = this.ssBroken ? '#ef4444' : '#f59e0b';
+                    ctx.fill();
+                    ctx.strokeStyle = '#d97706';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // SS disulfide clip visual
+                    if (!this.ssBroken) {
+                        ctx.strokeStyle = '#facc15';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(-5, -5);
+                        ctx.lineTo(5, 5);
+                        ctx.stroke();
+                    }
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 8px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('B(70k)', 0, 16);
+                } else if (this.type === 'C') {
+                    // Protein C (30k)
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 7, 0, Math.PI * 2);
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.fill();
+                    ctx.strokeStyle = '#0284c7';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 8px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('C(30k)', 0, 14);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // Initialize simulation items
+        function initSimulation() {
+            plastics = [new PlasticParticle(), new PlasticParticle()];
+            rebuildProteins();
+        }
+
+        function rebuildProteins() {
+            proteinsB = [];
+            proteinsC = [];
+            alphaEnzymes = [];
+
+            // If Gene A is OFF, no B and C are transcribed
+            if (!state.geneA) return;
+
+            // Gene B logic
+            let bCount = 0;
+            let bSSBroken = false;
+            let bNoActivity = false;
+
+            if (state.geneB === 'wt' || state.geneB === 'm1' || state.geneB === 'm2' || state.geneB === 'm3' || state.geneB === 'm4') {
+                bCount = 4;
+            }
+            if (state.geneB === 'm4') bSSBroken = true; // S-S bond broken
+
+            // Gene C logic
+            let cCount = (state.geneC === 'del') ? 0 : 4;
+
+            // Check if B and C can bind to form Alpha
+            // Alpha forms if: B is present, C is present, and B is not m4/m5, and C is not c4
+            let canFormAlpha = (bCount > 0) && (cCount > 0) && (state.geneB !== 'm4') && (state.geneB !== 'm5') && (state.geneC !== 'c4');
+
+            if (canFormAlpha) {
+                for (let i = 0; i < 4; i++) {
+                    alphaEnzymes.push(new ProteinParticle('Alpha'));
+                }
+            } else {
+                // Individual B and C
+                if (state.geneB !== 'del' && state.geneB !== 'm5') {
+                    for (let i = 0; i < 4; i++) {
+                        let p = new ProteinParticle('B');
+                        p.ssBroken = bSSBroken;
+                        proteinsB.push(p);
+                    }
+                }
+                if (state.geneC !== 'del') {
+                    for (let i = 0; i < 4; i++) {
+                        proteinsC.push(new ProteinParticle('C'));
+                    }
+                }
+            }
+
+            updateMeters();
+        }
+
+        function updateMeters() {
+            const meterAlpha = document.getElementById('meter-alpha');
+            const meterDegrade = document.getElementById('meter-degrade');
+            const meterAdhere = document.getElementById('meter-adhere');
+            const statusBadge = document.getElementById('sim-status-badge');
+
+            if (!state.geneA) {
+                meterAlpha.textContent = "確認不可";
+                meterAlpha.className = "text-base sm:text-lg font-black text-rose-400";
+                meterDegrade.textContent = "なし";
+                meterDegrade.className = "text-base sm:text-lg font-black text-rose-400";
+                meterAdhere.textContent = "なし";
+                statusBadge.textContent = "遺伝子A欠失 (転写停止)";
+                return;
+            }
+
+            let hasAlpha = alphaEnzymes.length > 0;
+            meterAlpha.textContent = hasAlpha ? "確認できた" : "確認できなかった";
+            meterAlpha.className = hasAlpha ? "text-base sm:text-lg font-black text-cyan-400" : "text-base sm:text-lg font-black text-slate-400";
+
+            if (hasAlpha) {
+                if (state.geneB === 'm2') {
+                    meterDegrade.textContent = "なし (活性失活)";
+                    meterDegrade.className = "text-base sm:text-lg font-black text-rose-400";
+                } else if (state.geneB === 'm3' || state.geneC === 'c3') {
+                    meterDegrade.textContent = "低下 (野生型より劣る)";
+                    meterDegrade.className = "text-base sm:text-lg font-black text-amber-400";
+                } else {
+                    meterDegrade.textContent = "あり (標準)";
+                    meterDegrade.className = "text-base sm:text-lg font-black text-emerald-400";
+                }
+                meterAdhere.textContent = "高 (磁石結合)";
+                statusBadge.textContent = "酵素α 形成状態";
+            } else {
+                // B solo or no B
+                if (proteinsB.length > 0 && state.geneB !== 'm5') {
+                    meterDegrade.textContent = "微弱 (ランダム接触)";
+                    meterDegrade.className = "text-base sm:text-lg font-black text-amber-400";
+                    meterAdhere.textContent = "なし (吸着不能)";
+                    statusBadge.textContent = state.geneB === 'm4' ? "変異④ (S-S結合不全)" : "B単体 浮遊状態";
+                } else {
+                    meterDegrade.textContent = "なし";
+                    meterDegrade.className = "text-base sm:text-lg font-black text-rose-400";
+                    meterAdhere.textContent = "なし";
+                    statusBadge.textContent = state.geneB === 'm5' ? "変異⑤ (終止コドン中断)" : "分解不可";
+                }
+            }
+        }
+
+        // Animation Loop
+        function animate() {
+            if (state.simRunning) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw Microbe cell background boundary
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+
+                // Filter dead plastics
+                plastics = plastics.filter(p => p.hp > 0);
+
+                // Draw & Update Plastics
+                plastics.forEach(p => p.draw());
+
+                // Draw & Update Proteins
+                alphaEnzymes.forEach(p => { p.update(); p.draw(); });
+                proteinsB.forEach(p => { p.update(); p.draw(); });
+                proteinsC.forEach(p => { p.update(); p.draw(); });
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // UI & Event Handlers
+        document.addEventListener('DOMContentLoaded', () => {
+
+            initSimulation();
+            animate();
+
+            // Tab Switch Logic
+            document.querySelectorAll('.q-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelectorAll('.q-tab').forEach(t => {
+                        t.classList.remove('bg-cyan-600', 'text-white', 'shadow');
+                        t.classList.add('text-slate-400', 'hover:bg-slate-800');
+                    });
+                    e.target.classList.remove('text-slate-400', 'hover:bg-slate-800');
+                    e.target.classList.add('bg-cyan-600', 'text-white', 'shadow');
+
+                    state.activeQ = e.target.dataset.q;
+                    renderQuestionPanel();
+                });
+            });
+
+            // Gene Controls
+            const btnGeneA = document.getElementById('btn-gene-a');
+            btnGeneA.addEventListener('click', () => {
+                state.geneA = !state.geneA;
+                btnGeneA.textContent = state.geneA ? "正常" : "欠失";
+                btnGeneA.className = state.geneA ? "px-2 py-1 rounded text-xs font-bold bg-emerald-600 text-white transition" : "px-2 py-1 rounded text-xs font-bold bg-rose-600 text-white transition";
+                rebuildProteins();
+            });
+
+            document.getElementById('select-gene-b').addEventListener('change', (e) => {
+                state.geneB = e.target.value;
+                rebuildProteins();
+            });
+
+            document.getElementById('select-gene-c').addEventListener('change', (e) => {
+                state.geneC = e.target.value;
+                rebuildProteins();
+            });
+
+            // Add Plastic Button
+            document.getElementById('btn-add-plastic').addEventListener('click', () => {
+                plastics.push(new PlasticParticle());
+            });
+
+            // Sim Pause/Play
+            document.getElementById('btn-toggle-sim').addEventListener('click', (e) => {
+                state.simRunning = !state.simRunning;
+                e.currentTarget.innerHTML = state.simRunning ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+            });
+
+            // Modal Handlers
+            const modal = document.getElementById('hint-modal');
+            document.getElementById('btn-hint-modal').addEventListener('click', () => modal.classList.remove('hidden'));
+            document.getElementById('btn-close-modal').addEventListener('click', () => modal.classList.add('hidden'));
+            document.getElementById('btn-modal-ok').addEventListener('click', () => modal.classList.add('hidden'));
+
+            // Initial Panel Render
+            renderQuestionPanel();
+        });
+
+        // Render Panel Content for Active Question
+        function renderQuestionPanel() {
+            const q = questionsData[state.activeQ];
+            const coachText = document.getElementById('coach-text');
+            const qContainer = document.getElementById('q-content-container');
+            const essayCard = document.getElementById('essay-builder-card');
+
+            coachText.textContent = q.coach;
+
+            let html = `
+                <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                    <h3 class="font-bold text-cyan-300 text-xs sm:text-sm mb-1">${q.title}</h3>
+                    <p class="text-slate-300 leading-relaxed text-xs">${q.text}</p>
+                </div>
+            `;
+
+            if (q.answer && !q.hasEssay) {
+                html += `
+                    <div class="p-3 bg-cyan-950/40 border border-cyan-800/60 rounded-xl">
+                        <strong class="text-cyan-400 text-xs block mb-1"><i class="fa-solid fa-key"></i> 考え方・解答ポイント:</strong>
+                        <p class="text-slate-200 text-xs font-medium">${q.answer}</p>
+                    </div>
+                `;
+            }
+
+            qContainer.innerHTML = html;
+
+            // Essay Builder Logic
+            if (q.hasEssay) {
+                essayCard.classList.remove('hidden');
+                setupEssayBuilder(q);
+            } else {
+                essayCard.classList.add('hidden');
+            }
+        }
+
+        // Setup Interactive Essay Builder
+        function setupEssayBuilder(q) {
+            const chipsContainer = document.getElementById('word-chips');
+            const constructedText = document.getElementById('constructed-text');
+            const wordCount = document.getElementById('word-count');
+
+            state.constructedEssay = [];
+            state.wordLimit = q.limit;
+
+            chipsContainer.innerHTML = '';
+            q.chips.forEach((chipText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "px-2 py-1 bg-slate-800 hover:bg-cyan-700 text-slate-200 hover:text-white rounded-lg text-xs font-medium transition border border-slate-700";
+                btn.textContent = chipText;
+                btn.addEventListener('click', () => {
+                    state.constructedEssay.push(chipText);
+                    btn.disabled = true;
+                    btn.classList.add('opacity-40', 'cursor-not-allowed');
+                    updateEssayDisplay();
+                });
+                chipsContainer.appendChild(btn);
+            });
+
+            updateEssayDisplay();
+
+            document.getElementById('btn-clear-text').onclick = () => {
+                state.constructedEssay = [];
+                document.querySelectorAll('#word-chips button').forEach(b => {
+                    b.disabled = false;
+                    b.classList.remove('opacity-40', 'cursor-not-allowed');
+                });
+                updateEssayDisplay();
+            };
+
+            document.getElementById('btn-check-essay').onclick = () => {
+                constructedText.innerHTML = `
+                    <div class="space-y-2">
+                        <p class="text-emerald-400 font-bold">【あなたの構成テキスト】</p>
+                        <p class="text-slate-200">${state.constructedEssay.join('') || '（キーワードを選択してください）'}</p>
+                        <hr class="border-slate-800">
+                        <p class="text-cyan-400 font-bold">【模範解答】</p>
+                        <p class="text-slate-300">${q.answer}</p>
+                    </div>
+                `;
+            };
+        }
+
+        function updateEssayDisplay() {
+            const constructedText = document.getElementById('constructed-text');
+            const wordCount = document.getElementById('word-count');
+            const text = state.constructedEssay.join('');
+
+            constructedText.textContent = text || '上のキーワードをタップして文章を作ろう！';
+            wordCount.textContent = `文字数: ${text.length} / ${state.wordLimit}字`;
+
+            if (text.length > state.wordLimit) {
+                wordCount.className = "text-xs text-rose-400 font-bold";
+            } else {
+                wordCount.className = "text-xs text-slate-400";
+            }
+        }
+    </script>
+</body>
+</html>
