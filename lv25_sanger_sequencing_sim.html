@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サンガー法（DNA塩基配列決定）完全攻略シミュレーター</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Zen Maru Gothic"', 'Inter', 'sans-serif'],
+                        mono: ['monospace']
+                    },
+                    colors: {
+                        baseA: '#ef4444', // 赤
+                        baseT: '#3b82f6', // 青
+                        baseG: '#10b981', // 緑
+                        baseC: '#f59e0b', // 黄/オレンジ
+                        gelBg: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .base-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 0.375rem;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .bg-baseA { background-color: #ef4444; }
+        .bg-baseT { background-color: #3b82f6; }
+        .bg-baseG { background-color: #10b981; }
+        .bg-baseC { background-color: #f59e0b; }
+
+        .gel-band {
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 4px currentColor;
+            transition: top 1.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+        .glow-active {
+            animation: pulseGlow 1.5s infinite;
+        }
+
+        /* DNA二重鎖アニメーション用 */
+        .dna-pair {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid fa-dna"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-300">
+                        サンガー法 完全攻略シミュレーター
+                    </h1>
+                    <p class="text-xs text-slate-400">高校生物「塩基配列の決定」が動いて解かる！</p>
+                </div>
+            </div>
+            
+            <!-- Navigation Tabs -->
+            <nav class="flex bg-slate-900/80 p-1 rounded-xl border border-slate-700 text-xs md:text-sm">
+                <button onclick="switchTab('tab1')" id="nav-tab1" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition-all text-cyan-400 bg-slate-800 shadow">
+                    1. 仕組み (なぜ止まる？)
+                </button>
+                <button onclick="switchTab('tab2')" id="nav-tab2" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200">
+                    2. 電気泳動図の読み方
+                </button>
+                <button onclick="switchTab('tab3')" id="nav-tab3" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200">
+                    3. ddNTP濃度実験 (問3)
+                </button>
+                <button onclick="switchTab('tab4')" id="nav-tab4" class="tab-btn px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200">
+                    4. 問題演習
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6">
+
+        <!-- TAB 1: サンガー法の仕組み（dNTP vs ddNTP） -->
+        <section id="tab1" class="tab-content block space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 md:p-6 shadow-xl">
+                <h2 class="text-xl font-bold text-cyan-300 flex items-center gap-2 mb-3">
+                    <i class="fa-solid fa-atom"></i> Step 1: なぜ DNA 伸長がストップするのか？
+                </h2>
+                <p class="text-slate-300 text-sm md:text-base leading-relaxed">
+                    DNAが伸びるにはヌクレオチドの <span class="text-amber-400 font-bold">3'位のOH（水酸基）</span> が必要です。<br>
+                    普通の <span class="text-emerald-400 font-bold">dNTP</span> にはOHがありますが、ストッパーである <span class="text-rose-400 font-bold">ddNTP（ジデオキシ〜）</span> にはOH（酸素 O）がありません！そのため、取り込まれるとそこで合成がストップします。
+                </p>
+
+                <!-- Interactive Comparison Animation -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    <!-- Normal dNTP -->
+                    <div class="bg-slate-900 border border-emerald-500/30 rounded-xl p-4 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full font-bold">通常パーツ</span>
+                                <h3 class="font-bold text-emerald-400">dNTP（デオキシヌクレオシド三リン酸）</h3>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-4">3'末端に <strong>-OH基</strong> があり、次の塩基と結合できる！</p>
+                        </div>
+                        <div class="bg-slate-800/80 rounded-lg p-4 text-center border border-slate-700 relative overflow-hidden h-36 flex items-center justify-center">
+                            <div id="dntp-demo" class="flex items-center gap-2">
+                                <div class="bg-cyan-600 text-xs px-2 py-1 rounded">既にあるDNA</div>
+                                <div class="text-amber-400 font-bold text-sm">-OH</div>
+                                <i class="fa-solid fa-link text-emerald-400 animate-pulse"></i>
+                                <div class="bg-emerald-600 text-xs px-2 py-1 rounded font-bold animate-bounce">
+                                    dNTP (結合成功!)
+                                </div>
+                                <div class="text-amber-400 font-bold text-sm animate-pulse">-OH</div>
+                                <i class="fa-solid fa-arrow-right text-slate-500"></i>
+                                <span class="text-xs text-emerald-300">次も繋がれる！</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stop ddNTP -->
+                    <div class="bg-slate-900 border border-rose-500/30 rounded-xl p-4 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="bg-rose-500/20 text-rose-300 text-xs px-2.5 py-1 rounded-full font-bold">ストッパー</span>
+                                <h3 class="font-bold text-rose-400">ddNTP（ジデオキシヌクレオシド三リン酸）</h3>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-4">3'末端の酸素が脱落（<strong>-H基</strong>）。次が結合できず伸長停止！</p>
+                        </div>
+                        <div class="bg-slate-800/80 rounded-lg p-4 text-center border border-slate-700 relative overflow-hidden h-36 flex items-center justify-center">
+                            <div id="ddntp-demo" class="flex items-center gap-2">
+                                <div class="bg-cyan-600 text-xs px-2 py-1 rounded">既にあるDNA</div>
+                                <div class="text-amber-400 font-bold text-sm">-OH</div>
+                                <i class="fa-solid fa-link text-rose-400"></i>
+                                <div class="bg-rose-600 text-xs px-2 py-1 rounded font-bold">
+                                    ddNTP (取り込み)
+                                </div>
+                                <div class="text-rose-400 font-bold text-sm strike-through">-[H]</div>
+                                <span class="text-rose-400 text-lg font-extrabold">✕ STOP!</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sanger Method Summary Box -->
+                <div class="bg-slate-900/90 border-l-4 border-cyan-400 p-4 rounded-r-xl mt-4 text-sm space-y-2">
+                    <h4 class="font-bold text-cyan-300"><i class="fa-solid fa-flask"></i> 実験で混ぜるもの（超重要！）</h4>
+                    <ul class="list-disc list-inside text-slate-300 space-y-1 text-xs md:text-sm">
+                        <li><strong>鋳型1本鎖DNA</strong>：配列を調べたい対象</li>
+                        <li><strong>ア：プライマー（短い1本鎖DNA）</strong>：合成のスタート地点（X）</li>
+                        <li><strong>イ：DNAポリメラーゼ</strong>：DNAを伸ばす酵素</li>
+                        <li><strong>4種類の dNTP（大量）</strong>：普通の材料（dATP, dGTP, dCTP, dTTP）</li>
+                        <li><strong>蛍光標識した ddNTP（少量）</strong>：ストッパー（ddATP, ddGTP, ddCTP, ddTTP のいずれか）</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: 電気泳動シミュレーションと図の解読 -->
+        <section id="tab2" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 md:p-6 shadow-xl">
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-cyan-300 flex items-center gap-2">
+                            <i class="fa-solid fa-vial-circle-check"></i> Step 2: 電気泳動の図をシミュレーションで解読！
+                        </h2>
+                        <p class="text-xs md:text-sm text-slate-400 mt-1">
+                            「電気泳動の図がわからない」の原因を解消！動きで流れを確認しましょう。
+                        </p>
+                    </div>
+                    <button onclick="runElectrophoresisAnimation()" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold px-4 py-2 rounded-xl shadow-lg transition-all flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-play"></i> 電気泳動をスタート！
+                    </button>
+                </div>
+
+                <!-- Step explanation banner -->
+                <div class="bg-cyan-950/50 border border-cyan-500/30 p-3 rounded-xl mb-4 text-xs md:text-sm text-cyan-200 flex items-center gap-3">
+                    <i class="fa-solid fa-lightbulb text-amber-400 text-lg"></i>
+                    <div>
+                        <strong>読み解きの鉄則：</strong>
+                        DNAはマイナス電荷をもつため、<strong>＋極（図の下側）に向かって移動</strong>します。
+                        <strong>「短いDNAほど障害物をすり抜けて速く遠く（＋極側＝一番下）まで泳動する」</strong>のがポイント！
+                    </div>
+                </div>
+
+                <!-- Simulation Main Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    <!-- Left: Gel Container (4 Lanes) -->
+                    <div class="lg:col-span-5 bg-slate-950 border-2 border-slate-700 rounded-2xl p-4 shadow-2xl relative">
+                        <!-- Top Polarity (-) -->
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-2 text-slate-400 text-xs">
+                            <span class="font-bold text-rose-400 text-sm">⊖ マイナス極（スタート位置・長いDNA）</span>
+                        </div>
+
+                        <!-- Lanes Header -->
+                        <div class="grid grid-cols-4 gap-2 text-center font-mono text-xs font-bold mb-2">
+                            <div class="bg-slate-800 py-1.5 rounded text-rose-300 border border-rose-500/30">ddATP</div>
+                            <div class="bg-slate-800 py-1.5 rounded text-emerald-300 border border-emerald-500/30">ddGTP</div>
+                            <div class="bg-slate-800 py-1.5 rounded text-amber-300 border border-amber-500/30">ddCTP</div>
+                            <div class="bg-slate-800 py-1.5 rounded text-blue-300 border border-blue-500/30">ddTTP</div>
+                        </div>
+
+                        <!-- Gel Body -->
+                        <div id="gel-body" class="relative bg-slate-900 border border-slate-800 rounded-xl h-[380px] w-full overflow-hidden">
+                            <!-- Background Grid Lines -->
+                            <div class="absolute inset-0 flex flex-col justify-between p-2 pointer-events-none opacity-20 text-[10px] text-slate-500 font-mono">
+                                <div>10 bp (長い)</div>
+                                <div>8 bp</div>
+                                <div>6 bp</div>
+                                <div>4 bp</div>
+                                <div>2 bp (短い)</div>
+                            </div>
+
+                            <!-- Bands Container JavaScript will render bands inside -->
+                            <div id="gel-bands-container" class="relative w-full h-full"></div>
+                        </div>
+
+                        <!-- Bottom Polarity (+) -->
+                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-slate-400 text-xs">
+                            <span class="font-bold text-cyan-400 text-sm">⊕ プラス極（ゴール位置・短いDNA）</span>
+                            <span class="text-[10px] text-slate-500">※下ほどプライマーに近い！</span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Step-by-Step Decoder & Sequence Builder -->
+                    <div class="lg:col-span-7 space-y-4">
+                        
+                        <!-- Sequence Step Reader -->
+                        <div class="bg-slate-900 border border-slate-700 rounded-xl p-4">
+                            <h3 class="text-sm font-bold text-slate-300 mb-2 flex items-center justify-between">
+                                <span><i class="fa-solid fa-arrow-down-short-wide text-cyan-400"></i> 図を「下から上へ」順に読む</span>
+                                <span id="read-progress" class="text-xs text-cyan-400">下（＋極）からクリックして解読</span>
+                            </h3>
+
+                            <p class="text-xs text-slate-400 mb-3">
+                                一番下にあるバンド（最も遠くまで泳動した短いDNA）が、プライマー直後の<strong>「第1塩基」</strong>です。下から上へと順番にバンドをたどることで、合成されたDNAの塩基配列がわかります！
+                            </p>
+
+                            <!-- Newly Synthesized Strand (Read Sequence) -->
+                            <div class="space-y-1 mb-4">
+                                <label class="text-xs font-bold text-cyan-300 block">① 新たに合成されたDNA（新生鎖） [プライマーX側 ➔]</label>
+                                <div id="synthesized-strand" class="flex flex-wrap gap-1.5 p-2 bg-slate-950 rounded-lg min-h-[46px] items-center border border-slate-800">
+                                    <span class="text-xs bg-cyan-900/60 text-cyan-300 px-2 py-1 rounded border border-cyan-500/40 font-bold">
+                                        プライマーX
+                                    </span>
+                                    <span class="text-slate-600 text-xs font-mono">（下に並ぶバンドから順に表示）</span>
+                                </div>
+                            </div>
+
+                            <!-- Template Strand Complementary Conversion -->
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-xs font-bold text-emerald-300 block">
+                                        ② 鋳型（テンプレート）DNAの塩基配列 <span class="text-rose-400 font-extrabold">【問2の答え！】</span>
+                                    </label>
+                                    <span class="text-[11px] text-amber-300">※相補的にペアリング（A↔T, G↔C）</span>
+                                </div>
+                                <div id="template-strand" class="flex flex-wrap gap-1.5 p-2 bg-slate-950 rounded-lg min-h-[46px] items-center border border-slate-800">
+                                    <span class="text-xs bg-emerald-900/60 text-emerald-300 px-2 py-1 rounded border border-emerald-500/40 font-bold">
+                                        結合部
+                                    </span>
+                                    <span class="text-slate-600 text-xs font-mono">（上の新生鎖に相補的な塩基が自動生成）</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Important Trap Warning -->
+                        <div class="bg-amber-950/40 border border-amber-500/30 p-4 rounded-xl text-xs space-y-2">
+                            <h4 class="font-bold text-amber-300 flex items-center gap-1.5 text-sm">
+                                <i class="fa-solid fa-triangle-exclamation"></i> 高校生が絶対に間違える超・頻出トラップ！
+                            </h4>
+                            <p class="text-slate-300 leading-relaxed">
+                                電気泳動の図から直接読める「A-C-C-G-A...」は<strong class="text-cyan-300">「新たに合成されたDNA（新生鎖）」</strong>です！<br>
+                                問題問2で聞かれているのは<strong class="text-emerald-300">「鋳型DNA」</strong>の配列なので、必ず<span class="bg-amber-500/20 px-1 text-amber-200 rounded font-bold">相補的な塩基（A↔T, C↔G）に変換</span>する必要があります！
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: ddNTP 濃度の違い（問3の実験） -->
+        <section id="tab3" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 md:p-6 shadow-xl">
+                <h2 class="text-xl font-bold text-cyan-300 flex items-center gap-2 mb-2">
+                    <i class="fa-solid fa-sliders"></i> Step 3: ジデオキシ（ddNTP）の量を増やしたらどうなる？ (問3)
+                </h2>
+                <p class="text-xs md:text-sm text-slate-300 leading-relaxed mb-4">
+                    ストッパーである ddNTP の割合を変えると、合成されるDNA断片の「長さのバランス」が激変します。<br>
+                    スライダーを動かして、実際にDNAを伸ばしてみましょう！
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 bg-slate-900 p-5 rounded-xl border border-slate-700">
+                    <!-- Controls -->
+                    <div class="md:col-span-5 space-y-5">
+                        <div>
+                            <label class="text-xs font-bold text-slate-300 flex justify-between mb-2">
+                                <span>ddNTP (ストッパー) の添加量比率:</span>
+                                <span id="ddntp-ratio-label" class="text-amber-400 font-bold">適量 (標準)</span>
+                            </label>
+                            <input type="range" id="ddntp-slider" min="1" max="3" step="1" value="2" oninput="updateDdntpExperiment()" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+                            <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+                                <span>少量 (低い)</span>
+                                <span>適量 (標準)</span>
+                                <span>大量 (過剰)</span>
+                            </div>
+                        </div>
+
+                        <button onclick="runDdntpSim()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold py-2.5 rounded-xl shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> DNA合成を100本分実行！
+                        </button>
+
+                        <div id="exp-result-explanation" class="bg-slate-800 p-3 rounded-lg text-xs text-slate-300 leading-relaxed border border-slate-700">
+                            <!-- Explanation text updated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Visualization Output -->
+                    <div class="md:col-span-7 flex flex-col justify-between">
+                        <h4 class="text-xs font-bold text-slate-400 mb-2">生成されたDNA断片の長さ分布（100本中）</h4>
+                        
+                        <!-- Dynamic Graph Bar -->
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-rose-400 font-bold">短いDNA断片 (1〜3 bpで停止)</span>
+                                    <span id="short-dna-count" class="font-mono text-rose-300">30%</span>
+                                </div>
+                                <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                                    <div id="short-dna-bar" class="bg-rose-500 h-full transition-all duration-500" style="width: 30%"></div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-amber-400 font-bold">中間のDNA断片 (4〜7 bpで停止)</span>
+                                    <span id="mid-dna-count" class="font-mono text-amber-300">40%</span>
+                                </div>
+                                <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                                    <div id="mid-dna-bar" class="bg-amber-500 h-full transition-all duration-500" style="width: 40%"></div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-cyan-400 font-bold">長いDNA断片 (8〜10 bp以上伸びる)</span>
+                                    <span id="long-dna-count" class="font-mono text-cyan-300">30%</span>
+                                </div>
+                                <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                                    <div id="long-dna-bar" class="bg-cyan-500 h-full transition-all duration-500" style="width: 30%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gel Electrophoresis Pattern shift simulation -->
+                        <div class="mt-4 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                            <span class="text-slate-400 font-bold block mb-1">電気泳動ゲルの見た目の変化:</span>
+                            <div class="h-10 bg-slate-900 rounded-lg flex items-center justify-around px-4 relative overflow-hidden">
+                                <div class="text-[10px] text-slate-500">⊖長</div>
+                                <div id="gel-shift-indicator" class="flex gap-2 items-center w-full max-w-xs justify-around">
+                                    <!-- Band opacity indicators dynamically created -->
+                                </div>
+                                <div class="text-[10px] text-cyan-400 font-bold">短⊕</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: 入試演習問題（画像の問題に挑戦） -->
+        <section id="tab4" class="tab-content hidden space-y-6">
+            <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 md:p-6 shadow-xl space-y-6">
+                <div>
+                    <span class="bg-cyan-500/20 text-cyan-300 text-xs px-2.5 py-1 rounded-full font-bold">問題 32 (lv25)</span>
+                    <h2 class="text-xl font-bold text-slate-100 mt-2">塩基配列の決定（サンガー法）</h2>
+                </div>
+
+                <!-- QUESTION 1 -->
+                <div class="bg-slate-900 p-4 md:p-5 rounded-xl border border-slate-700 space-y-3">
+                    <h3 class="font-bold text-cyan-300 text-sm md:text-base">
+                        問１ 下線部 ア、イ の名称として最も適当なものを選べ。
+                    </h3>
+                    <p class="text-xs text-slate-400">
+                        ア：鋳型DNAの特定部位に相補的な短い1本鎖DNA (X)<br>
+                        イ：DNA伸長反応を進める酵素
+                    </p>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+                        <button onclick="checkQ1('ア', 2, this)" class="q1-opt-a bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg border border-slate-600 font-medium transition">① プラスミド</button>
+                        <button onclick="checkQ1('ア', 2, this)" class="q1-opt-a bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg border border-slate-600 font-medium transition">② プライマー</button>
+                        <button onclick="checkQ1('ア', 2, this)" class="q1-opt-a bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg border border-slate-600 font-medium transition">⑤ DNAポリメラーゼ</button>
+                        <button onclick="checkQ1('ア', 2, this)" class="q1-opt-a bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2 px-3 rounded-lg border border-slate-600 font-medium transition">⑦ DNAリガーゼ</button>
+                    </div>
+
+                    <div id="q1-feedback" class="hidden p-3 rounded-lg text-xs leading-relaxed"></div>
+                </div>
+
+                <!-- QUESTION 2 -->
+                <div class="bg-slate-900 p-4 md:p-5 rounded-xl border border-slate-700 space-y-3">
+                    <h3 class="font-bold text-cyan-300 text-sm md:text-base">
+                        問２ 実験結果から、<span class="text-amber-300">鋳型DNA</span> の塩基配列として最も適当なものを一つ選べ。
+                    </h3>
+                    <p class="text-xs text-slate-400">
+                        ※X（プライマー）が結合したところに近い側（＋極側＝一番下）を左として並べたもの。
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                        <button onclick="checkQ2(1, this)" class="q2-opt bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2.5 px-3 rounded-lg border border-slate-600 font-mono text-left">① CGAGTAGCCA</button>
+                        <button onclick="checkQ2(2, this)" class="q2-opt bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2.5 px-3 rounded-lg border border-slate-600 font-mono text-left">② ACCGATGAGC <span class="text-rose-400 text-[10px]">(※引っかけ!)</span></button>
+                        <button onclick="checkQ2(3, this)" class="q2-opt bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2.5 px-3 rounded-lg border border-slate-600 font-mono text-left">③ GCTCATCGGT</button>
+                        <button onclick="checkQ2(4, this)" class="q2-opt bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2.5 px-3 rounded-lg border border-slate-600 font-mono text-left">④ TGGCTACTCG</button>
+                    </div>
+
+                    <div id="q2-feedback" class="hidden p-3 rounded-lg text-xs leading-relaxed"></div>
+                </div>
+
+                <!-- QUESTION 3 -->
+                <div class="bg-slate-900 p-4 md:p-5 rounded-xl border border-slate-700 space-y-3">
+                    <h3 class="font-bold text-cyan-300 text-sm md:text-base">
+                        問３ 反応液に加えるジデオキシリボヌクレオシド三リン酸（ddNTP）の量を増加させると、合成されるDNAはどうなるか。
+                    </h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
+                        <button onclick="checkQ3(1, this)" class="q3-opt bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2.5 px-3 rounded-lg border border-slate-600 text-left">① 短いものが多くなる</button>
+                        <button onclick="checkQ3(2, this)" class="q3-opt bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2.5 px-3 rounded-lg border border-slate-600 text-left">② 長いものが多くなる</button>
+                        <button onclick="checkQ3(3, this)" class="q3-opt bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2.5 px-3 rounded-lg border border-slate-600 text-left">③ 中間の長さのものが多くなる</button>
+                    </div>
+
+                    <div id="q3-feedback" class="hidden p-3 rounded-lg text-xs leading-relaxed"></div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 text-slate-500 text-xs py-4 text-center">
+        サンガー法（Sanger Sequencing）インタラクティブ問題学習アプリ
+    </footer>
+
+    <script>
+        // Data for the problem's gel electrophoresis bands
+        // Height position from bottom (%): lower = faster = shorter = closer to primer
+        const bandData = [
+            { pos: 1, lane: 'ddATP', base: 'A', heightPct: 12 },
+            { pos: 2, lane: 'ddCTP', base: 'C', heightPct: 20 },
+            { pos: 3, lane: 'ddCTP', base: 'C', heightPct: 28 },
+            { pos: 4, lane: 'ddGTP', base: 'G', heightPct: 36 },
+            { pos: 5, lane: 'ddATP', base: 'A', heightPct: 44 },
+            { pos: 6, lane: 'ddTTP', base: 'T', heightPct: 52 },
+            { pos: 7, lane: 'ddGTP', base: 'G', heightPct: 60 },
+            { pos: 8, lane: 'ddATP', base: 'A', heightPct: 68 },
+            { pos: 9, lane: 'ddGTP', base: 'G', heightPct: 76 },
+            { pos: 10, lane: 'ddCTP', base: 'C', heightPct: 84 }
+        ];
+
+        // Base complementary mapping
+        const compBaseMap = { 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G' };
+        const baseBgClass = { 'A': 'bg-baseA', 'T': 'bg-baseT', 'G': 'bg-baseG', 'C': 'bg-baseC' };
+
+        let clickedBands = new Set();
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'text-cyan-400', 'shadow');
+                btn.classList.add('text-slate-400');
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeNav = document.getElementById('nav-' + tabId);
+            activeNav.classList.add('bg-slate-800', 'text-cyan-400', 'shadow');
+            activeNav.classList.remove('text-slate-400');
+
+            if (tabId === 'tab2') {
+                initGelBands();
+            }
+        }
+
+        function initGelBands() {
+            const container = document.getElementById('gel-bands-container');
+            container.innerHTML = '';
+            clickedBands.clear();
+            resetSequenceDisplays();
+
+            const laneXPercent = { 'ddATP': '12.5%', 'ddGTP': '37.5%', 'ddCTP': '62.5%', 'ddTTP': '87.5%' };
+
+            bandData.forEach((band, index) => {
+                const bandEl = document.createElement('div');
+                bandEl.className = 'gel-band absolute transform -translate-x-1/2 w-12 h-2.5 rounded-full cursor-pointer hover:scale-125 transition-all duration-300';
+                bandEl.style.left = laneXPercent[band.lane];
+                // Start at top (- pole)
+                bandEl.style.top = '2%';
+                bandEl.dataset.index = index;
+
+                // Color according to base
+                if (band.base === 'A') bandEl.className += ' bg-rose-400 text-rose-300';
+                if (band.base === 'G') bandEl.className += ' bg-emerald-400 text-emerald-300';
+                if (band.base === 'C') bandEl.className += ' bg-amber-400 text-amber-300';
+                if (band.base === 'T') bandEl.className += ' bg-blue-400 text-blue-300';
+
+                bandEl.onclick = () => onBandClick(index);
+                container.appendChild(bandEl);
+            });
+        }
+
+        function runElectrophoresisAnimation() {
+            initGelBands();
+            const bands = document.querySelectorAll('.gel-band');
+            
+            setTimeout(() => {
+                bands.forEach((bandEl, i) => {
+                    const data = bandData[i];
+                    // Move from top down to calculated height (inverted from bottom heightPct)
+                    const topPos = 90 - data.heightPct;
+                    bandEl.style.top = topPos + '%';
+                });
+            }, 100);
+        }
+
+        function onBandClick(index) {
+            const band = bandData[index];
+            if (clickedBands.has(index)) return;
+
+            clickedBands.add(index);
+            
+            // Add base badge to synthesized sequence
+            const synContainer = document.getElementById('synthesized-strand');
+            const badge = document.createElement('span');
+            badge.className = `base-badge ${baseBgClass[band.base]} text-xs px-2 py-0.5 shadow font-mono text-white animate-bounce`;
+            badge.innerText = `${band.pos}:${band.base}`;
+            synContainer.appendChild(badge);
+
+            // Add complementary base to template sequence
+            const tplContainer = document.getElementById('template-strand');
+            const compBadge = document.createElement('span');
+            const compBase = compBaseMap[band.base];
+            compBadge.className = `base-badge ${baseBgClass[compBase]} text-xs px-2 py-0.5 shadow font-mono text-white animate-pulse`;
+            compBadge.innerText = `${band.pos}:${compBase}`;
+            tplContainer.appendChild(compBadge);
+
+            // Highlight band
+            const bands = document.querySelectorAll('.gel-band');
+            if (bands[index]) {
+                bands[index].classList.add('ring-2', 'ring-white', 'scale-110');
+            }
+
+            document.getElementById('read-progress').innerText = `解読完了: ${clickedBands.size} / 10 塩基`;
+        }
+
+        function resetSequenceDisplays() {
+            document.getElementById('synthesized-strand').innerHTML = `
+                <span class="text-xs bg-cyan-900/60 text-cyan-300 px-2 py-1 rounded border border-cyan-500/40 font-bold">
+                    プライマーX
+                </span>`;
+            document.getElementById('template-strand').innerHTML = `
+                <span class="text-xs bg-emerald-900/60 text-emerald-300 px-2 py-1 rounded border border-emerald-500/40 font-bold">
+                    結合部
+                </span>`;
+            document.getElementById('read-progress').innerText = '下（＋極）からクリックして解読';
+        }
+
+        function updateDdntpExperiment() {
+            const val = parseInt(document.getElementById('ddntp-slider').value);
+            const label = document.getElementById('ddntp-ratio-label');
+            const expText = document.getElementById('exp-result-explanation');
+
+            if (val === 1) {
+                label.innerText = '少量 (低い)';
+                label.className = 'text-cyan-400 font-bold';
+                expText.innerHTML = `
+                    <strong class="text-cyan-300">【ddNTPが少量】</strong><br>
+                    ストッパーがめったに取り込まれないため、ポリメラーゼはDNAをどんどん長く伸ばせます。<br>
+                    ➔ <span class="text-cyan-300 font-bold">長〜いDNA断片が多く合成されます。</span>
+                `;
+            } else if (val === 2) {
+                label.innerText = '適量 (標準)';
+                label.className = 'text-amber-400 font-bold';
+                expText.innerHTML = `
+                    <strong class="text-amber-300">【ddNTPが適量】</strong><br>
+                    1塩基〜10塩基以上の様々な長さのDNA断片がバランスよくバラバラに停止します。<br>
+                    ➔ <span class="text-amber-300 font-bold">電気泳動で綺麗なラダー（すべての塩基位置）が読めます！</span>
+                `;
+            } else {
+                label.innerText = '大量 (過剰 - 問3の条件)';
+                label.className = 'text-rose-400 font-bold';
+                expText.innerHTML = `
+                    <strong class="text-rose-300">【ddNTPが過剰】（問3の正解）</strong><br>
+                    複製が始まってすぐにストッパー(ddNTP)が出会ってしまい、伸長が即座に停止！<br>
+                    ➔ <span class="text-rose-300 font-bold">短いDNA断片ばかりが多くできてしまいます！</span>
+                `;
+            }
+            runDdntpSim();
+        }
+
+        function runDdntpSim() {
+            const val = parseInt(document.getElementById('ddntp-slider').value);
+            let shortPct, midPct, longPct;
+
+            if (val === 1) { // Low ddNTP
+                shortPct = 10; midPct = 30; longPct = 60;
+            } else if (val === 2) { // Normal
+                shortPct = 30; midPct = 40; longPct = 30;
+            } else { // High ddNTP
+                shortPct = 75; midPct = 20; longPct = 5;
+            }
+
+            document.getElementById('short-dna-count').innerText = shortPct + '%';
+            document.getElementById('short-dna-bar').style.width = shortPct + '%';
+
+            document.getElementById('mid-dna-count').innerText = midPct + '%';
+            document.getElementById('mid-dna-bar').style.width = midPct + '%';
+
+            document.getElementById('long-dna-count').innerText = longPct + '%';
+            document.getElementById('long-dna-bar').style.width = longPct + '%';
+
+            // Gel Shift Visualizer
+            const shiftBox = document.getElementById('gel-shift-indicator');
+            shiftBox.innerHTML = '';
+            for (let i = 0; i < 8; i++) {
+                const dot = document.createElement('div');
+                // Higher index = shorter DNA (right side = + pole)
+                const opacity = (i > 4) ? (shortPct / 100) : (longPct / 100);
+                dot.className = 'w-3 h-1.5 rounded bg-cyan-400 transition-all duration-300';
+                dot.style.opacity = Math.max(0.15, opacity);
+                shiftBox.appendChild(dot);
+            }
+        }
+
+        function checkQ1(type, correctVal, btnEl) {
+            const feedback = document.getElementById('q1-feedback');
+            feedback.classList.remove('hidden', 'bg-emerald-950/80', 'bg-rose-950/80', 'text-emerald-200', 'text-rose-200');
+            
+            if (btnEl.innerText.includes('② プライマー')) {
+                feedback.classList.add('bg-emerald-950/80', 'text-emerald-200', 'border', 'border-emerald-500/40');
+                feedback.innerHTML = '<strong>正解！⭕️</strong><br>ア は <strong>② プライマー</strong>（複製開始に必要な短い1本鎖DNA）です。<br>ちなみに イ は <strong>⑤ DNAポリメラーゼ</strong>（DNA合成酵素）です！';
+            } else {
+                feedback.classList.add('bg-rose-950/80', 'text-rose-200', 'border', 'border-rose-500/40');
+                feedback.innerHTML = '<strong>おしい！❌</strong><br>ア は合成のスタート地点となる短鎖DNAなので <strong>② プライマー</strong> です。';
+            }
+        }
+
+        function checkQ2(choice, btnEl) {
+            const feedback = document.getElementById('q2-feedback');
+            feedback.classList.remove('hidden', 'bg-emerald-950/80', 'bg-rose-950/80', 'border-emerald-500/40', 'border-rose-500/40');
+            
+            if (choice === 4) {
+                feedback.classList.add('bg-emerald-950/80', 'text-emerald-200', 'border', 'border-emerald-500/40');
+                feedback.innerHTML = `
+                    <strong>大正解！⭕️（正解：④）</strong><br>
+                    【解説】<br>
+                    ① 電気泳動を＋極（下）から順に読むと、新たに合成された鎖の配列は<br>
+                    <span class="font-mono text-cyan-300 font-bold">5' - ACCGATGAGC - 3'</span> と解読できます。（※選択肢②は引っ掛け！）<br>
+                    ② 問題で問われているのは<strong>「鋳型DNAの配列」</strong>なので、これに相補的な塩基を並べます。<br>
+                    <span class="font-mono text-emerald-300 font-bold">3' - TGGCTACTCG - 5'</span> ➔ 正解は <strong>④</strong> です！
+                `;
+            } else if (choice === 2) {
+                feedback.classList.add('bg-rose-950/80', 'text-rose-200', 'border', 'border-rose-500/40');
+                feedback.innerHTML = `
+                    <strong>残念！最も多い引っ掛け問題です！❌</strong><br>
+                    「ACCGATGAGC」は電気泳動で読んだ<b>「合成された新鎖DNA」</b>です。<br>
+                    問題文は<b>「鋳型DNA」</b>を求めているので、<strong>相補的（A↔T, C↔G）に変換</strong>した <strong>④ TGGCTACTCG</strong> が正解となります！
+                `;
+            } else {
+                feedback.classList.add('bg-rose-950/80', 'text-rose-200', 'border', 'border-rose-500/40');
+                feedback.innerHTML = '<strong>不正解 ❌</strong><br>下（＋極）から順にバンドの位置を読んで合成鎖の配列を出し、それを相補的な配列に変換してみましょう！';
+            }
+        }
+
+        function checkQ3(choice, btnEl) {
+            const feedback = document.getElementById('q3-feedback');
+            feedback.classList.remove('hidden', 'bg-emerald-950/80', 'bg-rose-950/80', 'border-emerald-500/40', 'border-rose-500/40');
+
+            if (choice === 1) {
+                feedback.classList.add('bg-emerald-950/80', 'text-emerald-200', 'border', 'border-emerald-500/40');
+                feedback.innerHTML = `
+                    <strong>正解！⭕️（正解：①）</strong><br>
+                    【解説】<br>
+                    伸長を止めるジデオキシ（ddNTP）の割合を増やすと、合成開始後すぐにddNTPが取り込まれて停止してしまいます。そのため、<strong class="text-rose-300">「短いDNAが多くなる」</strong>のが正解です！
+                `;
+            } else {
+                feedback.classList.add('bg-rose-950/80', 'text-rose-200', 'border', 'border-rose-500/40');
+                feedback.innerHTML = `
+                    <strong>不正解 ❌</strong><br>
+                    ddNTPは伸長を「ストップさせる障害物」です。ストッパーが大量にあると、遠くまで伸びる前にすぐ止まってしまうため、<strong>① 短いものが多くなる</strong> が正解です。
+                `;
+            }
+        }
+
+        // Initialize page state
+        window.onload = function() {
+            updateDdntpExperiment();
+            runElectrophoresisAnimation();
+        };
+    </script>
+</body>
+</html>
