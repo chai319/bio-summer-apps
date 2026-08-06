@@ -69,7 +69,7 @@
                     <i class="fa-solid fa-ruler"></i> Step 1: DNAの長さ
                 </button>
                 <button onclick="switchTab('step2')" id="btn-step2" class="tab-btn px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center gap-2">
-                    <i class="fa-solid fa-chart-pie"></i> Step 2: 塩基数と割合
+                    <i class="fa-solid fa-pie-chart"></i> Step 2: 塩基数と割合
                 </button>
                 <button onclick="switchTab('step3')" id="btn-step3" class="tab-btn px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white transition flex items-center gap-2">
                     <i class="fa-solid fa-link"></i> Step 3: H鎖・H'鎖・RNA
@@ -605,6 +605,7 @@
         // STEP 1 Logic
         const sliderNuc = document.getElementById('s1-nucleotide-slider');
         function updateStep1() {
+            if(!sliderNuc) return;
             const val = parseInt(sliderNuc.value);
             document.getElementById('s1-total-nucleotides-val').innerText = val.toLocaleString() + ' 個';
             
@@ -624,6 +625,7 @@
         // STEP 2 Logic
         const sliderGc = document.getElementById('s2-gc-slider');
         function updateStep2() {
+            if(!sliderGc) return;
             const gcSum = parseInt(sliderGc.value);
             const atSum = 100 - gcSum;
             const tRate = atSum / 2;
@@ -661,6 +663,7 @@
         const sliderHc = document.getElementById('s3-hc-slider');
 
         function updateStep3() {
+            if(!sliderHa || !sliderHc) return;
             const ha = parseInt(sliderHa.value);
             const hc = parseInt(sliderHc.value);
 
