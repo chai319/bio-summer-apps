@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>セントラルドグマ Lv24問題「転写・翻訳の同時進行」完全攻略ラボ (v1.7)</title>
+    <title>セントラルドグマ Lv24問題「転写・翻訳の同時進行」完全攻略ラボ (v1.8)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -537,11 +537,10 @@
                     ctx.textAlign = 'left';
                     ctx.textBaseline = 'alphabetic';
 
-                    // Growing Peptide Chain: STRICTLY 0 at attachment moment, grows proportionally as it moves UP!
+                    // Growing Peptide Chain: ONLY rendered after moving upwards at least 15px from attachment point!
                     const translatedDist = Math.max(0, ribo.attachedMrnaLen - ribo.distFromRoot);
-                    const peptideLen = Math.max(0, translatedDist * 0.28);
-                    
-                    if (peptideLen > 0) {
+                    if (translatedDist >= 15) {
+                        const peptideLen = Math.max(0, (translatedDist - 15) * 0.25);
                         ctx.strokeStyle = '#ec4899';
                         ctx.lineWidth = 2.5;
                         ctx.beginPath();
@@ -642,10 +641,10 @@
                     ctx.textAlign = 'left';
                     ctx.textBaseline = 'alphabetic';
 
-                    // Growing Peptide Chain
+                    // Growing Peptide Chain: ONLY rendered after moving upwards at least 15px from attachment point!
                     const translatedDist = Math.max(0, ribo.attachedMrnaLen - ribo.distFromRoot);
-                    const peptideLen = Math.max(0, translatedDist * 0.28);
-                    if (peptideLen > 0) {
+                    if (translatedDist >= 15) {
+                        const peptideLen = Math.max(0, (translatedDist - 15) * 0.25);
                         ctx.strokeStyle = '#ec4899';
                         ctx.lineWidth = 2.5;
                         ctx.beginPath();
