@@ -279,10 +279,13 @@
         let polySpawnTimer = 0;
         const polySpeed = 0.6;
 
+        let canvas, ctx;
+
         function initPolymerases(w) {
+            const width = w && w > 200 ? w : (canvas && canvas.width > 200 ? canvas.width : 800);
             const termX = 140; // 転写終了点
-            const startX = w - 140; // 転写開始点
-            const totalTravel = startX - termX;
+            const startX = width - 140; // 転写開始点
+            const totalTravel = Math.max(100, startX - termX);
 
             activePolymerases = [
                 createPolymerase(startX - totalTravel * 0.25, totalTravel, startX),
@@ -334,13 +337,13 @@
             }
         }
 
-        const canvas = document.getElementById('simCanvas');
-        const ctx = canvas.getContext('2d');
-
         function resizeCanvas() {
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width;
+            if (!canvas) return;
+            const parent = canvas.parentElement;
+            const width = parent && parent.clientWidth > 200 ? parent.clientWidth : 800;
+            canvas.width = width;
             canvas.height = 520;
+
             if (activePolymerases.length === 0 && detachedMrnas.length === 0) {
                 initPolymerases(canvas.width);
             }
@@ -350,12 +353,14 @@
         window.addEventListener('resize', resizeCanvas);
 
         function drawSim() {
+            if (!canvas || !ctx) return;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const w = canvas.width;
-            const h = canvas.height;
+            const w = canvas.width > 200 ? canvas.width : 800;
+            const h = canvas.height > 200 ? canvas.height : 520;
             const termX = 140;       // 転写終了点 (ターミネーター)
-            const startX = w - 140;   // 転写開始点 (プロモーター)
+            const startX = Math.max(termX + 100, w - 140);   // 転写開始点 (プロモーター)
             const totalTravel = startX - termX;
 
             // Background fill
@@ -377,7 +382,7 @@
             ctx.fillStyle = '#a5b4fc';
             ctx.font = 'bold 13px "JetBrains Mono"';
             ctx.fillText("2本鎖 DNA 5' ───", 40, dnaY - 20);
-            ctx.fillText("─── 3'", w - 100, dnaY - 20);
+            ctx.fillText("─── 3'", Math.max(100, w - 100), dnaY - 20);
 
             // Transcription Markers on DNA
             // Start Point Marker (Right)
@@ -417,7 +422,8 @@
             ctx.fillText("転写が進む方向 (c: 右から左へ進行)", w / 2, dnaY - 56);
             ctx.textAlign = 'left';
 
-            const speedMultiplier = parseInt(document.getElementById('speed-range').value);
+            const speedInput = document.getElementById('speed-range');
+            const speedMultiplier = speedInput ? (parseInt(speedInput.value) || 3) : 3;
             const moveDelta = polySpeed * (speedMultiplier / 3);
             const riboSpeed = 0.55 * (speedMultiplier / 3);
 
@@ -667,19 +673,21 @@
             const icon = document.getElementById('icon-play');
 
             if (isPlaying) {
-                text.innerText = "一時停止";
-                icon.className = "fa-solid fa-pause mr-2";
+                if (text) text.innerText = "一時停止";
+                if (icon) icon.className = "fa-solid fa-pause mr-2";
                 drawSim();
             } else {
-                text.innerText = "再生";
-                icon.className = "fa-solid fa-play mr-2";
+                if (text) text.innerText = "再生";
+                if (icon) icon.className = "fa-solid fa-play mr-2";
                 if (animFrameId) cancelAnimationFrame(animFrameId);
             }
         }
 
         function resetSimulation() {
-            initPolymerases(canvas.width);
-            drawSim();
+            if (canvas) {
+                initPolymerases(canvas.width);
+                drawSim();
+            }
         }
 
         // Quiz Data - 100% Matches the uploaded solution image texts and answers
@@ -774,6 +782,7 @@
 
         function renderQuiz() {
             const container = document.getElementById('quiz-container');
+            if (!container) return;
             container.innerHTML = "";
 
             quizData.forEach((q) => {
@@ -820,14 +829,18 @@
             const expEl = document.getElementById(`q-exp-${qId}`);
 
             if (isCorrect) {
-                statusEl.className = "text-xs px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-700 font-bold";
-                statusEl.innerText = "正解！";
+                if (statusEl) {
+                    statusEl.className = "text-xs px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-700 font-bold";
+                    statusEl.innerText = "正解！";
+                }
             } else {
-                statusEl.className = "text-xs px-2.5 py-1 rounded bg-red-950 text-red-400 border border-red-700 font-bold";
-                statusEl.innerText = "不正解";
+                if (statusEl) {
+                    statusEl.className = "text-xs px-2.5 py-1 rounded bg-red-950 text-red-400 border border-red-700 font-bold";
+                    statusEl.innerText = "不正解";
+                }
             }
 
-            expEl.classList.remove('hidden');
+            if (expEl) expEl.classList.remove('hidden');
             updateTotalScore();
         }
 
@@ -836,13 +849,25 @@
             Object.values(userScore).forEach(val => {
                 if (val === true) correctCount++;
             });
-            document.getElementById('score-val').innerText = correctCount;
+            const scoreEl = document.getElementById('score-val');
+            if (scoreEl) scoreEl.innerText = correctCount;
         }
 
-        window.onload = function() {
-            resizeCanvas();
+        function startApp() {
+            canvas = document.getElementById('simCanvas');
+            if (canvas) {
+                ctx = canvas.getContext('2d');
+                resizeCanvas();
+            }
             renderQuiz();
-        };
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startApp);
+        } else {
+            startApp();
+        }
+        window.addEventListener('load', startApp);
     </script>
 </body>
 </html>
