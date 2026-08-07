@@ -90,7 +90,7 @@
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-slate-400 font-bold">翻訳の方向:</span>
                         <span class="px-3 py-1 bg-amber-950 text-amber-300 border border-amber-700 rounded-full text-xs font-bold flex items-center gap-1">
-                            <i class="fa-solid fa-arrow-down"></i> 方向 b (mRNAの先端へ)
+                            <i class="fa-solid fa-arrow-up"></i> 方向 a (先端からDNA/根元へ)
                         </span>
                     </div>
 
@@ -105,7 +105,7 @@
             <div class="relative w-full bg-slate-950 rounded-2xl border border-slate-800 p-2 overflow-hidden shadow-2xl">
                 <div class="absolute top-4 left-4 z-10 flex gap-2">
                     <span class="bg-slate-900/90 backdrop-blur border border-slate-700 text-slate-300 px-3 py-1.5 rounded-md text-xs font-medium shadow">
-                        <i class="fa-solid fa-eye text-indigo-400 mr-1.5"></i> リアルタイム動態：RNAポリメラーゼ(イ)が右から左(c)へ移動しながら転写
+                        <i class="fa-solid fa-eye text-indigo-400 mr-1.5"></i> リアルタイム動態：RNAポリメラーゼ(イ)が右から左(c)へ移動 / リボソーム(ウ)は先端からDNA側(a)へ移動
                     </span>
                 </div>
                 <canvas id="simCanvas" class="w-full h-[520px] block"></canvas>
@@ -136,7 +136,7 @@
                         <span class="w-3 h-3 rounded-full bg-amber-500 inline-block mr-2"></span> 構造 ウ: リボソーム
                     </div>
                     <p class="text-xs text-slate-300">
-                        DNAに近い根元でmRNAに結合し、先端（方向b）へ移動しながらタンパク質（ペプチド鎖）を合成します。
+                        mRNAの先端（5'端）に結合し、DNA側の根元（方向a）へ向かって移動しながらペプチド鎖を伸長（翻訳）します。
                     </p>
                 </div>
             </div>
@@ -181,12 +181,12 @@
                                     <div class="absolute top-16 -left-3 w-6 h-6 rounded-full bg-amber-500 text-slate-900 font-bold text-xs flex items-center justify-center border border-amber-300">ウ</div>
                                     <div class="absolute top-28 -left-3 w-6 h-6 rounded-full bg-amber-500 text-slate-900 font-bold text-xs flex items-center justify-center border border-amber-300">ウ</div>
 
-                                    <!-- Translation Arrow b -->
+                                    <!-- Translation Arrow a -->
                                     <div class="absolute bottom-2 left-4 text-amber-400 text-xs font-bold flex items-center gap-1 bg-amber-950/80 px-2 py-1 rounded border border-amber-800">
-                                        <i class="fa-solid fa-arrow-down"></i> 翻訳の方向: b (先端へ)
-                                    </div>
-                                </div>
-                                <span class="text-[11px] text-amber-300 font-bold bg-slate-800 px-2 py-0.5 rounded inline-block">最も早く転写開始された</span>
+                                         <i class="fa-solid fa-arrow-up"></i> 翻訳の方向: a (DNA/根元へ)
+                                     </div>
+                                 </div>
+                                 <span class="text-[11px] text-amber-300 font-bold bg-slate-800 px-2 py-0.5 rounded inline-block">最も早く転写開始された</span>
                             </div>
 
                             <!-- Branch 2 (MIDDLE: Medium mRNA) -->
@@ -231,11 +231,11 @@
 
                     <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3">
                         <h4 class="font-bold text-indigo-300 text-base flex items-center">
-                            <i class="fa-solid fa-circle-question text-amber-400 mr-2"></i> Q2(2). 翻訳が進む方向(b)の判別法
+                            <i class="fa-solid fa-circle-question text-amber-400 mr-2"></i> Q2(2). 翻訳が進む方向(a)の判別法
                         </h4>
                         <p class="text-xs text-slate-300 leading-relaxed">
-                            mRNAに付着しているリボソーム（ウ）の場合、<strong>DNAに近いほう（mRNAの根元）に付着しているリボソームが、mRNAの先端に最初に付着したリボソーム</strong>です。<br>
-                            リボソームはmRNA上を先端に向かって移動するため、翻訳の方向は **b** です。
+                            リボソーム（ウ）はmRNAの先端（5'端）に最初に結合し、DNA側（mRNAの根元/3'端）へ向かって移動します。<br>
+                            したがって、DNAに近い（根元にある）リボソームほど翻訳が進んでおり、ペプチド鎖が長くなっています。翻訳の方向は <strong>a (先端からDNA側へ)</strong> です。
                         </p>
                     </div>
                 </div>
@@ -402,20 +402,20 @@
                         p.ribosomes = [];
                     }
 
-                    // Dynamically attach new Ribosomes near the DNA top (mRNA root) periodically
+                    // Dynamically attach new Ribosomes at the bottom tip of mRNA (5' end) periodically
                     if (Math.random() < 0.03 * (speedMultiplier / 3) && p.mrnaLength > 30) {
                         p.ribosomes.push({
-                            progress: 5 // starts near root
+                            progress: p.mrnaLength // starts at tip
                         });
                     }
 
-                    // Move existing Ribosomes down along mRNA (direction b)
+                    // Move existing Ribosomes UP along mRNA towards DNA root (direction a)
                     p.ribosomes.forEach(ribo => {
-                        ribo.progress += 0.8 * (speedMultiplier / 3);
+                        ribo.progress -= 0.8 * (speedMultiplier / 3);
                     });
 
-                    // Remove ribosomes that reached the bottom tip of mRNA
-                    p.ribosomes = p.ribosomes.filter(ribo => ribo.progress <= p.mrnaLength);
+                    // Remove ribosomes that reached the root near DNA
+                    p.ribosomes = p.ribosomes.filter(ribo => ribo.progress >= 5);
                 }
 
                 const px = p.x;
@@ -455,7 +455,7 @@
                 ctx.font = 'bold 12px sans-serif';
                 ctx.fillText('ア', px + 12, mrnaStartY + 20);
 
-                // Draw Ribosomes (ウ) moving downwards along this mRNA (Direction b)
+                // Draw Ribosomes (ウ) moving UPWARDS along this mRNA towards DNA (Direction a)
                 p.ribosomes.forEach(ribo => {
                     const ry = mrnaStartY + ribo.progress;
 
@@ -477,8 +477,9 @@
                     ctx.textAlign = 'left';
                     ctx.textBaseline = 'alphabetic';
 
-                    // Growing Peptide Chain attached to Ribosome
-                    const peptideLen = ribo.progress * 0.25;
+                    // Growing Peptide Chain attached to Ribosome (longer as ribosome moves closer to DNA)
+                    const translatedDist = p.mrnaLength - ribo.progress;
+                    const peptideLen = Math.max(0, translatedDist * 0.25);
                     ctx.strokeStyle = '#ec4899';
                     ctx.lineWidth = 2.5;
                     ctx.beginPath();
@@ -492,27 +493,27 @@
                     ctx.fill();
                 });
 
-                // Draw Arrow for Translation Direction (b) on the longest mRNA
+                // Draw Arrow for Translation Direction (a) on the longest mRNA (upwards to DNA)
                 if (idx === 0) {
                     const midY = mrnaStartY + p.mrnaLength / 2;
                     if (p.mrnaLength > 80) {
                         ctx.strokeStyle = '#f59e0b';
                         ctx.lineWidth = 2;
                         ctx.beginPath();
-                        ctx.moveTo(px - 18, midY - 20);
-                        ctx.lineTo(px - 18, midY + 20);
+                        ctx.moveTo(px - 18, midY + 20);
+                        ctx.lineTo(px - 18, midY - 20);
                         ctx.stroke();
 
                         ctx.fillStyle = '#f59e0b';
                         ctx.beginPath();
-                        ctx.moveTo(px - 18, midY + 20);
-                        ctx.lineTo(px - 23, midY + 12);
-                        ctx.lineTo(px - 13, midY + 12);
+                        ctx.moveTo(px - 18, midY - 20);
+                        ctx.lineTo(px - 23, midY - 12);
+                        ctx.lineTo(px - 13, midY - 12);
                         ctx.closePath();
                         ctx.fill();
 
                         ctx.font = 'bold 11px sans-serif';
-                        ctx.fillText('翻訳方向 b', px - 82, midY + 4);
+                        ctx.fillText('翻訳方向 a', px - 82, midY + 4);
                     }
                 }
             });
@@ -581,8 +582,8 @@
                     "③ 方向 c (左方向)",
                     "④ 方向 d (右方向)"
                 ],
-                correct: 1, // ②
-                explanation: "<strong>【正解: ②】</strong><br>mRNAに付着しているリボソーム(ウ)の場合、**DNAに近いほうに付着しているリボソームが、mRNAの先端に最初に付着したリボソーム**である。よって、翻訳の方向は **b** である。"
+                correct: 0, // ①
+                explanation: "<strong>【正解: ①】</strong><br>リボソーム（ウ）はmRNAの先端（5'端）に最初に結合し、DNA側（mRNAの根元/3'端）に向かって移動しながら翻訳を行います。したがって、DNAに近い（根元にある）リボソームほど翻訳が進んでおり、ペプチド鎖が長く伸びています。よって、翻訳の方向は **方向 a (DNAに近づく方向)** です。"
             },
             {
                 id: 3,
