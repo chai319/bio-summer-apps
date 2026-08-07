@@ -284,7 +284,8 @@
         function initPolymerases(w) {
             const minX = 80;
             const maxX = w - 80;
-            const dist = (maxX - minX) / 3;
+            const totalTravel = maxX - minX;
+            const dist = totalTravel / 3;
 
             polymerases = [
                 { x: minX + dist * 0.4, mrnaLength: 0, ribosomes: [] },
@@ -292,10 +293,19 @@
                 { x: minX + dist * 2.4, mrnaLength: 0, ribosomes: [] }
             ];
             
-            // Calculate initial mRNA length based on how far left it has traveled from right start
+            // Calculate initial mRNA length and setup initial ribosomes
             polymerases.forEach(p => {
-                const traveled = maxX - p.x;
-                p.mrnaLength = Math.max(10, traveled * 0.75);
+                const r = (maxX - p.x) / totalTravel;
+                p.mrnaLength = Math.max(10, r * totalTravel * 0.65);
+                if (r > 0.2) {
+                    p.ribosomes.push({ rStart: 0.1 });
+                }
+                if (r > 0.5) {
+                    p.ribosomes.push({ rStart: 0.35 });
+                }
+                if (r > 0.8) {
+                    p.ribosomes.push({ rStart: 0.6 });
+                }
             });
         }
 
@@ -391,31 +401,37 @@
             polymerases.forEach((p, idx) => {
                 if (isPlaying) {
                     p.x -= moveDelta;
-                    // Grow mRNA as it travels left
-                    const traveled = maxX - p.x;
-                    p.mrnaLength = Math.max(10, traveled * 0.75);
+                    
+                    // Progress ratio of transcription: r ranges from 0 (at maxX) to 1 (at minX)
+                    const totalTravel = maxX - minX;
+                    const r = Math.min(1, Math.max(0, (maxX - p.x) / totalTravel));
+                    const maxMrnaLength = totalTravel * 0.65;
 
-                    // If polymerase reaches the far left end, reset it to the far right
-                    if (p.x < minX) {
+                    p.mrnaLength = Math.max(10, r * maxMrnaLength);
+
+                    // If polymerase reaches the far left end (r = 1), reset it to the far right
+                    if (p.x <= minX) {
                         p.x = maxX;
                         p.mrnaLength = 5;
                         p.ribosomes = [];
-                    }
+                    } else {
+                        // Dynamically attach new Ribosomes at the bottom tip of mRNA (5' end) periodically
+                        if (Math.random() < 0.04 * (speedMultiplier / 3) && r > 0.1 && r < 0.85) {
+                            p.ribosomes.push({
+                                rStart: r // progress ratio when attached at tip
+                            });
+                        }
 
-                    // Dynamically attach new Ribosomes at the bottom tip of mRNA (5' end) periodically
-                    if (Math.random() < 0.03 * (speedMultiplier / 3) && p.mrnaLength > 30) {
-                        p.ribosomes.push({
-                            progress: p.mrnaLength // starts at tip
+                        // Move Ribosomes UP along mRNA towards DNA root (direction a)
+                        // Ribosome reaches DNA root (progress = 0) exactly when r = 1 (Polymerase reaches far left)
+                        p.ribosomes.forEach(ribo => {
+                            const remRatio = (1 - r) / (1 - ribo.rStart);
+                            ribo.progress = p.mrnaLength * Math.max(0, remRatio);
                         });
+
+                        // Keep ribosomes until they reach the root near DNA when r approaches 1
+                        p.ribosomes = p.ribosomes.filter(ribo => ribo.progress > 2);
                     }
-
-                    // Move existing Ribosomes UP along mRNA towards DNA root (direction a)
-                    p.ribosomes.forEach(ribo => {
-                        ribo.progress -= 0.8 * (speedMultiplier / 3);
-                    });
-
-                    // Remove ribosomes that reached the root near DNA
-                    p.ribosomes = p.ribosomes.filter(ribo => ribo.progress >= 5);
                 }
 
                 const px = p.x;
