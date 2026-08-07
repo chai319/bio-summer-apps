@@ -90,7 +90,7 @@
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-slate-400 font-bold">翻訳の方向:</span>
                         <span class="px-3 py-1 bg-amber-950 text-amber-300 border border-amber-700 rounded-full text-xs font-bold flex items-center gap-1">
-                            <i class="fa-solid fa-arrow-up"></i> 方向 a (先端からDNA/根元へ)
+                            <i class="fa-solid fa-arrow-up"></i> 方向 a (先端からDNA/根元へ等速移動)
                         </span>
                     </div>
 
@@ -105,7 +105,7 @@
             <div class="relative w-full bg-slate-950 rounded-2xl border border-slate-800 p-2 overflow-hidden shadow-2xl">
                 <div class="absolute top-4 left-4 z-10 flex gap-2">
                     <span class="bg-slate-900/90 backdrop-blur border border-slate-700 text-slate-300 px-3 py-1.5 rounded-md text-xs font-medium shadow">
-                        <i class="fa-solid fa-eye text-indigo-400 mr-1.5"></i> リアルタイム動態：RNAポリメラーゼ(イ)が右から左(c)へ移動 / リボソーム(ウ)は先端からDNA側(a)へ移動
+                        <i class="fa-solid fa-eye text-indigo-400 mr-1.5"></i> リアルタイム動態：🚩開始点から結合したイ(緑)が左へ移動 / 🏁終了点で離脱して完全遊離翻訳
                     </span>
                 </div>
                 <canvas id="simCanvas" class="w-full h-[520px] block"></canvas>
@@ -118,7 +118,7 @@
                         <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block mr-2"></span> 構造 イ: RNAポリメラーゼ
                     </div>
                     <p class="text-xs text-slate-300">
-                        DNA上を<strong>右から左（方向c）へ移動</strong>します。左へ進むほど転写時間が長く経過するため、合成されるmRNA（ア）がどんどん長く伸びていきます。
+                        🚩転写開始点（プロモーター）で結合し、<strong>右から左（方向c）へ等速移動</strong>します。🏁転写終了点に達するとDNAから離脱します。
                     </p>
                 </div>
 
@@ -127,7 +127,7 @@
                         <span class="w-3 h-3 rounded-full bg-cyan-500 inline-block mr-2"></span> 構造 ア: mRNA (伝令RNA)
                     </div>
                     <p class="text-xs text-slate-300">
-                        RNAポリメラーゼから下方に伸びる一本鎖RNA。原核生物では核膜がないため、転写が終わる前（合成途中）からリボソームが取り付きます。
+                        RNAポリメラーゼから下方に伸びる一本鎖RNA。原核生物では核膜がないため、転写完了前からリボソームが取り付きます。終了点通過後は遊離して翻訳を完了します。
                     </p>
                 </div>
 
@@ -136,7 +136,7 @@
                         <span class="w-3 h-3 rounded-full bg-amber-500 inline-block mr-2"></span> 構造 ウ: リボソーム
                     </div>
                     <p class="text-xs text-slate-300">
-                        mRNAの先端（5'端）に結合し、DNA側の根元（方向a）へ向かって移動しながらペプチド鎖を伸長（翻訳）します。
+                        mRNAの先端（5'端）に一定間隔で結合し、DNA側の根元（方向a）へ向かって<strong>完全等速で移動</strong>しながらペプチド鎖を伸長します。
                     </p>
                 </div>
             </div>
@@ -274,39 +274,45 @@
         let isPlaying = true;
         let animFrameId = null;
 
-        // Simulation Loop State
-        // We track multiple RNA Polymerases moving from Right (x_max) to Left (x_min)
-        let polySpeed = 0.8;
-        
-        // Complex structure: { id, x, mrnaLength, ribosomes: [] }
-        let polymerases = [];
+        let activePolymerases = [];
+        let detachedMrnas = [];
+        let polySpawnTimer = 0;
+        const polySpeed = 0.6;
 
         function initPolymerases(w) {
-            const minX = 80;
-            const maxX = w - 80;
-            const totalTravel = maxX - minX;
-            const dist = totalTravel / 3;
+            const termX = 140; // 転写終了点
+            const startX = w - 140; // 転写開始点
+            const totalTravel = startX - termX;
 
-            polymerases = [
-                { x: minX + dist * 0.4, mrnaLength: 0, ribosomes: [] },
-                { x: minX + dist * 1.4, mrnaLength: 0, ribosomes: [] },
-                { x: minX + dist * 2.4, mrnaLength: 0, ribosomes: [] }
+            activePolymerases = [
+                createPolymerase(startX - totalTravel * 0.25, totalTravel, startX),
+                createPolymerase(startX - totalTravel * 0.60, totalTravel, startX),
+                createPolymerase(startX - totalTravel * 0.90, totalTravel, startX)
             ];
-            
-            // Calculate initial mRNA length and setup initial ribosomes
-            polymerases.forEach(p => {
-                const r = (maxX - p.x) / totalTravel;
-                p.mrnaLength = Math.max(10, r * totalTravel * 0.65);
-                if (r > 0.2) {
-                    p.ribosomes.push({ rStart: 0.1 });
-                }
-                if (r > 0.5) {
-                    p.ribosomes.push({ rStart: 0.35 });
-                }
-                if (r > 0.8) {
-                    p.ribosomes.push({ rStart: 0.6 });
-                }
-            });
+            detachedMrnas = [];
+            polySpawnTimer = 0;
+        }
+
+        function createPolymerase(x, totalTravel, startX) {
+            const r = Math.max(0, (startX - x) / totalTravel);
+            const maxLen = totalTravel * 0.65;
+            const mrnaLen = Math.max(10, r * maxLen);
+
+            const p = {
+                x: x,
+                mrnaLength: mrnaLen,
+                maxMrnaLength: maxLen,
+                ribosomes: []
+            };
+
+            // Add initial ribosomes at equal intervals
+            for (let dist = mrnaLen; dist > 15; dist -= 55) {
+                p.ribosomes.push({
+                    distFromRoot: dist,
+                    peptideLen: Math.max(0, (mrnaLen - dist) * 0.25)
+                });
+            }
+            return p;
         }
 
         function switchTab(tab) {
@@ -335,7 +341,7 @@
             const rect = canvas.getBoundingClientRect();
             canvas.width = rect.width;
             canvas.height = 520;
-            if (polymerases.length === 0) {
+            if (activePolymerases.length === 0 && detachedMrnas.length === 0) {
                 initPolymerases(canvas.width);
             }
             drawSim();
@@ -348,8 +354,9 @@
 
             const w = canvas.width;
             const h = canvas.height;
-            const minX = 80;
-            const maxX = w - 80;
+            const termX = 140;       // 転写終了点 (ターミネーター)
+            const startX = w - 140;   // 転写開始点 (プロモーター)
+            const totalTravel = startX - termX;
 
             // Background fill
             ctx.fillStyle = '#020617';
@@ -372,7 +379,23 @@
             ctx.fillText("2本鎖 DNA 5' ───", 40, dnaY - 20);
             ctx.fillText("─── 3'", w - 100, dnaY - 20);
 
-            // Large Direction Arrow for Transcription (c: Right to Left)
+            // Transcription Markers on DNA
+            // Start Point Marker (Right)
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(startX, dnaY, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText('🚩 転写開始点', startX - 35, dnaY - 14);
+
+            // End Point Marker (Left)
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(termX, dnaY, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillText('🏁 転写終了点（離脱）', termX - 45, dnaY - 14);
+
+            // Direction Arrow for Transcription (c: Right to Left)
             ctx.strokeStyle = '#22d3ee';
             ctx.lineWidth = 3;
             ctx.fillStyle = '#22d3ee';
@@ -394,43 +417,66 @@
             ctx.fillText("転写が進む方向 (c: 右から左へ進行)", w / 2, dnaY - 56);
             ctx.textAlign = 'left';
 
-            // 2. Update and Draw RNA Polymerases moving RIGHT -> LEFT
             const speedMultiplier = parseInt(document.getElementById('speed-range').value);
             const moveDelta = polySpeed * (speedMultiplier / 3);
+            const riboSpeed = 0.55 * (speedMultiplier / 3);
 
-            polymerases.forEach((p, idx) => {
+            // 2. Spawn New Polymerases at Start Point Periodically
+            if (isPlaying) {
+                polySpawnTimer += 1 * (speedMultiplier / 3);
+                if (polySpawnTimer >= 140) {
+                    polySpawnTimer = 0;
+                    activePolymerases.push({
+                        x: startX,
+                        mrnaLength: 10,
+                        maxMrnaLength: totalTravel * 0.65,
+                        ribosomes: []
+                    });
+                }
+            }
+
+            // 3. Process Active Polymerases on DNA
+            for (let i = activePolymerases.length - 1; i >= 0; i--) {
+                const p = activePolymerases[i];
                 if (isPlaying) {
                     p.x -= moveDelta;
-                    
-                    // Progress ratio of transcription: r ranges from 0 (at maxX) to 1 (at minX)
-                    const totalTravel = maxX - minX;
-                    const r = Math.min(1, Math.max(0, (maxX - p.x) / totalTravel));
-                    const maxMrnaLength = totalTravel * 0.65;
+                    const r = Math.min(1, Math.max(0, (startX - p.x) / totalTravel));
+                    p.mrnaLength = Math.max(10, r * p.maxMrnaLength);
 
-                    p.mrnaLength = Math.max(10, r * maxMrnaLength);
-
-                    // If polymerase reaches the far left end (r = 1), reset it to the far right
-                    if (p.x <= minX) {
-                        p.x = maxX;
-                        p.mrnaLength = 5;
-                        p.ribosomes = [];
-                    } else {
-                        // Dynamically attach new Ribosomes at the bottom tip of mRNA (5' end) periodically
-                        if (Math.random() < 0.04 * (speedMultiplier / 3) && r > 0.1 && r < 0.85) {
+                    // Dynamically attach new Ribosomes at tip of mRNA (5' end) at EQUAL INTERVALS
+                    if (p.mrnaLength > 20) {
+                        const lastRibo = p.ribosomes[p.ribosomes.length - 1];
+                        if (!lastRibo || (p.mrnaLength - lastRibo.distFromRoot) >= 55) {
                             p.ribosomes.push({
-                                rStart: r // progress ratio when attached at tip
+                                distFromRoot: p.mrnaLength, // starts at tip
+                                peptideLen: 0
                             });
                         }
+                    }
 
-                        // Move Ribosomes UP along mRNA towards DNA root (direction a)
-                        // Ribosome reaches DNA root (progress = 0) exactly when r = 1 (Polymerase reaches far left)
-                        p.ribosomes.forEach(ribo => {
-                            const remRatio = (1 - r) / (1 - ribo.rStart);
-                            ribo.progress = p.mrnaLength * Math.max(0, remRatio);
+                    // Move Ribosomes UP along mRNA towards DNA root (Direction a) EQUAL CONSTANT SPEED
+                    p.ribosomes.forEach(ribo => {
+                        ribo.distFromRoot -= riboSpeed;
+                        ribo.peptideLen = Math.max(0, (p.mrnaLength - ribo.distFromRoot) * 0.25);
+                    });
+
+                    // Keep ribosomes until they reach root
+                    p.ribosomes = p.ribosomes.filter(ribo => ribo.distFromRoot > 5);
+
+                    // Check if Polymerase reached Termination Point (termX)
+                    if (p.x <= termX) {
+                        // Detach mRNA and Ribosomes from DNA!
+                        detachedMrnas.push({
+                            x: p.x,
+                            y: dnaY + 20,
+                            mrnaLength: p.mrnaLength,
+                            ribosomes: p.ribosomes,
+                            alpha: 1.0,
+                            vx: -0.2,
+                            vy: 0.3
                         });
-
-                        // Keep ribosomes until they reach the root near DNA when r approaches 1
-                        p.ribosomes = p.ribosomes.filter(ribo => ribo.progress > 2);
+                        activePolymerases.splice(i, 1);
+                        continue;
                     }
                 }
 
@@ -473,7 +519,7 @@
 
                 // Draw Ribosomes (ウ) moving UPWARDS along this mRNA towards DNA (Direction a)
                 p.ribosomes.forEach(ribo => {
-                    const ry = mrnaStartY + ribo.progress;
+                    const ry = mrnaStartY + ribo.distFromRoot;
 
                     // Draw Ribosome Particle
                     ctx.fillStyle = '#f59e0b';
@@ -494,45 +540,121 @@
                     ctx.textBaseline = 'alphabetic';
 
                     // Growing Peptide Chain attached to Ribosome (longer as ribosome moves closer to DNA)
-                    const translatedDist = p.mrnaLength - ribo.progress;
-                    const peptideLen = Math.max(0, translatedDist * 0.25);
                     ctx.strokeStyle = '#ec4899';
                     ctx.lineWidth = 2.5;
                     ctx.beginPath();
                     ctx.moveTo(px + 15, ry);
-                    ctx.lineTo(px + 25 + peptideLen, ry + 4);
+                    ctx.lineTo(px + 25 + ribo.peptideLen, ry - 4);
                     ctx.stroke();
 
                     ctx.fillStyle = '#f472b6';
                     ctx.beginPath();
-                    ctx.arc(px + 25 + peptideLen, ry + 4, 4, 0, Math.PI * 2);
+                    ctx.arc(px + 25 + ribo.peptideLen, ry - 4, 4, 0, Math.PI * 2);
                     ctx.fill();
                 });
 
                 // Draw Arrow for Translation Direction (a) on the longest mRNA (upwards to DNA)
-                if (idx === 0) {
+                if (idx === 0 && p.mrnaLength > 80) {
                     const midY = mrnaStartY + p.mrnaLength / 2;
-                    if (p.mrnaLength > 80) {
-                        ctx.strokeStyle = '#f59e0b';
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.moveTo(px - 18, midY + 20);
-                        ctx.lineTo(px - 18, midY - 20);
-                        ctx.stroke();
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(px - 18, midY + 20);
+                    ctx.lineTo(px - 18, midY - 20);
+                    ctx.stroke();
 
-                        ctx.fillStyle = '#f59e0b';
-                        ctx.beginPath();
-                        ctx.moveTo(px - 18, midY - 20);
-                        ctx.lineTo(px - 23, midY - 12);
-                        ctx.lineTo(px - 13, midY - 12);
-                        ctx.closePath();
-                        ctx.fill();
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath();
+                    ctx.moveTo(px - 18, midY - 20);
+                    ctx.lineTo(px - 23, midY - 12);
+                    ctx.lineTo(px - 13, midY - 12);
+                    ctx.closePath();
+                    ctx.fill();
 
-                        ctx.font = 'bold 11px sans-serif';
-                        ctx.fillText('翻訳方向 a', px - 82, midY + 4);
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.fillText('翻訳方向 a', px - 82, midY + 4);
+                }
+            }
+
+            // 4. Process Detached (Completed) mRNAs Floating & Finishing Translation
+            for (let i = detachedMrnas.length - 1; i >= 0; i--) {
+                const d = detachedMrnas[i];
+                if (isPlaying) {
+                    d.x += d.vx;
+                    d.y += d.vy;
+
+                    // Continue equal-speed translation on detached mRNA
+                    d.ribosomes.forEach(ribo => {
+                        ribo.distFromRoot -= riboSpeed;
+                        ribo.peptideLen = Math.max(0, (d.mrnaLength - ribo.distFromRoot) * 0.25);
+                    });
+
+                    d.ribosomes = d.ribosomes.filter(ribo => ribo.distFromRoot > 5);
+
+                    // When all translation is complete, fade out and remove mRNA
+                    if (d.ribosomes.length === 0) {
+                        d.alpha -= 0.015;
                     }
                 }
-            });
+
+                if (d.alpha <= 0) {
+                    detachedMrnas.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = d.alpha;
+
+                // Draw Detached mRNA Strand
+                const startY = d.y;
+                const endY = d.y + d.mrnaLength;
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(d.x, startY);
+                ctx.lineTo(d.x, endY);
+                ctx.stroke();
+
+                ctx.fillStyle = '#38bdf8';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.fillText('遊離mRNA (翻訳完了中)', d.x + 10, startY + 12);
+
+                // Draw Ribosomes on Detached mRNA
+                d.ribosomes.forEach(ribo => {
+                    const ry = startY + ribo.distFromRoot;
+
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.strokeStyle = '#d97706';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.ellipse(d.x, ry, 15, 11, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#0f172a';
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('ウ', d.x, ry);
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'alphabetic';
+
+                    // Peptide Chain
+                    ctx.strokeStyle = '#ec4899';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(d.x + 15, ry);
+                    ctx.lineTo(d.x + 25 + ribo.peptideLen, ry - 4);
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#f472b6';
+                    ctx.beginPath();
+                    ctx.arc(d.x + 25 + ribo.peptideLen, ry - 4, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                ctx.restore();
+            }
 
             if (isPlaying) {
                 animFrameId = requestAnimationFrame(drawSim);
