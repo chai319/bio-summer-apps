@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>セントラルドグマ Lv24問題「転写・翻訳の同時進行」完全攻略ラボ (v1.8)</title>
+    <title>セントラルドグマ Lv24問題「転写・翻訳の同時進行」完全攻略ラボ (v1.9)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -34,7 +34,7 @@
             background: #64748b;
         }
         canvas {
-            background: #020617;
+            background: rgb(2, 6, 23);
             border-radius: 0.75rem;
         }
     </style>
@@ -310,14 +310,14 @@
                 ribosomes: []
             };
 
-            // Seed initial ribosomes if mRNA is already long
-            if (mrnaLen > 30) {
+            // Seed initial ribosomes safely with attachedMrnaLen == distFromRoot (peptideLen = 0)
+            if (mrnaLen > 35) {
                 p.ribosomes.push({ distFromRoot: mrnaLen, attachedMrnaLen: mrnaLen });
             }
-            if (mrnaLen > 90) {
+            if (mrnaLen > 95) {
                 p.ribosomes.push({ distFromRoot: mrnaLen - 55, attachedMrnaLen: mrnaLen - 55 });
             }
-            if (mrnaLen > 150) {
+            if (mrnaLen > 155) {
                 p.ribosomes.push({ distFromRoot: mrnaLen - 110, attachedMrnaLen: mrnaLen - 110 });
             }
 
@@ -370,7 +370,7 @@
             const totalTravel = startX - termX;
 
             // Background fill
-            ctx.fillStyle = '#020617';
+            ctx.fillStyle = 'rgb(2, 6, 23)';
             ctx.fillRect(0, 0, w, h);
 
             // 1. DNA Double Strand at Top (Y = 90)
@@ -431,7 +431,7 @@
             const speedInput = document.getElementById('speed-range');
             const speedMultiplier = speedInput ? (parseInt(speedInput.value) || 3) : 3;
             const moveDelta = polySpeed * (speedMultiplier / 3);
-            const riboSpeed = 0.22 * (speedMultiplier / 3); // Slow constant ribosome speed
+            const riboSpeed = 0.20 * (speedMultiplier / 3); // Slow equal-speed translation
 
             // 2. Process Active Polymerases on DNA
             for (let i = 0; i < activePolymerases.length; i++) {
@@ -475,6 +475,10 @@
                     // Move Ribosomes UP along mRNA towards DNA root (Direction a) ABSOLUTE EQUAL CONSTANT SPEED
                     p.ribosomes.forEach(ribo => {
                         ribo.distFromRoot -= riboSpeed;
+                        // Strict margin guard: Never reach RNA Polymerase 'イ' root while on active DNA!
+                        if (ribo.distFromRoot < 22) {
+                            ribo.distFromRoot = 22;
+                        }
                     });
                 }
 
@@ -483,7 +487,7 @@
 
                 // Draw RNA Polymerase (イ)
                 ctx.fillStyle = '#10b981';
-                ctx.strokeStyle = '#059669';
+                ctx.strokeStyle = 'rgb(5, 150, 105)';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
                 ctx.arc(px, py, 20, 0, Math.PI * 2);
