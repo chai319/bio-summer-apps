@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>セントラルドグマ Lv24問題「転写・翻訳の同時進行」完全攻略ラボ (v1.2)</title>
+    <title>セントラルドグマ Lv24問題「転写・翻訳の同時進行」完全攻略ラボ (v1.3)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -425,7 +425,7 @@
             const speedInput = document.getElementById('speed-range');
             const speedMultiplier = speedInput ? (parseInt(speedInput.value) || 3) : 3;
             const moveDelta = polySpeed * (speedMultiplier / 3);
-            const riboSpeed = 0.55 * (speedMultiplier / 3);
+            const riboSpeed = (polySpeed * 0.48) * (speedMultiplier / 3);
 
             // 2. Process Active Polymerases on DNA
             for (let i = 0; i < activePolymerases.length; i++) {
@@ -458,20 +458,20 @@
                     // Dynamically attach new Ribosomes at tip of mRNA (5' end)
                     if (p.mrnaLength > 30 && p.ribosomes.length < 4) {
                         const lastRibo = p.ribosomes[p.ribosomes.length - 1];
-                        if (!lastRibo || (p.mrnaLength - lastRibo.distFromRoot) >= 55) {
+                        if (!lastRibo || (p.mrnaLength - lastRibo.distFromRoot) >= 50) {
                             p.ribosomes.push({
                                 distFromRoot: p.mrnaLength
                             });
                         }
                     }
 
-                    // Move Ribosomes UP along mRNA towards DNA root (Direction a) EQUAL CONSTANT SPEED
+                    // Move Ribosomes UP along mRNA towards DNA root (Direction a) SLOW EQUAL SPEED
                     p.ribosomes.forEach(ribo => {
                         ribo.distFromRoot -= riboSpeed;
                     });
 
-                    // Keep ribosomes that are valid
-                    p.ribosomes = p.ribosomes.filter(ribo => ribo.distFromRoot > 5 && ribo.distFromRoot <= p.mrnaLength + 5);
+                    // Keep ribosomes until they reach root exactly (distFromRoot >= 0)
+                    p.ribosomes = p.ribosomes.filter(ribo => ribo.distFromRoot >= 0 && ribo.distFromRoot <= p.mrnaLength + 5);
                 }
 
                 const px = p.x;
