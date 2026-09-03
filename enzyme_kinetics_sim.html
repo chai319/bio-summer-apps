@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酵素反応と分別定量シミュレーター | 高校生物「代謝」思考問題探究</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Outfit:wght@400;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --border-color: rgba(255, 255, 255, 0.12);
+            --text-main: #f3f4f6;
+            --text-sub: #9ca3af;
+            --text-muted: #6b7280;
+            --color-glucose: #38bdf8;       /* 青: グルコース */
+            --color-fructose: #fb923c;      /* 橙: フルクトース */
+            --color-g6p: #a855f7;           /* 紫: G6P */
+            --color-f6p: #facc15;           /* 黄: F6P */
+            --color-nadph: #4ade80;         /* 緑: NADPH (340nm吸収) */
+            --color-nadp: #94a3b8;          /* 灰白: NADP+ */
+            --color-accent: #38bdf8;
+            --color-danger: #f87171;
+            --font-main: 'Zen Kaku Gothic New', 'BIZ UDPGothic', sans-serif;
+            --font-num: 'Outfit', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+        }
+
+        /* Container & Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header */
+        header {
+            padding: 40px 0 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15), transparent 70%);
+        }
+        .header-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 14px;
+            border-radius: 20px;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: var(--color-glucose);
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            margin-bottom: 8px;
+        }
+        h1 span {
+            background: linear-gradient(135deg, #38bdf8, #4ade80);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            color: var(--text-sub);
+            font-size: 1.05rem;
+            max-width: 800px;
+        }
+
+        /* Navigation Bar */
+        .nav-bar {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-sub);
+            padding: 8px 18px;
+            border-radius: 24px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background: rgba(56, 189, 248, 0.15);
+            color: #fff;
+            border-color: var(--color-glucose);
+        }
+
+        /* Section Styling */
+        section {
+            margin-top: 48px;
+        }
+        .section-header {
+            margin-bottom: 24px;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-desc {
+            color: var(--text-sub);
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        /* Cards Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 900px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 24px;
+            position: relative;
+        }
+
+        /* Lab Animation Box */
+        .lab-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            min-height: 460px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 14px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Test Tube Graphic */
+        .tube-container {
+            width: 140px;
+            height: 240px;
+            border: 4px solid rgba(255, 255, 255, 0.4);
+            border-top: none;
+            border-radius: 0 0 70px 70px;
+            position: relative;
+            background: rgba(255, 255, 255, 0.02);
+            overflow: hidden;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.1);
+            margin: 20px 0 10px;
+        }
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 75%;
+            background: linear-gradient(180deg, rgba(56, 189, 248, 0.15) 0%, rgba(74, 222, 128, 0.25) 100%);
+            border-radius: 0 0 66px 66px;
+            transition: all 0.5s ease;
+        }
+        .dropper-indicator {
+            position: absolute;
+            top: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        .dropper-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Particles on Liquid */
+        .molecules-canvas {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Spectro UV Beam Graphic */
+        .spectro-meter {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 12px 18px;
+            margin-top: 14px;
+            border: 1px solid var(--border-color);
+        }
+        .spectro-beam {
+            flex: 1;
+            height: 10px;
+            background: linear-gradient(90deg, #a855f7, #6366f1);
+            border-radius: 5px;
+            position: relative;
+            box-shadow: 0 0 12px #a855f7;
+        }
+        .spectro-display {
+            text-align: right;
+            font-family: var(--font-num);
+        }
+        .spectro-val {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--color-nadph);
+            line-height: 1;
+        }
+        .spectro-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Molecule Legend */
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            margin-top: 16px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* Graph Card */
+        .graph-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .graph-canvas-box {
+            position: relative;
+            flex: 1;
+            min-height: 280px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+        canvas#graphCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Graph Annotations */
+        .graph-info-banner {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 10px 16px;
+            margin-top: 12px;
+            border: 1px solid var(--border-color);
+            font-size: 0.85rem;
+        }
+        .info-col {
+            display: flex;
+            flex-direction: column;
+        }
+        .info-col span:first-child {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .info-col span:last-child {
+            font-weight: 700;
+            font-size: 1.1rem;
+            font-family: var(--font-num);
+        }
+
+        /* Playback & Controls */
+        .controls-card {
+            margin-top: 24px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px 24px;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            background: var(--color-glucose);
+            color: #0b0f19;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+        }
+        .action-btn.secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            border: 1px solid var(--border-color);
+        }
+        .action-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: none;
+        }
+        .time-slider-wrapper {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        input[type="range"].time-slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"].time-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--color-glucose);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+        }
+
+        /* Sliders for Concentrations */
+        .sugar-sliders {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+        }
+
+        /* Scenarios (What-if experiments) */
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 18px;
+        }
+        @media (max-width: 800px) {
+            .scenario-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .scenario-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 18px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        .scenario-card:hover {
+            border-color: var(--color-glucose);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .scenario-card.active {
+            border-color: var(--color-glucose);
+            background: rgba(56, 189, 248, 0.08);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+        }
+        .scenario-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+        }
+        .badge-success { background: rgba(74, 222, 128, 0.15); color: var(--color-nadph); border: 1px solid rgba(74, 222, 128, 0.4); }
+        .badge-fail { background: rgba(248, 113, 113, 0.15); color: var(--color-danger); border: 1px solid rgba(248, 113, 113, 0.4); }
+        .scenario-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .scenario-desc {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            line-height: 1.45;
+        }
+
+        /* Step-by-Step Pedagogical Explanation Accordions */
+        .step-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .step-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .step-header {
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .step-header:hover {
+            background: var(--bg-card-hover);
+        }
+        .step-tag {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--color-glucose);
+            letter-spacing: 0.05em;
+            margin-bottom: 2px;
+        }
+        .step-q {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+        .step-toggle-icon {
+            font-size: 1.4rem;
+            transition: transform 0.3s;
+            color: var(--text-muted);
+        }
+        .step-item.open .step-toggle-icon {
+            transform: rotate(180deg);
+            color: var(--color-glucose);
+        }
+        .step-body {
+            padding: 0 24px 24px;
+            display: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 18px;
+        }
+        .step-item.open .step-body {
+            display: block;
+        }
+
+        /* Formula Box & Diagram Box */
+        .visual-diagram {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 14px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .flow-node {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-align: center;
+        }
+        .flow-arrow {
+            color: var(--color-glucose);
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        /* Question & Quiz Interactive Panel */
+        .quiz-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .quiz-q {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        .quiz-opts {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .quiz-opt-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quiz-opt-btn:hover {
+            border-color: var(--color-glucose);
+        }
+        .quiz-opt-btn.selected-correct {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: var(--color-nadph);
+            color: var(--color-nadph);
+        }
+        .quiz-opt-btn.selected-wrong {
+            background: rgba(248, 113, 113, 0.2);
+            border-color: var(--color-danger);
+            color: var(--color-danger);
+        }
+        .quiz-feedback {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            display: none;
+        }
+        .quiz-feedback.show {
+            display: block;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 80px;
+            padding: 30px 0;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <div class="header-tag">🧬 高校生物探究 / 酵素反応と光度分別定量</div>
+            <h1>酵素で分子を見分ける<span>「時間差トリック」</span></h1>
+            <p class="subtitle">
+                グルコースとフルクトースが混ざった溶液から、なぜそれぞれの量を正確に測れるのか？<br>
+                アニメーションとリアルタイムグラフを動かして、入試問題の核心を直感的に解き明かそう。
+            </p>
+        </div>
+    </header>
+
+    <div class="nav-bar">
+        <div class="container" style="display: flex; gap: 12px;">
+            <a href="#labSection" class="nav-btn active">🧪 バーチャル実験室</a>
+            <a href="#scenarioSection" class="nav-btn">⚡️ もしも実験（比較）</a>
+            <a href="#stepSection" class="nav-btn">📖 ステップ解説</a>
+            <a href="#quizSection" class="nav-btn">🎯 入試問題チャレンジ</a>
+        </div>
+    </div>
+
+    <main class="container">
+
+        <!-- ========================================== -->
+        <!-- SECTION 1: バーチャル実験室 & リアルタイムグラフ -->
+        <!-- ========================================== -->
+        <section id="labSection">
+            <div class="section-header">
+                <h2 class="section-title">🧪 バーチャル実験室 ＆ 吸光度グラフ</h2>
+                <p class="section-desc">時間を進めながら、試験管内の分子変化と波長340nm吸光度の上昇をリアルタイムに観察しよう。</p>
+            </div>
+
+            <div class="grid-2">
+                <!-- Left: Virtual Lab Tube -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-weight: 700; font-size: 1rem;">🔬 試験管内シミュレーション</span>
+                        <span id="currentPhaseBadge" style="font-size: 0.8rem; padding: 3px 10px; border-radius: 12px; background: rgba(56, 189, 248, 0.2); color: var(--color-glucose); font-weight: 700;">
+                            フェーズ 1 (0〜20分)
+                        </span>
+                    </div>
+
+                    <div class="lab-box">
+                        <div id="dropperIndicator" class="dropper-indicator">💧 酵素添加！</div>
+                        
+                        <div class="tube-container">
+                            <div class="liquid" id="tubeLiquid"></div>
+                            <canvas id="moleculesCanvas" class="molecules-canvas"></canvas>
+                        </div>
+
+                        <!-- UV Spectro Meter -->
+                        <div class="spectro-meter">
+                            <div style="font-size: 0.8rem; font-weight: 700; color: #c084fc;">
+                                340nm<br>UV照射
+                            </div>
+                            <div class="spectro-beam"></div>
+                            <div class="spectro-display">
+                                <div class="spectro-val" id="dispAbsVal">0.00</div>
+                                <div class="spectro-label">吸光度 (Abs 340nm)</div>
+                            </div>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="legend-grid">
+                            <div class="legend-item"><span class="legend-dot" style="background: var(--color-glucose);"></span> グルコース (<span id="cntGlucose">30</span>)</div>
+                            <div class="legend-item"><span class="legend-dot" style="background: var(--color-fructose);"></span> フルクトース (<span id="cntFructose">20</span>)</div>
+                            <div class="legend-item"><span class="legend-dot" style="background: var(--color-g6p);"></span> G6P (<span id="cntG6P">0</span>)</div>
+                            <div class="legend-item"><span class="legend-dot" style="background: var(--color-f6p);"></span> F6P (<span id="cntF6P">0</span>)</div>
+                            <div class="legend-item"><span class="legend-dot" style="background: var(--color-nadph);"></span> NADPH (<span id="cntNADPH">0</span>)</div>
+                            <div class="legend-item"><span class="legend-dot" style="background: var(--color-nadp);"></span> NADP+ (<span id="cntNADP">50</span>)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Real-time Graph -->
+                <div class="card graph-container">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-weight: 700; font-size: 1rem;">📈 反応に伴う吸光度（340nm）の経時的変化</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">図2対応グラフ</span>
+                    </div>
+
+                    <div class="graph-canvas-box">
+                        <canvas id="graphCanvas"></canvas>
+                    </div>
+
+                    <div class="graph-info-banner">
+                        <div class="info-col">
+                            <span>20分後の吸光度 (E20)</span>
+                            <span id="dispE20" style="color: var(--color-glucose);">--</span>
+                        </div>
+                        <div class="info-col">
+                            <span>追加上昇分 (E40 − E20)</span>
+                            <span id="dispDeltaE" style="color: var(--color-fructose);">--</span>
+                        </div>
+                        <div class="info-col">
+                            <span>40分後の吸光度 (E40)</span>
+                            <span id="dispE40" style="color: var(--color-nadph);">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Card -->
+            <div class="controls-card">
+                <div class="control-row">
+                    <button class="action-btn" id="playPauseBtn">▶ 再生開始</button>
+                    <button class="action-btn secondary" id="resetBtn">↺ リセット</button>
+
+                    <div class="time-slider-wrapper">
+                        <span style="font-size: 0.85rem; color: var(--text-sub); white-space: nowrap;">反応時間:</span>
+                        <input type="range" id="timeSlider" class="time-slider" min="0" max="40" step="0.2" value="0">
+                        <span id="timeDisp" style="font-family: var(--font-num); font-size: 1.2rem; font-weight: 800; min-width: 60px;">0.0 分</span>
+                    </div>
+                </div>
+
+                <!-- Sugar Concentration Sliders -->
+                <div class="sugar-sliders">
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>水溶液Wのグルコース量</span>
+                            <span id="initGlucoseDisp" style="color: var(--color-glucose); font-weight: 700;">1.50 mM (比率: 3)</span>
+                        </div>
+                        <input type="range" id="sliderGlucose" min="0.5" max="3.0" step="0.25" value="1.5">
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>水溶液Wのフルクトース量</span>
+                            <span id="initFructoseDisp" style="color: var(--color-fructose); font-weight: 700;">1.00 mM (比率: 2)</span>
+                        </div>
+                        <input type="range" id="sliderFructose" min="0.5" max="3.0" step="0.25" value="1.0">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 2: もしも実験（失敗パターン比較） -->
+        <!-- ========================================== -->
+        <section id="scenarioSection">
+            <div class="section-header">
+                <h2 class="section-title">⚡️ 「もしも実験」で必然性を実感する</h2>
+                <p class="section-desc">
+                    なぜ「最初に①と③を入れ、20分待ってから②を入れる」必要があるのか？<br>
+                    もし別のタイミングや順番で入れたらどうなるか、失敗パターンを試してみよう！
+                </p>
+            </div>
+
+            <div class="scenario-grid">
+                <!-- Scenario 1 (Correct) -->
+                <div class="scenario-card active" id="scenStandard" onclick="selectScenario('standard')">
+                    <span class="scenario-badge badge-success">正解の手順</span>
+                    <h3 class="scenario-title">①+③ ➔ 20分後に ② 添加</h3>
+                    <p class="scenario-desc">
+                        グルコースを先にNADPHに変換し切る（E20）。その後に②を入れてフルクトース由来分（E40−E20）を追加定量。<strong>完全に分別成功！</strong>
+                    </p>
+                </div>
+
+                <!-- Scenario 2 (Early Add: Q2-3-A) -->
+                <div class="scenario-card" id="scenEarly" onclick="selectScenario('early')">
+                    <span class="scenario-badge badge-fail">問2(3)(A) の失敗例</span>
+                    <h3 class="scenario-title">①+③ ➔ 5分後に ② 添加</h3>
+                    <p class="scenario-desc">
+                        時間がもったいないからと5分で②を入れると、まだグルコースが残っている間にフルクトースも反応開始。<strong>2段階の段差が崩壊して分別不能！</strong>
+                    </p>
+                </div>
+
+                <!-- Scenario 3 (All at once) -->
+                <div class="scenario-card" id="scenAll" onclick="selectScenario('all')">
+                    <span class="scenario-badge badge-fail">同時添加の失敗例</span>
+                    <h3 class="scenario-title">最初から ①＋②＋③ を同時添加</h3>
+                    <p class="scenario-desc">
+                        最初から全酵素を入れると、グルコースもフルクトースも同時に一気に反応。1本の綺麗なS字曲線でE40まで上がりますが、<strong>内訳が全く分からない！</strong>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 3: ステップ解説（寄り添い対話） -->
+        <!-- ========================================== -->
+        <section id="stepSection">
+            <div class="section-header">
+                <h2 class="section-title">📖 ステップ解説：思考の壁をとく</h2>
+                <p class="section-desc">生徒がつまずきやすい4つのポイントを、対話と図解でひとつずつ丁寧に解きほぐします。</p>
+            </div>
+
+            <div class="step-container">
+                <!-- STEP 1 -->
+                <div class="step-item open">
+                    <div class="step-header" onclick="toggleStep(this)">
+                        <div>
+                            <div class="step-tag">STEP 01 ・ 問1の謎</div>
+                            <div class="step-q">なぜ「波長340nm」の光を測定するのか？</div>
+                        </div>
+                        <div class="step-toggle-icon">▼</div>
+                    </div>
+                    <div class="step-body">
+                        <p>
+                            試験管の中には、未反応の <strong>NADP⁺</strong> と、反応で生まれた <strong>NADPH</strong> が混ざり合っています。<br>
+                            図1の吸収スペクトルを見ると：
+                        </p>
+                        <div class="visual-diagram">
+                            <div class="flow-node" style="border-color: #94a3b8;">波長 260nm<br><span style="color:#94a3b8; font-size:0.8rem;">NADP⁺もNADPHも両方吸収（重なって区別できない！）</span></div>
+                            <div class="flow-arrow">vs</div>
+                            <div class="flow-node" style="border-color: #4ade80;">波長 340nm<br><span style="color:#4ade80; font-size:0.8rem;">NADPHだけが吸収！（NADP⁺は吸収ゼロ）</span></div>
+                        </div>
+                        <p style="color: var(--text-sub); font-size: 0.95rem;">
+                            💡 <strong>ここがポイント！</strong><br>
+                            波長340nm（近紫外線）を当てれば、<strong>「生じたNADPHの濃度だけに比例して吸光度が上がる」</strong>ため、酵素反応が進んだ分だけをピンポイントで数値化できるのです！
+                        </p>
+                    </div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div class="step-item">
+                    <div class="step-header" onclick="toggleStep(this)">
+                        <div>
+                            <div class="step-tag">STEP 02 ・ 問2(1)の謎</div>
+                            <div class="step-q">なぜ最初に加えるのは「酵素①」と「酵素③」なのか？</div>
+                        </div>
+                        <div class="step-toggle-icon">▼</div>
+                    </div>
+                    <div class="step-body">
+                        <p>
+                            3つの酵素の「基質」と「生産物」を整理してみましょう。
+                        </p>
+                        <div class="visual-diagram" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                            <div>🔵 <strong>グルコース</strong> ＋ ATP ──( <strong>酵素①</strong> )──▶ 🟣 <strong>G6P</strong> ──( <strong>酵素③</strong> ＋ NADP⁺ )──▶ 🟢 <strong>NADPH 生成！</strong></div>
+                            <div>🟠 <strong>フルクトース</strong> ＋ ATP ──( <strong>酵素①</strong> )──▶ 🟡 <strong>F6P</strong> ──( <strong>酵素②</strong> )──▶ 🟣 <strong>G6P</strong> (ここで酵素②がないとストップ！)</div>
+                        </div>
+                        <p>
+                            水溶液Wに入っているのは「グルコース」と「フルクトース」の2つだけ。<br>
+                            最初に <strong>酵素①と酵素③</strong> を入れると：
+                        </p>
+                        <ul style="margin: 8px 0 8px 24px; color: var(--text-sub);">
+                            <li>グルコースは ① ➔ ③ とスムーズに進んで <strong>NADPH</strong> になる！</li>
+                            <li>フルクトースは ① で F6P になるが、<strong>酵素②がないためそこで一時停止（プール）される！</strong></li>
+                        </ul>
+                        <p style="color: var(--color-glucose); font-weight: 700;">
+                            👉 フルクトースをあえて「F6Pで足止め」しておくことで、最初の20分間はグルコースだけを先に測り切る、という見事な作戦なのです！
+                        </p>
+                    </div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div class="step-item">
+                    <div class="step-header" onclick="toggleStep(this)">
+                        <div>
+                            <div class="step-tag">STEP 03 ・ 問2(2)(3)の謎</div>
+                            <div class="step-q">なぜ「E20」がグルコースで、「E40−E20」がフルクトースなのか？</div>
+                        </div>
+                        <div class="step-toggle-icon">▼</div>
+                    </div>
+                    <div class="step-body">
+                        <p>
+                            グラフの段差（プラトー）の意味を整理しましょう：
+                        </p>
+                        <div class="visual-diagram">
+                            <div class="flow-node" style="color: var(--color-glucose); border-color: var(--color-glucose);">
+                                0〜20分の上昇 (E20)<br>
+                                <strong>グルコース由来のNADPH</strong>
+                            </div>
+                            <div class="flow-arrow">＋</div>
+                            <div class="flow-node" style="color: var(--color-fructose); border-color: var(--color-fructose);">
+                                20〜40分の追加上昇 (E40 − E20)<br>
+                                <strong>フルクトース由来のNADPH</strong>
+                            </div>
+                            <div class="flow-arrow">＝</div>
+                            <div class="flow-node" style="color: var(--color-nadph); border-color: var(--color-nadph);">
+                                40分後のトータル (E40)<br>
+                                <strong>両者の合計量</strong>
+                            </div>
+                        </div>
+                        <p>
+                            20分後に酵素②（C）を入れると、足止めされていた F6P が一気に G6P へ（反応[2]）、そして共存している酵素③によって NADPH へ（反応[3]）と進みます。<br>
+                            したがって：
+                        </p>
+                        <ul style="margin: 8px 0 8px 24px; color: var(--text-sub);">
+                            <li><strong>(エ)〜(オ)で進行する反応</strong>：反応[2] と 反応[3]（問2(2)の正解）</li>
+                            <li><strong>グルコース量 ∝ E20</strong></li>
+                            <li><strong>フルクトース量 ∝ E40 − E20</strong></li>
+                            <li>グラフを見ると E20 ＞ (E40 − E20) なので、<strong>グルコース量 ＞ フルクトース量</strong>（問2(3)(E)が〇の理由！）</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SECTION 4: 入試問題チャレンジ（即時採点クイズ） -->
+        <!-- ========================================== -->
+        <section id="quizSection">
+            <div class="section-header">
+                <h2 class="section-title">🎯 入試問題チャレンジ（問2 小問(3)）</h2>
+                <p class="section-desc">学んだ考え方を使って、本番の選択肢 (A)〜(E) の正誤判定に挑戦してみよう！</p>
+            </div>
+
+            <!-- Quiz A -->
+            <div class="quiz-card">
+                <div class="quiz-q">
+                    <span>(A)</span>
+                    <span>時間短縮のため、(イ)の5分後に(エ)を行ってもグルコースの定量に支障はない。</span>
+                </div>
+                <div class="quiz-opts">
+                    <button class="quiz-opt-btn" onclick="checkQuiz(this, 'A', 'O')">〇 正しい</button>
+                    <button class="quiz-opt-btn" onclick="checkQuiz(this, 'A', 'X')">✕ 誤り</button>
+                </div>
+                <div class="quiz-feedback" id="fbA">
+                    <strong>正解：✕（誤り）</strong><br>
+                    「もしも実験」で見た通り、5分後ではグルコースがまだ半分しか反応していません。ここで酵素②を加えると、未反応のグルコースとフルクトースが同時に反応してしまい、グルコース単独の量（E20）が測れなくなります！
+                </div>
+            </div>
+
+            <!-- Quiz B -->
+            <div class="quiz-card">
+                <div class="quiz-q">
+                    <span>(B)</span>
+                    <span>E40の値からは、水溶液W中のグルコースとフルクトースの合計量を求めることができる。</span>
+                </div>
+                <div class="quiz-opts">
+                    <button class="quiz-opt-btn" onclick="checkQuiz(this, 'B', 'O')">〇 正しい</button>
+                    <button class="quiz-opt-btn" onclick="checkQuiz(this, 'B', 'X')">✕ 誤り</button>
+                </div>
+                <div class="quiz-feedback" id="fbB">
+                    <strong>正解：〇（正しい）</strong><br>
+                    40分後にはグルコースもフルクトースもすべてNADPHに変換され尽くしています。E40は生じたNADPHの総量を示すため、モル吸光係数を用いて両者の合計モル濃度を算出できます。
+                </div>
+            </div>
+
+            <!-- Quiz C & D -->
+            <div class="quiz-card">
+                <div class="quiz-q">
+                    <span>(C)＆(D)</span>
+                    <span>(C) フルクトース量はE20から求まる。 / (D) グルコース量はE40−E20から求まる。</span>
+                </div>
+                <div class="quiz-opts">
+                    <button class="quiz-opt-btn" onclick="checkQuiz(this, 'CD', 'O')">〇 正しい</button>
+                    <button class="quiz-opt-btn" onclick="checkQuiz(this, 'CD', 'X')">✕ 誤り</button>
+                </div>
+                <div class="quiz-feedback" id="fbCD">
+                    <strong>正解：✕（逆転しているため誤り！）</strong><br>
+                    正しくは、<strong>グルコース量が E20</strong> から、<strong>フルクトース量が E40 − E20</strong> から求まります！
+                </div>
+            </div>
+
+            <!-- Quiz E -->
+            <div class="quiz-card">
+                <div class="quiz-q">
+                    <span>(E)</span>
+                    <span>水溶液W中に存在するグルコース量は、フルクトースより多い。</span>
+                </div>
+                <div class="quiz-opts">
+                    <button class="quiz-opt-btn" onclick="checkQuiz(this, 'E', 'O')">〇 正しい</button>
+                    <button class="quiz-opt-btn" onclick="checkQuiz(this, 'E', 'X')">✕ 誤り</button>
+                </div>
+                <div class="quiz-feedback" id="fbE">
+                    <strong>正解：〇（正しい）</strong><br>
+                    図2のグラフの実測値を見ると、1段目の高さ E20 は約 1.4、2段目の増分 E40 − E20 は約 0.9 です。E20 ＞ (E40 − E20) であるため、グルコース量のほうがフルクトース量より確実に多いと判断できます！
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            河瀬高校 STEAM探究 / 生物・情報連携教材<br>
+            高校生物「代謝と酵素反応」光度分別定量シミュレーター
+        </div>
+    </footer>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT SIMULATION LOGIC -->
+    <!-- ========================================== -->
+    <script>
+        // Simulation State
+        const state = {
+            currentTime: 0,
+            isPlaying: false,
+            playbackSpeed: 1.0,
+            scenario: 'standard', // 'standard', 'early', 'all'
+            glucose0: 1.5,
+            fructose0: 1.0,
+            kAbs: 0.9,           // 吸光度変換係数
+            kRate: 0.22,         // 反応速度定数
+            particles: [],
+            lastTimestamp: null
+        };
+
+        // DOM Elements
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const timeSlider = document.getElementById('timeSlider');
+        const timeDisp = document.getElementById('timeDisp');
+        const sliderGlucose = document.getElementById('sliderGlucose');
+        const sliderFructose = document.getElementById('sliderFructose');
+        const initGlucoseDisp = document.getElementById('initGlucoseDisp');
+        const initFructoseDisp = document.getElementById('initFructoseDisp');
+        const currentPhaseBadge = document.getElementById('currentPhaseBadge');
+        const dropperIndicator = document.getElementById('dropperIndicator');
+        const dispAbsVal = document.getElementById('dispAbsVal');
+        const dispE20 = document.getElementById('dispE20');
+        const dispDeltaE = document.getElementById('dispDeltaE');
+        const dispE40 = document.getElementById('dispE40');
+
+        // Canvas Elements
+        const moleculesCanvas = document.getElementById('moleculesCanvas');
+        const mCtx = moleculesCanvas.getContext('2d');
+        const graphCanvas = document.getElementById('graphCanvas');
+        const gCtx = graphCanvas.getContext('2d');
+
+        // Resize Canvas to device pixel ratio
+        function resizeCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+            
+            const mRect = moleculesCanvas.parentElement.getBoundingClientRect();
+            moleculesCanvas.width = mRect.width * dpr;
+            moleculesCanvas.height = mRect.height * dpr;
+            mCtx.scale(dpr, dpr);
+
+            const gRect = graphCanvas.parentElement.getBoundingClientRect();
+            graphCanvas.width = gRect.width * dpr;
+            graphCanvas.height = gRect.height * dpr;
+            gCtx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', () => {
+            resizeCanvases();
+            drawGraph();
+        });
+
+        // ==========================================
+        // Mathematical Model (ODE-based continuous kinetics)
+        // ==========================================
+        function getConcentrations(t, scen = state.scenario) {
+            const g0 = state.glucose0;
+            const f0 = state.fructose0;
+            const k = state.kRate;
+
+            let g = 0, f = 0, g6p = 0, f6p = 0, nadph = 0;
+
+            if (scen === 'standard') {
+                // 0 ~ 20 min: Enzyme 1 + 3 active.
+                // Glucose -> G6P -> NADPH. Fructose -> F6P (pooled).
+                if (t <= 20) {
+                    g = g0 * Math.exp(-k * t);
+                    f = f0 * Math.exp(-k * t);
+                    f6p = f0 * (1 - Math.exp(-k * t));
+                    nadph = g0 * (1 - Math.exp(-k * t));
+                    g6p = 0; // consumed rapidly by 3
+                } else {
+                    // 20 ~ 40 min: Enzyme 2 added at t=20.
+                    // F6P -> G6P -> NADPH.
+                    const tAfter = t - 20;
+                    const nadphPhase1 = g0 * (1 - Math.exp(-k * 20));
+                    const f6pAt20 = f0 * (1 - Math.exp(-k * 20));
+                    
+                    g = g0 * Math.exp(-k * t);
+                    f = f0 * Math.exp(-k * t);
+                    f6p = f6pAt20 * Math.exp(-k * tAfter);
+                    const nadphPhase2 = f6pAt20 * (1 - Math.exp(-k * tAfter));
+                    nadph = nadphPhase1 + nadphPhase2;
+                }
+            } else if (scen === 'early') {
+                // Early addition: Enzyme 2 added at t=5 min
+                if (t <= 5) {
+                    g = g0 * Math.exp(-k * t);
+                    f = f0 * Math.exp(-k * t);
+                    f6p = f0 * (1 - Math.exp(-k * t));
+                    nadph = g0 * (1 - Math.exp(-k * t));
+                } else {
+                    const tAfter = t - 5;
+                    const gAt5 = g0 * Math.exp(-k * 5);
+                    const nadphAt5 = g0 * (1 - Math.exp(-k * 5));
+                    const f6pAt5 = f0 * (1 - Math.exp(-k * 5));
+                    const fAt5 = f0 * Math.exp(-k * 5);
+
+                    g = gAt5 * Math.exp(-k * tAfter);
+                    f = fAt5 * Math.exp(-k * tAfter);
+                    f6p = f6pAt5 * Math.exp(-k * tAfter);
+
+                    const gConverted = gAt5 * (1 - Math.exp(-k * tAfter));
+                    const fConverted = (f0 - fAt5) * (1 - Math.exp(-k * tAfter)) + (fAt5 - f);
+                    nadph = nadphAt5 + gConverted + fConverted * (1 - Math.exp(-k * tAfter));
+                }
+            } else if (scen === 'all') {
+                // All enzymes at t=0: Both Glucose and Fructose react continuously
+                g = g0 * Math.exp(-k * t);
+                f = f0 * Math.exp(-k * t);
+                nadph = (g0 + f0) * (1 - Math.exp(-k * t));
+            }
+
+            const abs = nadph * state.kAbs;
+            return { g, f, g6p, f6p, nadph, abs };
+        }
+
+        // ==========================================
+        // Particle Simulation in Virtual Test Tube
+        // ==========================================
+        function initParticles() {
+            state.particles = [];
+            const count = 70;
+            for (let i = 0; i < count; i++) {
+                state.particles.push({
+                    x: Math.random() * 110 + 15,
+                    y: Math.random() * 120 + 70,
+                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: (Math.random() - 0.5) * 0.8,
+                    type: i < 35 ? 'glucose' : 'fructose'
+                });
+            }
+        }
+
+        function updateParticles() {
+            const conc = getConcentrations(state.currentTime);
+            const totalSugars = state.glucose0 + state.fructose0;
+            const totalParticles = state.particles.length;
+
+            const targetG = Math.round((conc.g / totalSugars) * totalParticles);
+            const targetF = Math.round((conc.f / totalSugars) * totalParticles);
+            const targetF6P = Math.round((conc.f6p / totalSugars) * totalParticles);
+            const targetNADPH = totalParticles - targetG - targetF - targetF6P;
+
+            // Assign particle types based on ratios
+            let curG = 0, curF = 0, curF6P = 0;
+            state.particles.forEach((p) => {
+                if (curG < targetG) {
+                    p.type = 'glucose'; curG++;
+                } else if (curF < targetF) {
+                    p.type = 'fructose'; curF++;
+                } else if (curF6P < targetF6P) {
+                    p.type = 'f6p'; curF6P++;
+                } else {
+                    p.type = 'nadph';
+                }
+
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 15 || p.x > 125) p.vx *= -1;
+                if (p.y < 70 || p.y > 210) p.vy *= -1;
+            });
+
+            // Update Counts display
+            document.getElementById('cntGlucose').innerText = Math.round(conc.g * 20);
+            document.getElementById('cntFructose').innerText = Math.round(conc.f * 20);
+            document.getElementById('cntF6P').innerText = Math.round(conc.f6p * 20);
+            document.getElementById('cntG6P').innerText = Math.round(conc.g6p * 20);
+            document.getElementById('cntNADPH').innerText = Math.round(conc.nadph * 20);
+            document.getElementById('cntNADP').innerText = Math.max(0, 50 - Math.round(conc.nadph * 20));
+        }
+
+        function drawParticles() {
+            mCtx.clearRect(0, 0, moleculesCanvas.width, moleculesCanvas.height);
+            const colors = {
+                glucose: '#38bdf8',
+                fructose: '#fb923c',
+                f6p: '#facc15',
+                g6p: '#a855f7',
+                nadph: '#4ade80'
+            };
+
+            state.particles.forEach((p) => {
+                mCtx.beginPath();
+                mCtx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+                mCtx.fillStyle = colors[p.type] || '#fff';
+                mCtx.shadowColor = colors[p.type] || '#fff';
+                mCtx.shadowBlur = 6;
+                mCtx.fill();
+            });
+            mCtx.shadowBlur = 0;
+        }
+
+        // ==========================================
+        // Graph Rendering (Canvas with Beer-Lambert annotations)
+        // ==========================================
+        function drawGraph() {
+            const w = graphCanvas.parentElement.clientWidth;
+            const h = graphCanvas.parentElement.clientHeight;
+            gCtx.clearRect(0, 0, w, h);
+
+            const padLeft = 55;
+            const padBottom = 40;
+            const padTop = 25;
+            const padRight = 30;
+            const graphW = w - padLeft - padRight;
+            const graphH = h - padTop - padBottom;
+
+            const maxAbs = Math.max(2.5, (state.glucose0 + state.fructose0) * state.kAbs * 1.15);
+
+            // Coordinates mapping
+            const toX = (t) => padLeft + (t / 40) * graphW;
+            const toY = (abs) => padTop + graphH - (abs / maxAbs) * graphH;
+
+            // Grid lines
+            gCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            gCtx.lineWidth = 1;
+            for (let t = 0; t <= 40; t += 10) {
+                gCtx.beginPath();
+                gCtx.moveTo(toX(t), padTop);
+                gCtx.lineTo(toX(t), padTop + graphH);
+                gCtx.stroke();
+
+                gCtx.fillStyle = '#6b7280';
+                gCtx.font = '11px Outfit, sans-serif';
+                gCtx.textAlign = 'center';
+                gCtx.fillText(t + '分', toX(t), padTop + graphH + 18);
+            }
+
+            for (let a = 0; a <= maxAbs; a += 0.5) {
+                gCtx.beginPath();
+                gCtx.moveTo(padLeft, toY(a));
+                gCtx.lineTo(padLeft + graphW, toY(a));
+                gCtx.stroke();
+
+                gCtx.fillStyle = '#6b7280';
+                gCtx.font = '11px Outfit, sans-serif';
+                gCtx.textAlign = 'right';
+                gCtx.fillText(a.toFixed(1), padLeft - 8, toY(a) + 4);
+            }
+
+            // Phase Shading & Vertical Lines
+            if (state.scenario === 'standard') {
+                // E20 Plateau dashed line
+                const e20 = getConcentrations(20, 'standard').abs;
+                gCtx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+                gCtx.setLineDash([4, 4]);
+                gCtx.beginPath();
+                gCtx.moveTo(padLeft, toY(e20));
+                gCtx.lineTo(toX(40), toY(e20));
+                gCtx.stroke();
+
+                // E40 Plateau dashed line
+                const e40 = getConcentrations(40, 'standard').abs;
+                gCtx.strokeStyle = 'rgba(74, 222, 128, 0.35)';
+                gCtx.beginPath();
+                gCtx.moveTo(padLeft, toY(e40));
+                gCtx.lineTo(toX(40), toY(e40));
+                gCtx.stroke();
+                gCtx.setLineDash([]);
+
+                // Phase 1 -> Phase 2 demarcation line at t=20
+                gCtx.strokeStyle = 'rgba(251, 146, 60, 0.6)';
+                gCtx.lineWidth = 1.5;
+                gCtx.setLineDash([2, 2]);
+                gCtx.beginPath();
+                gCtx.moveTo(toX(20), padTop);
+                gCtx.lineTo(toX(20), padTop + graphH);
+                gCtx.stroke();
+                gCtx.setLineDash([]);
+
+                // Annotation: (エ) 酵素②添加
+                gCtx.fillStyle = '#fb923c';
+                gCtx.font = 'bold 11px Zen Kaku Gothic New';
+                gCtx.textAlign = 'center';
+                gCtx.fillText('↓ (エ) 酵素②添加', toX(20), padTop + 14);
+            }
+
+            // Draw Theoretical Curve (Faint guide)
+            gCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            gCtx.lineWidth = 2;
+            gCtx.beginPath();
+            for (let t = 0; t <= 40; t += 0.5) {
+                const c = getConcentrations(t, state.scenario);
+                if (t === 0) gCtx.moveTo(toX(t), toY(c.abs));
+                else gCtx.lineTo(toX(t), toY(c.abs));
+            }
+            gCtx.stroke();
+
+            // Draw Active Real-time Curve (Up to currentTime)
+            if (state.currentTime > 0) {
+                gCtx.strokeStyle = '#4ade80';
+                gCtx.lineWidth = 3.5;
+                gCtx.shadowColor = '#4ade80';
+                gCtx.shadowBlur = 10;
+                gCtx.beginPath();
+                for (let t = 0; t <= state.currentTime; t += 0.2) {
+                    const c = getConcentrations(t, state.scenario);
+                    if (t === 0) gCtx.moveTo(toX(t), toY(c.abs));
+                    else gCtx.lineTo(toX(t), toY(c.abs));
+                }
+                gCtx.stroke();
+                gCtx.shadowBlur = 0;
+
+                // Current head point
+                const currentC = getConcentrations(state.currentTime, state.scenario);
+                gCtx.beginPath();
+                gCtx.arc(toX(state.currentTime), toY(currentC.abs), 6, 0, Math.PI * 2);
+                gCtx.fillStyle = '#fff';
+                gCtx.shadowColor = '#4ade80';
+                gCtx.shadowBlur = 12;
+                gCtx.fill();
+                gCtx.shadowBlur = 0;
+            }
+
+            // Labels on Axes
+            gCtx.fillStyle = '#9ca3af';
+            gCtx.font = '12px Zen Kaku Gothic New';
+            gCtx.textAlign = 'left';
+            gCtx.fillText('吸光度 (340nm)', padLeft + 4, padTop - 8);
+        }
+
+        // ==========================================
+        // UI & State Updates
+        // ==========================================
+        function updateUI() {
+            timeSlider.value = state.currentTime;
+            timeDisp.innerText = state.currentTime.toFixed(1) + ' 分';
+
+            const conc = getConcentrations(state.currentTime);
+            dispAbsVal.innerText = conc.abs.toFixed(2);
+
+            // Phase Badge and Dropper indicator
+            if (state.scenario === 'standard') {
+                if (state.currentTime < 20) {
+                    currentPhaseBadge.innerText = 'フェーズ 1 (0〜20分: 酵素①+③)';
+                    currentPhaseBadge.style.color = 'var(--color-glucose)';
+                    currentPhaseBadge.style.background = 'rgba(56, 189, 248, 0.15)';
+                    dropperIndicator.classList.remove('show');
+                } else if (state.currentTime >= 20 && state.currentTime <= 21.5) {
+                    currentPhaseBadge.innerText = 'フェーズ 2 開始！(酵素②添加)';
+                    dropperIndicator.innerText = '💧 酵素②(C) 添加！';
+                    dropperIndicator.style.background = 'rgba(251, 146, 60, 0.3)';
+                    dropperIndicator.style.color = '#fb923c';
+                    dropperIndicator.classList.add('show');
+                } else {
+                    currentPhaseBadge.innerText = 'フェーズ 2 (20〜40分: 全酵素共存)';
+                    currentPhaseBadge.style.color = 'var(--color-fructose)';
+                    currentPhaseBadge.style.background = 'rgba(251, 146, 60, 0.15)';
+                    dropperIndicator.classList.remove('show');
+                }
+            } else if (state.scenario === 'early') {
+                currentPhaseBadge.innerText = state.currentTime < 5 ? 'フェーズ 1 (0〜5分)' : '早すぎる酵素②添加！(分別失敗)';
+                currentPhaseBadge.style.color = 'var(--color-danger)';
+            } else {
+                currentPhaseBadge.innerText = '同時添加モード (内訳分別不能)';
+                currentPhaseBadge.style.color = 'var(--color-danger)';
+            }
+
+            // Values E20, E40-E20, E40
+            const c20 = getConcentrations(20, state.scenario);
+            const c40 = getConcentrations(40, state.scenario);
+            if (state.currentTime >= 20) {
+                dispE20.innerText = c20.abs.toFixed(2);
+            } else {
+                dispE20.innerText = '--';
+            }
+
+            if (state.currentTime >= 40) {
+                dispE40.innerText = c40.abs.toFixed(2);
+                dispDeltaE.innerText = (c40.abs - c20.abs).toFixed(2);
+            } else {
+                dispE40.innerText = '--';
+                dispDeltaE.innerText = '--';
+            }
+
+            updateParticles();
+            drawParticles();
+            drawGraph();
+        }
+
+        // Animation Loop
+        function animate(timestamp) {
+            if (!state.lastTimestamp) state.lastTimestamp = timestamp;
+            const deltaSec = (timestamp - state.lastTimestamp) / 1000;
+            state.lastTimestamp = timestamp;
+
+            if (state.isPlaying) {
+                state.currentTime += deltaSec * 3.5 * state.playbackSpeed;
+                if (state.currentTime >= 40) {
+                    state.currentTime = 40;
+                    state.isPlaying = false;
+                    playPauseBtn.innerText = '▶ 再生開始';
+                }
+                updateUI();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Event Listeners
+        playPauseBtn.addEventListener('click', () => {
+            state.isPlaying = !state.isPlaying;
+            playPauseBtn.innerText = state.isPlaying ? '⏸ 一時停止' : '▶ 再生開始';
+            if (state.currentTime >= 40) {
+                state.currentTime = 0;
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            state.isPlaying = false;
+            state.currentTime = 0;
+            playPauseBtn.innerText = '▶ 再生開始';
+            updateUI();
+        });
+
+        timeSlider.addEventListener('input', (e) => {
+            state.currentTime = parseFloat(e.target.value);
+            state.isPlaying = false;
+            playPauseBtn.innerText = '▶ 再生開始';
+            updateUI();
+        });
+
+        sliderGlucose.addEventListener('input', (e) => {
+            state.glucose0 = parseFloat(e.target.value);
+            initGlucoseDisp.innerText = `${state.glucose0.toFixed(2)} mM`;
+            updateUI();
+        });
+
+        sliderFructose.addEventListener('input', (e) => {
+            state.fructose0 = parseFloat(e.target.value);
+            initFructoseDisp.innerText = `${state.fructose0.toFixed(2)} mM`;
+            updateUI();
+        });
+
+        function selectScenario(scen) {
+            state.scenario = scen;
+            document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('active'));
+            if (scen === 'standard') document.getElementById('scenStandard').classList.add('active');
+            if (scen === 'early') document.getElementById('scenEarly').classList.add('active');
+            if (scen === 'all') document.getElementById('scenAll').classList.add('active');
+
+            state.currentTime = 0;
+            state.isPlaying = true;
+            playPauseBtn.innerText = '⏸ 一時停止';
+            updateUI();
+        }
+
+        function toggleStep(el) {
+            const item = el.parentElement;
+            item.classList.toggle('open');
+        }
+
+        // Quiz Logic
+        const quizAnswers = {
+            'A': 'X',
+            'B': 'O',
+            'CD': 'X',
+            'E': 'O'
+        };
+
+        function checkQuiz(btn, qId, userAns) {
+            const isCorrect = userAns === quizAnswers[qId];
+            const parent = btn.parentElement;
+            parent.querySelectorAll('.quiz-opt-btn').forEach(b => {
+                b.classList.remove('selected-correct', 'selected-wrong');
+            });
+
+            if (isCorrect) {
+                btn.classList.add('selected-correct');
+            } else {
+                btn.classList.add('selected-wrong');
+            }
+
+            const fb = document.getElementById('fb' + qId);
+            if (fb) fb.classList.add('show');
+        }
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            resizeCanvases();
+            initParticles();
+            updateUI();
+            requestAnimationFrame(animate);
+        });
+    </script>
+</body>
+</html>
