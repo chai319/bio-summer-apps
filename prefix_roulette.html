@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>接頭辞ルーレット | 階段の生物数字ミュージアム</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-card: rgba(23, 32, 54, 0.85);
+      --border-card: rgba(255, 255, 255, 0.12);
+      --accent-cyan: #00f2fe;
+      --accent-blue: #4facfe;
+      --accent-purple: #9b51e0;
+      --accent-green: #00e676;
+      --accent-orange: #ff9100;
+      --accent-pink: #ff2a85;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Noto Sans JP', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      background-image: 
+        radial-gradient(circle at 15% 20%, rgba(79, 172, 254, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(155, 81, 224, 0.15) 0%, transparent 40%),
+        linear-gradient(180deg, rgba(10, 14, 23, 0.9) 0%, rgba(10, 14, 23, 1) 100%);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* 背景グリッド演出 */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ヘッダー */
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(79, 172, 254, 0.12);
+      border: 1px solid rgba(79, 172, 254, 0.3);
+      color: var(--accent-cyan);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* モードセレクター */
+    .mode-toggle-wrap {
+      display: flex;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 380px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-body);
+    }
+    .mode-btn.active {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(79, 172, 254, 0.3);
+    }
+
+    /* ルーレットメインステージ */
+    .roulette-stage {
+      width: 100%;
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-card);
+      border-radius: 24px;
+      padding: 32px 20px 28px;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6), 0 0 30px rgba(79, 172, 254, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    /* スロットウィンドウ */
+    .slot-window {
+      width: 100%;
+      height: 160px;
+      background: rgba(10, 14, 23, 0.8);
+      border-radius: 18px;
+      border: 2px solid rgba(79, 172, 254, 0.3);
+      box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .slot-symbol {
+      font-family: var(--font-display);
+      font-size: 4.8rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      line-height: 1;
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(79, 172, 254, 0.6);
+      transition: transform 0.1s ease;
+    }
+    .slot-reading {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      margin-top: 6px;
+      letter-spacing: 1px;
+    }
+
+    /* 結果詳細カード */
+    .result-details {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .result-details.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 難易度 ＆ 10の乗数バッジバー */
+    .meta-bar {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+    .meta-pill {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .meta-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .meta-val-exponent {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+    .meta-val-diff {
+      font-size: 0.95rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    /* 難易度別カラー */
+    .diff-easy { color: var(--accent-green); }
+    .diff-normal { color: var(--accent-cyan); }
+    .diff-tricky { color: var(--accent-orange); }
+    .diff-hard { color: var(--accent-pink); }
+    .diff-legend { color: #f59e0b; text-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+
+    /* 換算ボックス */
+    .conversion-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .conv-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .conv-row:last-child {
+      margin-bottom: 0;
+    }
+    .conv-title {
+      color: var(--text-muted);
+    }
+    .conv-val {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    /* おすすめ生物・ヒント */
+    .hint-card {
+      background: rgba(79, 172, 254, 0.06);
+      border: 1px solid rgba(79, 172, 254, 0.2);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+    .hint-head {
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: var(--accent-cyan);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hint-text {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    .hint-examples {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .hint-examples strong {
+      color: #ffffff;
+    }
+
+    /* 操作ボタン */
+    .btn-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .btn-spin {
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      border: none;
+      background: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #9b51e0 100%);
+      color: #040813;
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px -5px rgba(79, 172, 254, 0.5);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-spin:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px -5px rgba(79, 172, 254, 0.7);
+    }
+    .btn-spin:active {
+      transform: translateY(1px);
+    }
+    .btn-spin:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-copy {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-copy:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* サウンドトグル */
+    .sound-toggle {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+    .sound-toggle.active {
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+
+    /* 紙吹雪Canvas */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* ルーブリック案内フッター */
+    .rubric-hint-box {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .rubric-hint-title {
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* トースト通知 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      background: rgba(0, 230, 118, 0.95);
+      color: #0a0e17;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      box-shadow: 0 4px 20px rgba(0, 230, 118, 0.4);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 200;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <div class="container">
+    <header>
+      <div class="badge">Scale Roulette</div>
+      <h1>階段の生物数字ミュージアム</h1>
+      <p class="subtitle">接頭辞くじを引いて、キミの担当スケールを決めよう！</p>
+    </header>
+
+    <!-- モード切替 -->
+    <div class="mode-toggle-wrap">
+      <button class="mode-btn active" id="mode-standard" onclick="setMode('standard')">階段5大スケール (km〜nm)</button>
+      <button class="mode-btn" id="mode-all" onclick="setMode('all')">全9段フルスケール</button>
+    </div>
+
+    <!-- ルーレットステージ -->
+    <div class="roulette-stage">
+      <button class="sound-toggle active" id="sound-btn" onclick="toggleSound()" title="効果音オン/オフ">🔊</button>
+
+      <!-- スロット回転窓 -->
+      <div class="slot-window">
+        <div class="slot-symbol" id="slot-symbol">?</div>
+        <div class="slot-reading" id="slot-reading">ボタンを押してスタート</div>
+      </div>
+
+      <!-- 結果詳細エリア -->
+      <div class="result-details" id="result-details">
+        <!-- 難易度 ＆ 10の乗数 -->
+        <div class="meta-bar">
+          <div class="meta-pill">
+            <div class="meta-label">10の何乗？</div>
+            <div class="meta-val-exponent" id="val-exponent">10³</div>
+          </div>
+          <div class="meta-pill">
+            <div class="meta-label">生物探究の難易度</div>
+            <div class="meta-val-diff" id="val-diff">★★★★★</div>
+          </div>
+        </div>
+
+        <!-- 換算基準 -->
+        <div class="conversion-box">
+          <div class="conv-row">
+            <span class="conv-title">基準メートル換算:</span>
+            <span class="conv-val" id="val-m-conv">1 km = 1,000 m</span>
+          </div>
+          <div class="conv-row">
+            <span class="conv-title">倍率・分数表現:</span>
+            <span class="conv-val" id="val-mult">1,000倍 (×10³)</span>
+          </div>
+          <div class="conv-row">
+            <span class="conv-title">観察ツール:</span>
+            <span class="conv-val" id="val-tool">肉眼・地図・衛星写真</span>
+          </div>
+        </div>
+
+        <!-- 探究ヒント ＆ 生物例 -->
+        <div class="hint-card">
+          <div class="hint-head">💡 このスケールの攻略ヒント</div>
+          <div class="hint-text" id="val-hint">テキスト</div>
+          <div class="hint-examples" id="val-examples">
+            おすすめ例: <strong>シロナガスクジラ、オニナラタケ</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- アクションボタン -->
+      <div class="btn-wrap">
+        <button class="btn-spin" id="spin-btn" onclick="spinRoulette()">
+          <span>🎲 くじを引く！</span>
+        </button>
+        <button class="btn-copy" id="copy-btn" onclick="copyResult()" style="display: none;">
+          📋 この結果をコピー（提出用）
+        </button>
+      </div>
+    </div>
+
+    <!-- ルーブリック達成のアドバイス -->
+    <div class="rubric-hint-box">
+      <div class="rubric-hint-title">🎯 ルーブリック S判定のポイント</div>
+      <p>・<strong>［接頭辞］</strong> 引いた単位で「1〜10」の範囲で示せると最高評価S！（例: mmなら1〜10mmの生物）</p>
+      <p>・<strong>［驚愕数］</strong> 大きさ以外の数字（寿命・個数・回数など）を日常や人間と比較して「◯倍！」「地球◯周分！」と驚きを表現しよう！</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">コピーしました！</div>
+
+  <script>
+    // 全データ定義
+    const SCALE_DATA = {
+      // 5大スケール
+      'km': {
+        symbol: 'km',
+        reading: 'キロメートル',
+        exp: '10³',
+        expRaw: '10^3',
+        diffStars: '★★★★★',
+        diffText: 'LEGENDARY (マクロ極致)',
+        diffClass: 'diff-legend',
+        mConv: '1 km = 1,000 m',
+        mult: '1,000 倍 (×10³)',
+        tool: '肉眼・地図・衛星写真',
+        hint: '移動距離だけでなく、「単一クローン生物の広がり（オニナラタケ4km、海草180km）」や「体内の総延長（血管10万km、カイコの糸1.5km）」に目を向けると驚愕のカードが作れるぞ！',
+        examples: 'オニナラタケの地下菌糸(4km)、ヒトの血管総延長(10万km)、カイコ1匹の糸(1.5km)、サンゴ礁(2300km)'
+      },
+      'hm': {
+        symbol: 'hm',
+        reading: 'ヘクトメートル',
+        exp: '10²',
+        expRaw: '10^2',
+        diffStars: '★★★★☆',
+        diffText: 'HARD (巨木・群落)',
+        diffClass: 'diff-hard',
+        mConv: '1 hm = 100 m',
+        mult: '100 倍 (×10²)',
+        tool: '肉眼・巻尺・航空写真',
+        hint: '100m単位！地球上で最も背の高い木（セコイアメスギ 約115m＝約1.15hm）や、巨大樹木林、クジラの群れの広がりを探そう！',
+        examples: '世界一高い木ハイペリオン(115.9m)、サンゴ礁のパッチ、巨大竹林'
+      },
+      'dam': {
+        symbol: 'dam',
+        reading: 'デカメートル',
+        exp: '10¹',
+        expRaw: '10^1',
+        diffStars: '★★★☆☆',
+        diffText: 'TRICKY (レア単位)',
+        diffClass: 'diff-tricky',
+        mConv: '1 dam = 10 m',
+        mult: '10 倍 (×10¹)',
+        tool: '肉眼・大型メジャー',
+        hint: '10m単位！学校のプール（25m）級の生物。シロナガスクジラ（約30m＝3dam）や超大型恐竜、ダイオウイカがターゲットだ！',
+        examples: 'シロナガスクジラ(約3dam)、ダイオウイカ(約1.3dam)、ブラキオサウルス(約2.5dam)'
+      },
+      'm': {
+        symbol: 'm',
+        reading: 'メートル',
+        exp: '10⁰',
+        expRaw: '10^0',
+        diffStars: '★☆☆☆☆',
+        diffText: 'EASY (身近な世界)',
+        diffClass: 'diff-easy',
+        mConv: '1 m = 基準（ものさし）',
+        mult: '1 倍 (基準)',
+        tool: '肉眼・定規・メジャー',
+        hint: '人間（約1.7m）やイヌ、ネコ、身の回りの動植物。誰でも見つけやすい分、「大きさ以外の驚愕の数字」で差をつけよう！',
+        examples: 'ヒト(1.7m)、アフリカゾウ(6m)、ダチョウ(2.5m)、ヒマワリ(2~3m)'
+      },
+      'dm': {
+        symbol: 'dm',
+        reading: 'デシメートル',
+        exp: '10⁻¹',
+        expRaw: '10^-1',
+        diffStars: '★★★☆☆',
+        diffText: 'TRICKY (レア単位)',
+        diffClass: 'diff-tricky',
+        mConv: '1 dm = 0.1 m (10 cm)',
+        mult: '1/10 (×10⁻¹)',
+        tool: '肉眼・定規',
+        hint: '10cm単位！手のひらサイズ。カブトムシ（約8cm＝0.8dm）、スズメ（約1.4dm）、バナナなど身近なサイズが該当！',
+        examples: 'カブトムシ(約0.8dm)、スズメ(約1.4dm)、人の手のひら(約1.8dm)'
+      },
+      'cm': {
+        symbol: 'cm',
+        reading: 'センチメートル',
+        exp: '10⁻²',
+        expRaw: '10^-2',
+        diffStars: '★☆☆☆☆',
+        diffText: 'EASY (身近な小動物)',
+        diffClass: 'diff-easy',
+        mConv: '1 cm = 0.01 m',
+        mult: '1/100 (×10⁻²)',
+        tool: '肉眼・定規',
+        hint: '日常で最も親しみのある単位。昆虫、小魚、トカゲ、植物の花や葉っぱなど、探しやすいぞ！',
+        examples: 'ニホンアマガエル(3~4cm)、ダンゴムシ(1.2cm)、アサガオの葉(5~10cm)'
+      },
+      'mm': {
+        symbol: 'mm',
+        reading: 'ミリメートル',
+        exp: '10⁻³',
+        expRaw: '10^-3',
+        diffStars: '★★☆☆☆',
+        diffText: 'NORMAL (肉眼の限界)',
+        diffClass: 'diff-normal',
+        mConv: '1 mm = 0.001 m',
+        mult: '1/1,000 (×10⁻³)',
+        tool: '肉眼・虫眼鏡・実体顕微鏡',
+        hint: '肉眼で見えるギリギリの極小生物！アリ、メダカの卵、プランクトン、植物の種など、小さくて精巧な世界を探求しよう！',
+        examples: 'クロオオアリ(約10mm)、カエルの卵(約2mm)、ミジンコ(約1~3mm)、ゾウリムシ(約0.2mm)'
+      },
+      'μm': {
+        symbol: 'μm',
+        reading: 'マイクロメートル',
+        exp: '10⁻⁶',
+        expRaw: '10^-6',
+        diffStars: '★★★★☆',
+        diffText: 'HARD (光学顕微鏡)',
+        diffClass: 'diff-hard',
+        mConv: '1 μm = 1/1,000,000 m',
+        mult: '1/100万 (×10⁻⁶)',
+        tool: '光学顕微鏡（生物室）',
+        hint: '肉眼では絶対に見えない細胞・細菌の世界！赤血球（7~8μm）や植物の気孔、大腸菌など。生物基礎の教科書に宝の山があるぞ！',
+        examples: 'ヒト赤血球(約7~8μm)、動植物細胞(10~30μm)、大腸菌(約2μm)、スギ花粉(約30μm)'
+      },
+      'nm': {
+        symbol: 'nm',
+        reading: 'ナノメートル',
+        exp: '10⁻⁹',
+        expRaw: '10^-9',
+        diffStars: '★★★★★',
+        diffText: 'EXTREME (極微・分子)',
+        diffClass: 'diff-legend',
+        mConv: '1 nm = 1/1,000,000,000 m',
+        mult: '1/10億 (×10⁻⁹)',
+        tool: '電子顕微鏡・分子生物学',
+        hint: '最高難易度の極微ワールド！ウイルスやDNAの幅、細胞膜の厚さなど。生体分子のサイズを調べてみんなをアッと言わせよう！',
+        examples: 'インフルエンザウイルス(約100nm)、細胞膜の厚さ(約10nm)、DNAのらせん幅(約2nm)'
+      }
+    };
+
+    // モード定義
+    const MODES = {
+      'standard': ['km', 'm', 'mm', 'μm', 'nm'],
+      'all': ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm', 'μm', 'nm']
+    };
+
+    let currentMode = 'standard';
+    let isSpinning = false;
+    let soundEnabled = true;
+    let lastResult = null;
+
+    // Web Audio API による効果音
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTick() {
+      if (!soundEnabled || audioCtx.state === 'suspended') return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600 + Math.random() * 200, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+      } catch (e) {}
+    }
+
+    function playWin() {
+      if (!soundEnabled || audioCtx.state === 'suspended') return;
+      try {
+        const now = audioCtx.currentTime;
+        const freqs = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, High C
+        freqs.forEach((f, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * 0.09);
+          gain.gain.setValueAtTime(0.12, now + i * 0.09);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.35);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + i * 0.09);
+          osc.stop(now + i * 0.09 + 0.35);
+        });
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('sound-btn');
+      btn.textContent = soundEnabled ? '🔊' : '🔇';
+      btn.classList.toggle('active', soundEnabled);
+      if (soundEnabled && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function setMode(mode) {
+      if (isSpinning) return;
+      currentMode = mode;
+      document.getElementById('mode-standard').classList.toggle('active', mode === 'standard');
+      document.getElementById('mode-all').classList.toggle('active', mode === 'all');
+    }
+
+    // ルーレット回転処理
+    function spinRoulette() {
+      if (isSpinning) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      isSpinning = true;
+      const spinBtn = document.getElementById('spin-btn');
+      const copyBtn = document.getElementById('copy-btn');
+      const details = document.getElementById('result-details');
+      const slotSymbol = document.getElementById('slot-symbol');
+      const slotReading = document.getElementById('slot-reading');
+
+      spinBtn.disabled = true;
+      copyBtn.style.display = 'none';
+      details.classList.remove('show');
+
+      const list = MODES[currentMode];
+      let counter = 0;
+      let speed = 40;
+      const totalTicks = 28 + Math.floor(Math.random() * 8);
+
+      function tick() {
+        const itemKey = list[counter % list.length];
+        const item = SCALE_DATA[itemKey];
+
+        slotSymbol.textContent = item.symbol;
+        slotReading.textContent = item.reading;
+        slotSymbol.style.transform = `scale(${1 + Math.random() * 0.1 - 0.05})`;
+
+        playTick();
+        counter++;
+
+        if (counter < totalTicks) {
+          if (counter > totalTicks - 10) {
+            speed += 30; // 減速
+          }
+          setTimeout(tick, speed);
+        } else {
+          // 停止・確定
+          const finalKey = list[(counter - 1) % list.length];
+          showFinalResult(finalKey);
+        }
+      }
+
+      tick();
+    }
+
+    function showFinalResult(key) {
+      isSpinning = false;
+      const item = SCALE_DATA[key];
+      lastResult = item;
+
+      const slotSymbol = document.getElementById('slot-symbol');
+      const slotReading = document.getElementById('slot-reading');
+      const details = document.getElementById('result-details');
+      const spinBtn = document.getElementById('spin-btn');
+      const copyBtn = document.getElementById('copy-btn');
+
+      slotSymbol.textContent = item.symbol;
+      slotReading.textContent = `― ${item.reading} ―`;
+      slotSymbol.style.transform = 'scale(1.1)';
+      setTimeout(() => { slotSymbol.style.transform = 'scale(1)'; }, 200);
+
+      // メタ情報反映
+      document.getElementById('val-exponent').textContent = item.exp;
+      
+      const diffElem = document.getElementById('val-diff');
+      diffElem.innerHTML = `<span class="${item.diffClass}">${item.diffStars}</span> <span style="font-size:0.75rem; font-weight:700;">${item.diffText}</span>`;
+
+      document.getElementById('val-m-conv').textContent = item.mConv;
+      document.getElementById('val-mult').textContent = item.mult;
+      document.getElementById('val-tool').textContent = item.tool;
+      document.getElementById('val-hint').textContent = item.hint;
+      document.getElementById('val-examples').innerHTML = `おすすめ例: <strong>${item.examples}</strong>`;
+
+      details.classList.add('show');
+      spinBtn.disabled = false;
+      spinBtn.innerHTML = '<span>🔄 もう一度引く（引き直し）</span>';
+      copyBtn.style.display = 'flex';
+
+      playWin();
+      fireConfetti();
+    }
+
+    function copyResult() {
+      if (!lastResult) return;
+      const text = `【階段生物数字ミュージアム くじ結果】\n・担当接頭辞: ${lastResult.symbol} (${lastResult.reading})\n・10の何乗: ${lastResult.exp} (${lastResult.expRaw})\n・換算基準: ${lastResult.mConv}\n・難易度: ${lastResult.diffText}\n・おすすめ例: ${lastResult.examples}`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("結果をクリップボードにコピーしました！");
+      }).catch(() => {
+        showToast("コピーに失敗しました");
+      });
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => { t.classList.remove('show'); }, 2200);
+    }
+
+    // 紙吹雪アニメーション
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function fireConfetti() {
+      particles = [];
+      const colors = ['#00f2fe', '#4facfe', '#9b51e0', '#00e676', '#ff9100', '#ff2a85', '#ffffff'];
+      for (let i = 0; i < 65; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height * 0.45,
+          vx: (Math.random() - 0.5) * 14,
+          vy: (Math.random() - 0.8) * 16,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 10,
+          alpha: 1
+        });
+      }
+      animateConfetti();
+    }
+
+    function animateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.45; // 重力
+        p.rotation += p.vRot;
+        p.alpha -= 0.015;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+        ctx.restore();
+
+        if (p.alpha <= 0) particles.splice(idx, 1);
+      });
+
+      if (particles.length > 0) {
+        requestAnimationFrame(animateConfetti);
+      }
+    }
+  </script>
+</body>
+</html>
