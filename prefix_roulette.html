@@ -483,7 +483,7 @@
     <div class="mode-toggle-wrap">
       <button class="mode-btn active" id="mode-standard" onclick="setMode('standard')">階段5大<br><span style="font-size:0.65rem; font-weight:400;">(km〜nm)</span></button>
       <button class="mode-btn" id="mode-all" onclick="setMode('all')">全9段フル<br><span style="font-size:0.65rem; font-weight:400;">(km〜nm全て)</span></button>
-      <button class="mode-btn" id="mode-boss" onclick="setMode('boss')">🔥裏ボス含む13種<br><span style="font-size:0.65rem; font-weight:400;">(最大難易度あり)</span></button>
+      <button class="mode-btn" id="mode-boss" onclick="setMode('boss')">🔥裏ボス含む15種<br><span style="font-size:0.65rem; font-weight:400;">(最大難易度あり)</span></button>
     </div>
 
     <!-- ルーレットステージ -->
@@ -703,6 +703,19 @@
         tool: 'ノギス・実体顕微鏡・医療規格',
         hint: '医療現場で細い管の太さに使われる特殊な単位（1 Fr ＝ 外周1mm・直径約0.33mm）！体の中をめぐる細〜い管や、顕微鏡で見つかる極細の糸のような生き物の「太さ・直径」に注目してみよう！'
       },
+      'micrometer_1_1': {
+        symbol: '接眼1目盛(対物1/接眼1)',
+        reading: '接眼ミクロメーター１目盛の長さ',
+        exp: '10⁻⁵',
+        expRaw: '10 μm (10^-5 m)',
+        diffStars: '★★★★★★',
+        diffText: 'CALCULATION BOSS (実習計算ミッション)',
+        diffClass: 'diff-god',
+        mConv: '(1目盛×10μm) ÷ 1目盛 = 10 μm (0.01 mm)',
+        mult: '1/100,000 (×10⁻⁵)',
+        tool: '光学顕微鏡（接眼・対物ミクロメーター）',
+        hint: '【顕微鏡の実習計算ミッション！】対物1目盛(10μm)と接眼1目盛がピタリと一致！ということは接眼1目盛はズバリ何μm？ちょうどその「10μm（0.01mm）」ジャスト前後になる、顕微鏡で観察するような微小な細胞や微生物、あるいは細胞内の構造を探し出せ！'
+      },
       'micrometer_calc': {
         symbol: '接眼1目盛(対物5/接眼2)',
         reading: '接眼ミクロメーター１目盛の長さ',
@@ -715,6 +728,19 @@
         mult: '1/40,000 (×2.5×10⁻⁵)',
         tool: '光学顕微鏡（接眼・対物ミクロメーター）',
         hint: '【顕微鏡の実習計算ミッション！】対物5目盛(50μm)と接眼2目盛が一致…ということは接眼1目盛は何μm？計算で導いたドンピシャの数値を狙って、顕微鏡で観察するような微小な細胞や微生物を探し出せ！'
+      },
+      'micrometer_1_4': {
+        symbol: '接眼1目盛(対物1/接眼4)',
+        reading: '接眼ミクロメーター１目盛の長さ',
+        exp: '2.5×10⁻⁶',
+        expRaw: '2.5 μm (2.5*10^-6 m)',
+        diffStars: '★★★★★★',
+        diffText: 'CALCULATION BOSS (実習計算ミッション)',
+        diffClass: 'diff-god',
+        mConv: '(1目盛×10μm) ÷ 4目盛 = 2.5 μm (0.0025 mm)',
+        mult: '1/400,000 (×2.5×10⁻⁶)',
+        tool: '光学顕微鏡（接眼・対物ミクロメーター）',
+        hint: '【顕微鏡の実習計算ミッション！】高倍率で観察中に対物1目盛(10μm)の中に接眼4目盛が収まった！ということは接眼1目盛は10÷4＝何μm？計算して出たわずか「2.5μm」前後の、光学顕微鏡の限界に近い極小の微生物や細胞小器官を特定せよ！'
       },
       'fm': {
         symbol: 'fm',
@@ -735,7 +761,7 @@
     const MODES = {
       'standard': ['km', 'm', 'mm', 'μm', 'nm'],
       'all': ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm', 'μm', 'nm'],
-      'boss': ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm', 'μm', 'nm', 'Å', 'Fr', 'micrometer_calc', 'fm']
+      'boss': ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm', 'μm', 'nm', 'Å', 'Fr', 'micrometer_1_4', 'micrometer_1_1', 'micrometer_calc', 'fm']
     };
 
     let currentMode = 'standard';
