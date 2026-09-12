@@ -114,29 +114,36 @@
       display: flex;
       background: rgba(255, 255, 255, 0.06);
       padding: 4px;
-      border-radius: 12px;
+      border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.08);
       margin-bottom: 20px;
       width: 100%;
-      max-width: 380px;
+      max-width: 480px;
+      gap: 4px;
     }
     .mode-btn {
       flex: 1;
-      padding: 8px 12px;
+      padding: 8px 6px;
       border: none;
       background: transparent;
       color: var(--text-muted);
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 700;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
       transition: all 0.2s ease;
       font-family: var(--font-body);
+      text-align: center;
+      line-height: 1.3;
     }
     .mode-btn.active {
       background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
       color: #ffffff;
       box-shadow: 0 2px 10px rgba(79, 172, 254, 0.3);
+    }
+    .mode-btn.active.mode-boss {
+      background: linear-gradient(135deg, #ff007f, #9b51e0);
+      box-shadow: 0 2px 12px rgba(255, 0, 128, 0.4);
     }
 
     /* ルーレットメインステージ */
@@ -172,23 +179,35 @@
       position: relative;
       margin-bottom: 24px;
       overflow: hidden;
+      padding: 0 12px;
     }
     .slot-symbol {
       font-family: var(--font-display);
       font-size: 4.8rem;
       font-weight: 900;
       letter-spacing: -1px;
-      line-height: 1;
+      line-height: 1.1;
       color: #ffffff;
       text-shadow: 0 0 20px rgba(79, 172, 254, 0.6);
       transition: transform 0.1s ease;
+      text-align: center;
+      word-break: break-all;
+    }
+    .slot-symbol.slot-long {
+      font-size: 1.85rem;
+      letter-spacing: 0px;
+      line-height: 1.2;
+    }
+    .slot-symbol.slot-medium {
+      font-size: 3.2rem;
     }
     .slot-reading {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: var(--accent-cyan);
       margin-top: 6px;
       letter-spacing: 1px;
+      text-align: center;
     }
 
     /* 結果詳細カード */
@@ -235,12 +254,13 @@
       color: var(--accent-cyan);
     }
     .meta-val-diff {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 900;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 2px;
     }
 
     /* 難易度別カラー */
@@ -248,7 +268,20 @@
     .diff-normal { color: var(--accent-cyan); }
     .diff-tricky { color: var(--accent-orange); }
     .diff-hard { color: var(--accent-pink); }
-    .diff-legend { color: #f59e0b; text-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+    .diff-legend { color: #a855f7; text-shadow: 0 0 10px rgba(168, 85, 247, 0.5); }
+    .diff-god {
+      background: linear-gradient(90deg, #ff007f, #9b51e0, #00f2fe, #ff9100, #ff007f);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: rainbow 2.5s linear infinite;
+      font-weight: 900;
+      filter: drop-shadow(0 0 8px rgba(255, 0, 128, 0.6));
+    }
+    @keyframes rainbow {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
 
     /* 換算ボックス */
     .conversion-box {
@@ -458,8 +491,9 @@
 
     <!-- モード切替 -->
     <div class="mode-toggle-wrap">
-      <button class="mode-btn active" id="mode-standard" onclick="setMode('standard')">階段5大スケール (km〜nm)</button>
-      <button class="mode-btn" id="mode-all" onclick="setMode('all')">全9段フルスケール</button>
+      <button class="mode-btn active" id="mode-standard" onclick="setMode('standard')">階段5大<br><span style="font-size:0.65rem; font-weight:400;">(km〜nm)</span></button>
+      <button class="mode-btn" id="mode-all" onclick="setMode('all')">全9段フル<br><span style="font-size:0.65rem; font-weight:400;">(km〜nm全て)</span></button>
+      <button class="mode-btn" id="mode-boss" onclick="setMode('boss')">🔥裏ボス含む13種<br><span style="font-size:0.65rem; font-weight:400;">(最大難易度あり)</span></button>
     </div>
 
     <!-- ルーレットステージ -->
@@ -534,21 +568,21 @@
   <div class="toast" id="toast">コピーしました！</div>
 
   <script>
-    // 全データ定義
+    // 全データ定義（見直し済み全13スケール）
     const SCALE_DATA = {
-      // 5大スケール
+      // 5大スケール＆基本接頭辞
       'km': {
         symbol: 'km',
         reading: 'キロメートル',
         exp: '10³',
         expRaw: '10^3',
-        diffStars: '★★★★★',
-        diffText: 'LEGENDARY (マクロ極致)',
-        diffClass: 'diff-legend',
+        diffStars: '★★★★★☆',
+        diffText: 'EXTREME (マクロ極致・広がり)',
+        diffClass: 'diff-hard',
         mConv: '1 km = 1,000 m',
         mult: '1,000 倍 (×10³)',
         tool: '肉眼・地図・衛星写真',
-        hint: '移動距離だけでなく、「単一クローン生物の広がり（オニナラタケ4km、海草180km）」や「体内の総延長（血管10万km、カイコの糸1.5km）」に目を向けると驚愕のカードが作れるぞ！',
+        hint: '移動距離ではなく「単一クローン生物の広がり（オニナラタケ4km、海草180km）」や「体内の総延長（血管10万km、カイコの糸1.5km）」に目を向けると驚愕のカードが作れるぞ！',
         examples: 'オニナラタケの地下菌糸(4km)、ヒトの血管総延長(10万km)、カイコ1匹の糸(1.5km)、サンゴ礁(2300km)'
       },
       'hm': {
@@ -556,7 +590,7 @@
         reading: 'ヘクトメートル',
         exp: '10²',
         expRaw: '10^2',
-        diffStars: '★★★★☆',
+        diffStars: '★★★★☆☆',
         diffText: 'HARD (巨木・群落)',
         diffClass: 'diff-hard',
         mConv: '1 hm = 100 m',
@@ -570,8 +604,8 @@
         reading: 'デカメートル',
         exp: '10¹',
         expRaw: '10^1',
-        diffStars: '★★★☆☆',
-        diffText: 'TRICKY (レア単位)',
+        diffStars: '★★★☆☆☆',
+        diffText: 'TRICKY (レア単位・プール級)',
         diffClass: 'diff-tricky',
         mConv: '1 dam = 10 m',
         mult: '10 倍 (×10¹)',
@@ -584,7 +618,7 @@
         reading: 'メートル',
         exp: '10⁰',
         expRaw: '10^0',
-        diffStars: '★☆☆☆☆',
+        diffStars: '★☆☆☆☆☆',
         diffText: 'EASY (身近な世界)',
         diffClass: 'diff-easy',
         mConv: '1 m = 基準（ものさし）',
@@ -598,9 +632,9 @@
         reading: 'デシメートル',
         exp: '10⁻¹',
         expRaw: '10^-1',
-        diffStars: '★★★☆☆',
-        diffText: 'TRICKY (レア単位)',
-        diffClass: 'diff-tricky',
+        diffStars: '★★☆☆☆☆',
+        diffText: 'NORMAL (手のひらサイズ)',
+        diffClass: 'diff-normal',
         mConv: '1 dm = 0.1 m (10 cm)',
         mult: '1/10 (×10⁻¹)',
         tool: '肉眼・定規',
@@ -612,13 +646,13 @@
         reading: 'センチメートル',
         exp: '10⁻²',
         expRaw: '10^-2',
-        diffStars: '★☆☆☆☆',
-        diffText: 'EASY (身近な小動物)',
+        diffStars: '★☆☆☆☆☆',
+        diffText: 'EASY (身近な昆虫・小動物)',
         diffClass: 'diff-easy',
         mConv: '1 cm = 0.01 m',
         mult: '1/100 (×10⁻²)',
         tool: '肉眼・定規',
-        hint: '日常で最も親しみのある単位。昆虫、小魚、トカゲ、植物の花や葉っぱなど、探しやすいぞ！',
+        hint: '日常で最も親しみのある単位。昆虫、小魚、トカゲ、植物の花や葉っぱなど、身近で見つけやすいぞ！',
         examples: 'ニホンアマガエル(3~4cm)、ダンゴムシ(1.2cm)、アサガオの葉(5~10cm)'
       },
       'mm': {
@@ -626,7 +660,7 @@
         reading: 'ミリメートル',
         exp: '10⁻³',
         expRaw: '10^-3',
-        diffStars: '★★☆☆☆',
+        diffStars: '★★☆☆☆☆',
         diffText: 'NORMAL (肉眼の限界)',
         diffClass: 'diff-normal',
         mConv: '1 mm = 0.001 m',
@@ -640,8 +674,8 @@
         reading: 'マイクロメートル',
         exp: '10⁻⁶',
         expRaw: '10^-6',
-        diffStars: '★★★★☆',
-        diffText: 'HARD (光学顕微鏡)',
+        diffStars: '★★★★☆☆',
+        diffText: 'HARD (光学顕微鏡・細胞)',
         diffClass: 'diff-hard',
         mConv: '1 μm = 1/1,000,000 m',
         mult: '1/100万 (×10⁻⁶)',
@@ -654,21 +688,80 @@
         reading: 'ナノメートル',
         exp: '10⁻⁹',
         expRaw: '10^-9',
-        diffStars: '★★★★★',
-        diffText: 'EXTREME (極微・分子)',
+        diffStars: '★★★★★☆',
+        diffText: 'EXTREME (極微・分子・ウイルス)',
         diffClass: 'diff-legend',
         mConv: '1 nm = 1/1,000,000,000 m',
         mult: '1/10億 (×10⁻⁹)',
         tool: '電子顕微鏡・分子生物学',
-        hint: '最高難易度の極微ワールド！ウイルスやDNAの幅、細胞膜の厚さなど。生体分子のサイズを調べてみんなをアッと言わせよう！',
-        examples: 'インフルエンザウイルス(約100nm)、細胞膜の厚さ(約10nm)、DNAのらせん幅(約2nm)'
+        hint: '極微ワールド！ウイルスやDNAの幅、細胞膜の厚さなど。生体分子のサイズを調べてみんなをアッと言わせよう！',
+        examples: 'インフルエンザウイルス(約100nm)、細胞膜の厚さ(約10nm)、DNAの二重らせん幅(約2nm)'
+      },
+
+      // 【難易度最大・特殊＆裏ボス枠】
+      'Å': {
+        symbol: 'Å',
+        reading: 'オングストローム',
+        exp: '10⁻¹⁰',
+        expRaw: '10^-10',
+        diffStars: '★★★★★★',
+        diffText: 'GOD / ATOMIC (原子・共有結合)',
+        diffClass: 'diff-god',
+        mConv: '1 Å = 0.1 nm = 10⁻¹⁰ m',
+        mult: '1/100億 (×10⁻¹⁰)',
+        tool: 'X線結晶構造解析・クライオ電顕',
+        hint: 'ナノ(nm)のさらに10分の1！原子の大きさ（水素原子半径 約0.53Å）や共有結合の結合長（C-C結合 約1.54Å）、細胞膜のリン脂質二重層（約75〜100Å）がターゲット！生体高分子の原子レベルの構造を暴き出せ！',
+        examples: 'C-C単結合長(1.54Å)、水分子の直径(約2.8Å)、水素原子半径(0.53Å)、細胞膜厚(約75~100Å)、DNAらせん1ピッチ(34Å)'
+      },
+      'Fr': {
+        symbol: 'Fr',
+        reading: 'フレンチ (医療用カテーテル外径)',
+        exp: '約3.33×10⁻⁴',
+        expRaw: '1/3 mm (約3.33*10^-4 m)',
+        diffStars: '★★★★★★',
+        diffText: 'SPECIAL TRICKY (医療・生体管腔)',
+        diffClass: 'diff-god',
+        mConv: '1 Fr = 1/3 mm ≒ 0.333 mm (外周1mm)',
+        mult: '約1/3,000 (×3.33×10⁻⁴)',
+        tool: 'ノギス・実体顕微鏡・医療規格',
+        hint: '医療現場で血管カテーテルや内視鏡の太さに使われる特殊単位！「外周が1mm＝直径は1/3mm（約0.33mm）」。血管、尿管、細気管支、あるいは線虫・微小寄生虫など「生物の管や細長い構造」で1Fr（0.33mm）前後のものを探してみよう！',
+        examples: '線虫C.エレガンスの体幅(約0.05mm=0.15Fr)、ヒト細動脈・微小血管、昆虫の気管枝、ヒトの髪の毛束(数本分)'
+      },
+      'micrometer_calc': {
+        symbol: '接眼1目盛(対物5/接眼2)',
+        reading: '接眼ミクロメーター１目盛の長さ',
+        exp: '2.5×10⁻⁵',
+        expRaw: '25 μm (2.5*10^-5 m)',
+        diffStars: '★★★★★★',
+        diffText: 'CALCULATION BOSS (実習計算ミッション)',
+        diffClass: 'diff-god',
+        mConv: '(5目盛×10μm) ÷ 2目盛 = 25 μm (0.025 mm)',
+        mult: '1/40,000 (×2.5×10⁻⁵)',
+        tool: '光学顕微鏡（接眼・対物ミクロメーター）',
+        hint: '【計算ミッション！】対物5目盛(1目盛10μm＝50μm)と接眼2目盛が一致 ➔ 接眼1目盛＝50÷2＝25μm！ちょうど「25μm（0.025mm）」前後の細胞や微生物（ミドリムシの短径、スギ花粉、ヒト白血球など）をドンピシャで特定せよ！',
+        examples: 'スギ花粉(約30μm)、ミドリムシの幅(約15~25μm)、ヒト白血球(12~25μm)、タマネギ表皮細胞の短径(約25~30μm)'
+      },
+      'fm': {
+        symbol: 'fm',
+        reading: 'フェルミ長 (フェムトメートル)',
+        exp: '10⁻¹⁵',
+        expRaw: '10^-15',
+        diffStars: '★★★★★★',
+        diffText: 'COSMIC HELL (原子核・極微限界)',
+        diffClass: 'diff-god',
+        mConv: '1 fm = 10⁻¹⁵ m = 1/1,000,000 nm',
+        mult: '1/1,000兆 (×10⁻¹⁵)',
+        tool: '高エネルギー粒子加速器',
+        hint: '生物学を突き抜けて素粒子・原子核物理へ！原子核（陽子・中性子）の半径が約0.84〜0.87 fm。私たち全生物の体を形作る炭素や酸素の「原子核そのものの極小スケール」だ！',
+        examples: '陽子の電荷半径(約0.84fm)、炭素原子核の直径(約5.4fm)、ウラン原子核(約15fm)'
       }
     };
 
     // モード定義
     const MODES = {
       'standard': ['km', 'm', 'mm', 'μm', 'nm'],
-      'all': ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm', 'μm', 'nm']
+      'all': ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm', 'μm', 'nm'],
+      'boss': ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm', 'μm', 'nm', 'Å', 'Fr', 'micrometer_calc', 'fm']
     };
 
     let currentMode = 'standard';
@@ -695,22 +788,26 @@
       } catch (e) {}
     }
 
-    function playWin() {
+    function playWin(isGod = false) {
       if (!soundEnabled || audioCtx.state === 'suspended') return;
       try {
         const now = audioCtx.currentTime;
-        const freqs = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, High C
+        const freqs = isGod 
+          ? [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98, 2093.00] // 超豪華ファンファーレ
+          : [523.25, 659.25, 783.99, 1046.50]; // 通常
+        const stepTime = isGod ? 0.07 : 0.09;
+        
         freqs.forEach((f, i) => {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(f, now + i * 0.09);
-          gain.gain.setValueAtTime(0.12, now + i * 0.09);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.35);
+          osc.type = isGod ? 'sawtooth' : 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * stepTime);
+          gain.gain.setValueAtTime(isGod ? 0.15 : 0.12, now + i * stepTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * stepTime + (isGod ? 0.45 : 0.35));
           osc.connect(gain);
           gain.connect(audioCtx.destination);
-          osc.start(now + i * 0.09);
-          osc.stop(now + i * 0.09 + 0.35);
+          osc.start(now + i * stepTime);
+          osc.stop(now + i * stepTime + (isGod ? 0.45 : 0.35));
         });
       } catch (e) {}
     }
@@ -730,6 +827,9 @@
       currentMode = mode;
       document.getElementById('mode-standard').classList.toggle('active', mode === 'standard');
       document.getElementById('mode-all').classList.toggle('active', mode === 'all');
+      const bossBtn = document.getElementById('mode-boss');
+      bossBtn.classList.toggle('active', mode === 'boss');
+      bossBtn.classList.toggle('mode-boss', mode === 'boss');
     }
 
     // ルーレット回転処理
@@ -759,6 +859,18 @@
 
         slotSymbol.textContent = item.symbol;
         slotReading.textContent = item.reading;
+
+        // 文字の長さに応じてサイズ調整
+        if (item.symbol.length > 8) {
+          slotSymbol.classList.add('slot-long');
+          slotSymbol.classList.remove('slot-medium');
+        } else if (item.symbol.length > 3) {
+          slotSymbol.classList.add('slot-medium');
+          slotSymbol.classList.remove('slot-long');
+        } else {
+          slotSymbol.classList.remove('slot-long', 'slot-medium');
+        }
+
         slotSymbol.style.transform = `scale(${1 + Math.random() * 0.1 - 0.05})`;
 
         playTick();
@@ -792,6 +904,17 @@
 
       slotSymbol.textContent = item.symbol;
       slotReading.textContent = `― ${item.reading} ―`;
+
+      if (item.symbol.length > 8) {
+        slotSymbol.classList.add('slot-long');
+        slotSymbol.classList.remove('slot-medium');
+      } else if (item.symbol.length > 3) {
+        slotSymbol.classList.add('slot-medium');
+        slotSymbol.classList.remove('slot-long');
+      } else {
+        slotSymbol.classList.remove('slot-long', 'slot-medium');
+      }
+
       slotSymbol.style.transform = 'scale(1.1)';
       setTimeout(() => { slotSymbol.style.transform = 'scale(1)'; }, 200);
 
@@ -812,8 +935,9 @@
       spinBtn.innerHTML = '<span>🔄 もう一度引く（引き直し）</span>';
       copyBtn.style.display = 'flex';
 
-      playWin();
-      fireConfetti();
+      const isGod = item.diffClass === 'diff-god';
+      playWin(isGod);
+      fireConfetti(isGod ? 110 : 65);
     }
 
     function copyResult() {
