@@ -853,7 +853,15 @@
       const list = MODES[currentMode];
       let counter = 0;
       let speed = 40;
-      const totalTicks = 28 + Math.floor(Math.random() * 8);
+
+      // 完全に公平なランダム（一様分布）で当選アイテムを決定
+      const targetIndex = Math.floor(Math.random() * list.length);
+
+      // 最低約25回以上回転させ、最後に対象の targetIndex でピタリと止まるように totalTicks を計算
+      // 停止時: (totalTicks - 1) % list.length === targetIndex
+      const minTicks = 25 + Math.floor(Math.random() * 6);
+      const baseLaps = Math.ceil(minTicks / list.length);
+      const totalTicks = baseLaps * list.length + targetIndex + 1;
 
       function tick() {
         const itemKey = list[counter % list.length];
@@ -884,8 +892,8 @@
           }
           setTimeout(tick, speed);
         } else {
-          // 停止・確定
-          const finalKey = list[(counter - 1) % list.length];
+          // 停止・確定（完全にtargetIndexで停止）
+          const finalKey = list[targetIndex];
           showFinalResult(finalKey);
         }
       }
