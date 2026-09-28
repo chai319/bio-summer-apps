@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>胚葉の分化と中胚葉誘導シミュレーター | ニューコープの実験を手で体感する</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=M+PLUS+Rounded+1c:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"M PLUS Rounded 1c"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            ectoderm: '#38bdf8', // 外胚葉 (青)
+            mesoderm: '#f43f5e', // 中胚葉 (赤/ピンク)
+            endoderm: '#fbbf24', // 内胚葉 (黄/橙)
+            tracer: '#22c55e',   // 蛍光標識 (ネオングリーン)
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes pulse-glow {
+      0%, 100% { filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.7)); }
+      50% { filter: drop-shadow(0 0 12px rgba(34, 197, 94, 1)); }
+    }
+    .glow-tracer {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+    @keyframes signal-wave {
+      0% { r: 12; opacity: 0.9; }
+      100% { r: 50; opacity: 0; }
+    }
+    .signal-particle {
+      animation: signal-wave 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    }
+    /* タッチ・人間工学に基づくアクティブフィードバック */
+    .touch-target {
+      min-height: 48px;
+      min-width: 48px;
+    }
+    .interactive-card {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .interactive-card:active {
+      transform: scale(0.98);
+    }
+    /* スクロールバー美化 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-sky-500 selection:text-white">
+
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <a href="index.html" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-rose-500 to-amber-500 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white font-black text-xl hover:scale-105 transition-transform" title="ポータルへ戻る">
+          胚
+        </a>
+        <div>
+          <h1 class="text-lg md:text-xl font-bold leading-tight flex items-center gap-2">
+            胚葉の分化 & 中胚葉誘導ラボ
+            <span class="text-xs bg-sky-500/20 text-sky-300 border border-sky-500/40 px-2 py-0.5 rounded-full font-semibold">Lv30 高校生物</span>
+          </h1>
+          <p class="text-xs text-slate-400">ニューコープの実験を手で触って自力で解き明かす！</p>
+        </div>
+      </div>
+
+      <!-- モード切り替えタブ (大型タップ対応) -->
+      <nav class="flex items-center bg-slate-800/80 p-1 rounded-2xl border border-slate-700/60 shadow-inner">
+        <button id="tab-lab" onclick="switchTab('lab')" class="px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1.5 transition-all bg-sky-600 text-white shadow-md">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+          実験室シミュレータ
+        </button>
+        <button id="tab-map" onclick="switchTab('map')" class="px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+          三胚葉マップ (問1対策)
+        </button>
+        <button id="tab-quiz" onclick="switchTab('quiz')" class="px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          入試問題に挑戦
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+    <!-- ======================================================== -->
+    <!-- SECTION 1: 実験室シミュレータ (メイン機能) -->
+    <!-- ======================================================== -->
+    <section id="view-lab" class="space-y-6">
+      
+      <!-- 人間工学ガイドバナー -->
+      <div class="bg-gradient-to-r from-sky-950/60 via-slate-900 to-indigo-950/60 border border-sky-800/40 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+        <div class="space-y-1 max-w-2xl">
+          <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-sky-400">
+            <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+            探究の問い：中胚葉はどこから生まれるのか？
+          </div>
+          <h2 class="text-base md:text-lg font-bold text-white">
+            予定外胚葉（I）と予定内胚葉（III）を組み合わせると何が起きる？
+          </h2>
+          <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+            プリセットを選ぶか、自分で胚片を組み合わせて「培養開始」を押してみよう。印（蛍光マーカー）をつけることで、<strong class="text-emerald-400">筋肉（中胚葉）が I と III のどちらから作られたのか</strong>が一目でわかります！
+          </p>
+        </div>
+
+        <!-- プリセットクイックボタン（問2の実験を一発再現可能） -->
+        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+          <button onclick="setExperimentPreset('q2')" class="flex-1 md:flex-initial px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 border border-emerald-400/30 transition-all active:scale-95">
+            <span class="text-base">🧪</span> 問2の実験 (印つきI + 印なしIII)
+          </button>
+          <button onclick="setExperimentPreset('singleI')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700 active:scale-95">
+            I単独
+          </button>
+          <button onclick="setExperimentPreset('singleII')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700 active:scale-95">
+            II単独
+          </button>
+          <button onclick="setExperimentPreset('singleIII')" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold border border-slate-700 active:scale-95">
+            III単独
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- 左側：胚の切り出しと設定パレット (5 cols) -->
+        <div class="lg:col-span-5 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 md:p-5 space-y-5 shadow-lg backdrop-blur">
+          
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-400 text-xs flex items-center justify-center font-bold">1</span>
+              胞胚の切り出し & 標識 (印)
+            </h3>
+            <span class="text-xs text-slate-400">タップして配置</span>
+          </div>
+
+          <!-- 原図の胞胚SVG (インタラクティブ) -->
+          <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 flex flex-col items-center">
+            <div class="text-xs text-slate-400 mb-2 font-medium">胞胚（動物極・植物極）の断面図</div>
+            
+            <svg id="blastula-svg" viewBox="0 0 240 220" class="w-56 h-52 select-none">
+              <defs>
+                <filter id="glow-filter" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+
+              <!-- 外枠・背景円形 -->
+              <circle cx="120" cy="110" r="95" fill="#0f172a" stroke="#334155" stroke-width="2" />
+              
+              <!-- 領域III (植物極) -->
+              <path id="svg-part-III" d="M 35 155 A 95 95 0 0 0 205 155 L 175 125 A 55 55 0 0 1 65 125 Z" 
+                    fill="#ca8a04" fill-opacity="0.35" stroke="#facc15" stroke-width="2" class="cursor-pointer transition-all hover:fill-opacity-60" onclick="toggleSelectPart('III')" />
+              <text x="120" y="165" fill="#fef08a" font-weight="bold" font-size="14" text-anchor="middle" pointer-events="none">III (植物極)</text>
+
+              <!-- 領域II (赤道域・帯域) -->
+              <path id="svg-part-II-L" d="M 25 110 A 95 95 0 0 0 35 155 L 65 125 A 55 55 0 0 1 50 110 Z" 
+                    fill="#e11d48" fill-opacity="0.35" stroke="#f43f5e" stroke-width="2" class="cursor-pointer transition-all hover:fill-opacity-60" onclick="toggleSelectPart('II')" />
+              <path id="svg-part-II-R" d="M 215 110 A 95 95 0 0 1 205 155 L 175 125 A 55 55 0 0 0 190 110 Z" 
+                    fill="#e11d48" fill-opacity="0.35" stroke="#f43f5e" stroke-width="2" class="cursor-pointer transition-all hover:fill-opacity-60" onclick="toggleSelectPart('II')" />
+              <text x="40" y="130" fill="#fda4af" font-weight="bold" font-size="12" text-anchor="middle" pointer-events="none">II</text>
+              <text x="200" y="130" fill="#fda4af" font-weight="bold" font-size="12" text-anchor="middle" pointer-events="none">II</text>
+
+              <!-- 胞胚腔 (内腔) -->
+              <path d="M 50 110 Q 120 70 190 110 Q 120 135 50 110 Z" fill="#030712" stroke="#475569" stroke-width="1.5" stroke-dasharray="3,3" />
+              <text x="120" y="105" fill="#64748b" font-size="11" text-anchor="middle">胞胚腔</text>
+
+              <!-- 領域I (動物極) -->
+              <path id="svg-part-I" d="M 25 110 A 95 95 0 0 1 215 110 Q 120 70 50 110 Z" 
+                    fill="#0284c7" fill-opacity="0.35" stroke="#38bdf8" stroke-width="2" class="cursor-pointer transition-all hover:fill-opacity-60" onclick="toggleSelectPart('I')" />
+              <text x="120" y="55" fill="#bae6fd" font-weight="bold" font-size="14" text-anchor="middle" pointer-events="none">I (動物極)</text>
+
+              <!-- 動物極・植物極ラベル -->
+              <text x="120" y="20" fill="#94a3b8" font-size="10" text-anchor="middle">動物極側</text>
+              <text x="120" y="215" fill="#94a3b8" font-size="10" text-anchor="middle">植物極側</text>
+            </svg>
+
+            <!-- 標識（印）の切り替えスイッチ -->
+            <div class="w-full mt-3 pt-3 border-t border-slate-800 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-400 ring-2 ring-emerald-500/50 animate-pulse"></span>
+                <span class="text-xs font-bold text-slate-300">標識物質（印）の有無</span>
+              </div>
+              <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-700 text-xs font-bold">
+                <button id="tracer-btn-I" onclick="toggleTracerFor('I')" class="px-2.5 py-1 rounded-lg transition-all bg-emerald-600 text-white shadow">
+                  I に印: ON
+                </button>
+                <button id="tracer-btn-III" onclick="toggleTracerFor('III')" class="px-2.5 py-1 rounded-lg transition-all text-slate-400 hover:text-white">
+                  III に印: OFF
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="text-xs font-semibold text-slate-400">培養皿に追加するパーツを選択（タップで投入）：</div>
+            
+            <div class="grid grid-cols-3 gap-2">
+              <!-- パーツ I ボタン -->
+              <button onclick="addTissueToDish('I')" class="interactive-card touch-target p-2.5 rounded-xl border border-sky-500/40 bg-sky-950/40 hover:bg-sky-900/60 flex flex-col items-center justify-center text-center group">
+                <div class="w-6 h-6 rounded-lg bg-sky-500/30 border border-sky-400 flex items-center justify-center font-bold text-sky-300 text-xs mb-1 group-hover:scale-110 transition-transform">
+                  I
+                </div>
+                <div class="text-xs font-bold text-sky-200">動物極域</div>
+                <div class="text-[10px] text-sky-400/80">予定外胚葉</div>
+                <div id="badge-tracer-I" class="mt-1 text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 font-bold">
+                  ★印あり
+                </div>
+              </button>
+
+              <!-- パーツ II ボタン -->
+              <button onclick="addTissueToDish('II')" class="interactive-card touch-target p-2.5 rounded-xl border border-rose-500/40 bg-rose-950/40 hover:bg-rose-900/60 flex flex-col items-center justify-center text-center group">
+                <div class="w-6 h-6 rounded-lg bg-rose-500/30 border border-rose-400 flex items-center justify-center font-bold text-rose-300 text-xs mb-1 group-hover:scale-110 transition-transform">
+                  II
+                </div>
+                <div class="text-xs font-bold text-rose-200">赤道域 (帯域)</div>
+                <div class="text-[10px] text-rose-400/80">予定中胚葉</div>
+                <div class="mt-1 text-[9px] text-slate-500">標準</div>
+              </button>
+
+              <!-- パーツ III ボタン -->
+              <button onclick="addTissueToDish('III')" class="interactive-card touch-target p-2.5 rounded-xl border border-amber-500/40 bg-amber-950/40 hover:bg-amber-900/60 flex flex-col items-center justify-center text-center group">
+                <div class="w-6 h-6 rounded-lg bg-amber-500/30 border border-amber-400 flex items-center justify-center font-bold text-amber-300 text-xs mb-1 group-hover:scale-110 transition-transform">
+                  III
+                </div>
+                <div class="text-xs font-bold text-amber-200">植物極域</div>
+                <div class="text-[10px] text-amber-400/80">予定内胚葉</div>
+                <div id="badge-tracer-III" class="mt-1 text-[9px] text-slate-500 font-semibold">
+                  印なし
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- クイックリセット & 皿クリア -->
+          <button onclick="clearDish()" class="w-full py-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-400 hover:text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            培養皿を空にする
+          </button>
+        </div>
+
+        <!-- 右側：ペトリ皿・培養進行・結果顕微鏡ビュー (7 cols) -->
+        <div class="lg:col-span-7 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 md:p-5 space-y-4 shadow-lg flex flex-col justify-between">
+          
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">2</span>
+              <h3 class="text-sm font-bold text-slate-200">培養ペトリ皿 & 顕微鏡観察</h3>
+            </div>
+            
+            <!-- 蛍光ライト（UV）切り替えトグル（印の可視化） -->
+            <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+              <span class="text-xs text-slate-400 font-medium">照明:</span>
+              <button id="view-mode-normal" onclick="setIllumination('normal')" class="px-2 py-0.5 rounded-lg text-xs font-bold bg-slate-700 text-white">
+                明視野
+              </button>
+              <button id="view-mode-fluo" onclick="setIllumination('fluo')" class="px-2 py-0.5 rounded-lg text-xs font-bold text-slate-400 hover:text-emerald-300 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 蛍光(印)
+              </button>
+            </div>
+          </div>
+
+          <!-- ペトリ皿グラフィック（SVG描画領域） -->
+          <div class="relative w-full aspect-[4/3] bg-gradient-to-b from-slate-950 to-slate-900 rounded-2xl border-2 border-slate-800 flex items-center justify-center overflow-hidden shadow-inner group">
+            
+            <!-- ペトリ皿の外縁・ガラス光沢 -->
+            <div class="absolute inset-4 rounded-full border-4 border-slate-700/40 pointer-events-none shadow-[inset_0_0_30px_rgba(0,0,0,0.8)]"></div>
+            <div class="absolute inset-8 rounded-full border border-sky-500/10 pointer-events-none"></div>
+
+            <!-- ペトリ皿内ステータスバッジ -->
+            <div class="absolute top-3 left-3 bg-slate-900/90 border border-slate-700/80 px-2.5 py-1 rounded-lg text-[11px] text-slate-300 z-10 font-mono flex items-center gap-2">
+              <span id="culture-time-label" class="text-sky-400 font-bold">Time: 0h (培養前)</span>
+              <span id="induction-status-badge" class="hidden text-amber-400 font-bold animate-pulse">⚡ 中胚葉誘導中...</span>
+            </div>
+
+            <!-- SVG キャンバス (細胞塊と分化器官を描画) -->
+            <svg id="dish-canvas" viewBox="0 0 360 270" class="w-full h-full select-none">
+              <!-- 背景グリッド（顕微鏡目盛り風） -->
+              <g stroke="#334155" stroke-width="0.5" stroke-dasharray="2,6" opacity="0.3">
+                <line x1="180" y1="0" x2="180" y2="270" />
+                <line x1="0" y1="135" x2="360" y2="135" />
+                <circle cx="180" cy="135" r="50" fill="none" />
+                <circle cx="180" cy="135" r="100" fill="none" />
+              </g>
+
+              <!-- 動的描画コンテナ -->
+              <g id="dish-contents-group"></g>
+
+              <!-- 誘導シグナル（ノーダルタンパク質）のパーティクルエフェクト層 -->
+              <g id="signal-effects-group"></g>
+            </svg>
+
+            <!-- 空のときのヒントメッセージ -->
+            <div id="empty-dish-hint" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
+              <div class="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400 mb-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              </div>
+              <p class="text-sm font-bold text-slate-300">培養皿が空です</p>
+              <p class="text-xs text-slate-500 mt-1 max-w-xs">
+                左側の [I] [II] [III] ボタンを押して細胞塊を入れるか、上部の「問2の実験」プリセットを押してください。
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-2">
+            <!-- 培養進捗バー -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs font-semibold text-slate-400">
+                <span>発生ステージ進行度</span>
+                <span id="progress-percent" class="text-sky-400">0%</span>
+              </div>
+              <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700/60">
+                <div id="culture-progress-bar" class="h-full bg-gradient-to-r from-sky-500 via-indigo-500 to-emerald-500 rounded-full transition-all duration-300 w-0"></div>
+              </div>
+            </div>
+
+            <!-- アクションコントロールバー（大型人間工学ボタン） -->
+            <div class="flex items-center gap-3">
+              <button id="btn-start-culture" onclick="startCultureAnimation()" class="flex-1 py-3 px-5 bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-sky-900/40 flex items-center justify-center gap-2 border border-sky-400/40 transition active:scale-95 disabled:opacity-40 disabled:pointer-events-none">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <span>一定温度で培養開始（分化させる）</span>
+              </button>
+
+              <button onclick="resetCultureState()" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold border border-slate-700 active:scale-95 transition">
+                巻き戻す
+              </button>
+            </div>
+          </div>
+
+          <div id="results-panel" class="bg-slate-950/80 rounded-xl border border-slate-800 p-3.5 space-y-2">
+            <div class="text-xs font-bold text-slate-300 flex items-center justify-between">
+              <span class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span> 観察結果（分化した組織と印）
+              </span>
+              <span id="results-count-badge" class="text-[11px] text-slate-400 font-mono">未培養</span>
+            </div>
+            
+            <div id="results-detail-content" class="text-xs text-slate-400 leading-relaxed min-h-[3rem] flex items-center justify-center">
+              培養を開始すると、ここに顕微鏡下で観察された組織（外胚葉性・中胚葉性・内胚葉性）と、印の有無がリアルタイムに判定されます。
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 space-y-3">
+        <h4 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+          <span class="text-lg">💡</span> 高校生のための原理解説：なぜ I から筋肉ができるのか？
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300 leading-relaxed">
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/60 space-y-1.5">
+            <div class="font-bold text-sky-400">① 単独培養の限界</div>
+            <p>
+              I（動物極）を単独で培養すると<strong>外胚葉（表皮など）</strong>にしかなれません。中胚葉や内胚葉は【なし】です。
+              III（植物極）を単独培養すると<strong>内胚葉</strong>にしかなれません。
+            </p>
+          </div>
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/60 space-y-1.5">
+            <div class="font-bold text-rose-400">② ニューコープの発見（中胚葉誘導）</div>
+            <p>
+              ところが<strong>「I」と「III」を密着させて培養</strong>すると、本来中胚葉にならないはずの組み合わせから<strong>中胚葉（筋肉・脊索）</strong>が出現します！
+            </p>
+          </div>
+          <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800/60 space-y-1.5">
+            <div class="font-bold text-emerald-400">③ 印（標識）が証明した決定打</div>
+            <p>
+              「筋肉になった細胞」を蛍光顕微鏡で見ると、<strong>Iに付けた印</strong>が付いていました！つまり、<span class="text-emerald-300 font-bold">IIIから出たシグナル（ノーダル等）によって、Iの細胞自身が筋肉へ運命変更（誘導）された</span>のです！
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- SECTION 2: 三胚葉マップ & 分類トレーニング (問1対策) -->
+    <!-- ======================================================== -->
+    <section id="view-map" class="space-y-6 hidden">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-4">
+        <div>
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-amber-400 mb-1">
+            <span>📚 問1 完全攻略ガイド</span>
+          </div>
+          <h2 class="text-lg md:text-xl font-bold text-white">
+            どの組織・器官がどの胚葉に由来するか？
+          </h2>
+          <p class="text-xs md:text-sm text-slate-300">
+            問1は「図のIII（植物極＝内胚葉）に由来する器官の組み合わせ」を問う問題です。高校生物で頻出の器官を整理しましょう。
+          </p>
+        </div>
+
+        <!-- 3胚葉カードグリッド -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          
+          <!-- 外胚葉カード -->
+          <div class="bg-sky-950/30 border-2 border-sky-500/40 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-sky-500/30">
+              <span class="text-base font-bold text-sky-300 flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-sky-400"></span> 外胚葉 (I 由来)
+              </span>
+              <span class="text-[11px] bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded font-mono">からだの外側 & 神経</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              外界と接する表面、外界からの刺激を感じて情報処理するシステム。
+            </p>
+            <div class="space-y-1.5 pt-1">
+              <div class="text-xs font-bold text-sky-200">代表的な器官・組織：</div>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="text-xs px-2 py-1 bg-sky-900/60 border border-sky-700/60 rounded-lg text-sky-100">表皮 (皮膚の表面)</span>
+                <span class="text-xs px-2 py-1 bg-sky-900/60 border border-sky-700/60 rounded-lg text-sky-100">脳・脊髄 (中枢神経)</span>
+                <span class="text-xs px-2 py-1 bg-sky-900/60 border border-sky-700/60 rounded-lg text-sky-100">網膜・水晶体 (目)</span>
+                <span class="text-xs px-2 py-1 bg-sky-900/60 border border-sky-700/60 rounded-lg text-sky-100">感覚器</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 中胚葉カード -->
+          <div class="bg-rose-950/30 border-2 border-rose-500/40 rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-rose-500/30">
+              <span class="text-base font-bold text-rose-300 flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-rose-400"></span> 中胚葉 (II 由来)
+              </span>
+              <span class="text-[11px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-mono">運動・骨格・循環・排出</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              身体を支え、動かし、血液を巡らせ、老廃物を濾過する器官。
+            </p>
+            <div class="space-y-1.5 pt-1">
+              <div class="text-xs font-bold text-rose-200">代表的な器官・組織：</div>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="text-xs px-2 py-1 bg-rose-900/60 border border-rose-700/60 rounded-lg text-rose-100">骨格筋・筋肉</span>
+                <span class="text-xs px-2 py-1 bg-rose-900/60 border border-rose-700/60 rounded-lg text-rose-100">真皮 (皮膚の深層)</span>
+                <span class="text-xs px-2 py-1 bg-rose-900/60 border border-rose-700/60 rounded-lg text-rose-100">心臓・血管 (循環系)</span>
+                <span class="text-xs px-2 py-1 bg-rose-900/60 border border-rose-700/60 rounded-lg text-rose-100">腎臓・生殖腺</span>
+                <span class="text-xs px-2 py-1 bg-rose-900/60 border border-rose-700/60 rounded-lg text-rose-100">脊索・骨</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 内胚葉カード (問題のIII) -->
+          <div class="bg-amber-950/30 border-2 border-amber-500/50 rounded-2xl p-4 space-y-3 shadow-lg shadow-amber-950/40">
+            <div class="flex items-center justify-between pb-2 border-b border-amber-500/40">
+              <span class="text-base font-bold text-amber-300 flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-amber-400"></span> 内胚葉 (III 由来 ★)
+              </span>
+              <span class="text-[11px] bg-amber-500/30 text-amber-200 px-2 py-0.5 rounded font-bold font-mono">消化管・呼吸・腺</span>
+            </div>
+            <p class="text-xs text-amber-100/90 leading-relaxed font-medium">
+              食べたものを消化吸収し、代謝を行う内側の粘膜と巨大な腺組織！
+            </p>
+            <div class="space-y-1.5 pt-1">
+              <div class="text-xs font-bold text-amber-300">代表的な器官・組織：</div>
+              <div class="flex flex-wrap gap-1.5">
+                <span class="text-xs px-2 py-1 bg-amber-900/70 border border-amber-600/80 rounded-lg text-amber-100 font-bold">胃の上皮・腸管</span>
+                <span class="text-xs px-2 py-1 bg-amber-900/70 border border-amber-600/80 rounded-lg text-amber-100 font-bold">肝臓</span>
+                <span class="text-xs px-2 py-1 bg-amber-900/70 border border-amber-600/80 rounded-lg text-amber-100 font-bold">すい臓</span>
+                <span class="text-xs px-2 py-1 bg-amber-900/70 border border-amber-600/80 rounded-lg text-amber-100">肺・気管の上皮</span>
+                <span class="text-xs px-2 py-1 bg-amber-900/70 border border-amber-600/80 rounded-lg text-amber-100">甲状腺</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 器官仕分けミニゲーム -->
+        <div class="mt-6 bg-slate-950/70 rounded-2xl border border-slate-800 p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+                <span>🎯</span> 直感チェック：この器官はどこ由来？
+              </h3>
+              <p class="text-xs text-slate-400">下の器官カードをタップして、正しい胚葉を選んでみよう！</p>
+            </div>
+            <div class="text-xs font-bold text-slate-300 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+              正解数: <span id="quiz-score" class="text-sky-400">0</span> / 6
+            </div>
+          </div>
+
+          <!-- 仕分け対象カード -->
+          <div id="organ-challenge-box" class="p-4 bg-slate-900/90 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl" id="organ-challenge-icon">🫀</span>
+              <div>
+                <div class="text-xs text-slate-400">ターゲット器官</div>
+                <div class="text-base font-bold text-white" id="organ-challenge-name">心臓</div>
+              </div>
+            </div>
+
+            <!-- 選択ボタン3つ (人間工学対応) -->
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <button onclick="checkOrganAnswer('外胚葉')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-sky-950 hover:bg-sky-900 text-sky-200 border border-sky-600/50 text-xs font-bold transition active:scale-95">
+                外胚葉 (I)
+              </button>
+              <button onclick="checkOrganAnswer('中胚葉')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-600/50 text-xs font-bold transition active:scale-95">
+                中胚葉 (II)
+              </button>
+              <button onclick="checkOrganAnswer('内胚葉')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-amber-950 hover:bg-amber-900 text-amber-200 border border-amber-600/50 text-xs font-bold transition active:scale-95">
+                内胚葉 (III)
+              </button>
+            </div>
+          </div>
+
+          <div id="organ-feedback" class="text-xs min-h-[1.5rem] text-slate-300 font-medium"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- SECTION 3: 入試問題に挑戦 (問1・問2・問3) -->
+    <!-- ======================================================== -->
+    <section id="view-quiz" class="space-y-6 hidden">
+      
+      <!-- 問1 カード -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-4 shadow-lg">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <span class="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold">問 1</span>
+          <span class="text-xs text-slate-400">内胚葉（植物極III）由来の器官選択</span>
+        </div>
+        
+        <p class="text-sm font-semibold text-slate-100 leading-relaxed">
+          図の <strong class="text-amber-400 underline decoration-amber-500 underline-offset-4">III（植物極）</strong> に由来する組織・器官の組合せとして最も適当なものを、次の ①〜⑨ のうちから一つ選べ。
+        </p>
+
+        <!-- 選択肢グリッド -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+          <button onclick="submitQ1(1)" id="q1-opt-1" class="q1-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">① 脳, 網膜, 表皮</button>
+          <button onclick="submitQ1(2)" id="q1-opt-2" class="q1-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">② 脳, 表皮, 骨格筋</button>
+          <button onclick="submitQ1(3)" id="q1-opt-3" class="q1-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">③ 表皮, 真皮, 腎臓</button>
+          <button onclick="submitQ1(4)" id="q1-opt-4" class="q1-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">④ 心臓, 真皮, 腎臓</button>
+          <button onclick="submitQ1(5)" id="q1-opt-5" class="q1-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">⑤ 心臓, 真皮, 表皮</button>
+          <button onclick="submitQ1(6)" id="q1-opt-6" class="q1-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">⑥ 心臓, 肝臓, 脳</button>
+          <button onclick="submitQ1(7)" id="q1-opt-7" class="q1-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition font-bold">⑦ 胃の上皮, 肝臓, すい臓</button>
+          <button onclick="submitQ1(8)" id="q1-opt-8" class="q1-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">⑧ 胃の上皮, 肝臓, 腎臓</button>
+          <button onclick="submitQ1(9)" id="q1-opt-9" class="q1-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">⑨ 胃の上皮, 腎臓, すい臓</button>
+        </div>
+
+        <div id="q1-explanation" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-2"></div>
+      </div>
+
+      <!-- 問2 カード -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-4 shadow-lg">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-bold">問 2 ★重要</span>
+          <span class="text-xs text-slate-400">印付きI ＋ 印なしIII の組み合わせ培養</span>
+        </div>
+
+        <p class="text-sm font-semibold text-slate-100 leading-relaxed">
+          印を付けた胚から切り出した <strong class="text-emerald-400">I（印あり）</strong> と、印のない胚から切り出した <strong class="text-amber-400">III（印なし）</strong> を組み合わせて培養した。<br>
+          予想される結果の記述（ク〜ス）の組合せとして最も適当なものを、下の ①〜⑧ のうちから一つ選べ。
+        </p>
+
+        <!-- 記述ク〜スのヒント確認 -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 text-xs">
+          <div class="space-y-1">
+            <span class="font-bold text-sky-300">【表皮 (外胚葉)】</span>
+            <div class="text-slate-400">ク：印が<strong>付いている</strong></div>
+            <div class="text-slate-400">ケ：印が<strong>付いていない</strong></div>
+          </div>
+          <div class="space-y-1">
+            <span class="font-bold text-rose-300">【筋肉 (中胚葉誘導)】</span>
+            <div class="text-slate-400">コ：印が<strong>付いている</strong></div>
+            <div class="text-slate-400">サ：印が<strong>付いていない</strong></div>
+          </div>
+          <div class="space-y-1">
+            <span class="font-bold text-amber-300">【腸管 (内胚葉)】</span>
+            <div class="text-slate-400">シ：印が<strong>付いている</strong></div>
+            <div class="text-slate-400">ス：印が<strong>付いていない</strong></div>
+          </div>
+        </div>
+
+        <!-- 選択肢 ①〜⑧ -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+          <button onclick="submitQ2(1)" id="q2-opt-1" class="q2-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-center text-xs text-slate-300 transition">① ク, コ, シ</button>
+          <button onclick="submitQ2(2)" id="q2-opt-2" class="q2-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-center text-xs text-slate-300 transition font-bold">② ク, コ, ス</button>
+          <button onclick="submitQ2(3)" id="q2-opt-3" class="q2-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-center text-xs text-slate-300 transition">③ ク, サ, シ</button>
+          <button onclick="submitQ2(4)" id="q2-opt-4" class="q2-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-center text-xs text-slate-300 transition">④ ク, サ, ス</button>
+          <button onclick="submitQ2(5)" id="q2-opt-5" class="q2-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-center text-xs text-slate-300 transition">⑤ ケ, コ, シ</button>
+          <button onclick="submitQ2(6)" id="q2-opt-6" class="q2-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-center text-xs text-slate-300 transition">⑥ ケ, コ, ス</button>
+          <button onclick="submitQ2(7)" id="q2-opt-7" class="q2-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-center text-xs text-slate-300 transition">⑦ ケ, サ, シ</button>
+          <button onclick="submitQ2(8)" id="q2-opt-8" class="q2-btn p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-center text-xs text-slate-300 transition">⑧ ケ, サ, ス</button>
+        </div>
+
+        <div id="q2-explanation" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-2"></div>
+      </div>
+
+      <!-- 問3 カード -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-4 shadow-lg">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded-lg text-xs font-bold">問 3</span>
+          <span class="text-xs text-slate-400">印（トレーサー物質）が満たすべき条件</span>
+        </div>
+
+        <p class="text-sm font-semibold text-slate-100 leading-relaxed">
+          問2の結果を得るために、印として用いた物質が満たすべき条件の記述として <strong class="text-rose-400 underline decoration-rose-500 underline-offset-4">誤っているもの</strong> を、次の ①〜⑥ のうちから一つ選べ。
+        </p>
+
+        <!-- 選択肢 ①〜⑥ -->
+        <div class="space-y-2 pt-1">
+          <button onclick="submitQ3(1)" id="q3-opt-1" class="q3-btn w-full p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">① 特定の胚葉の分化を促進したり抑制したりしないこと。</button>
+          <button onclick="submitQ3(2)" id="q3-opt-2" class="q3-btn w-full p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">② 細胞の分化の状態によって、検出されたりされなかったりしないこと。</button>
+          <button onclick="submitQ3(3)" id="q3-opt-3" class="q3-btn w-full p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">③ 細胞の代謝によって分解されないこと。</button>
+          <button onclick="submitQ3(4)" id="q3-opt-4" class="q3-btn w-full p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">④ 卵割に伴って希釈されても消えないこと。</button>
+          <button onclick="submitQ3(5)" id="q3-opt-5" class="q3-btn w-full p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition">⑤ 分裂後に、二つの娘細胞の両方に受け継がれること。</button>
+          <button onclick="submitQ3(6)" id="q3-opt-6" class="q3-btn w-full p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs text-slate-300 transition font-bold">⑥ 隣接する細胞に速やかに輸送されること。</button>
+        </div>
+
+        <div id="q3-explanation" class="hidden p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-2"></div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="bg-slate-950 border-t border-slate-800/80 py-4 px-4 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>両生類の発生・中胚葉誘導シミュレータ (Nieuwkoop Experiment Interactive Model)</div>
+      <div class="text-slate-400">高校生物「発生と分化のしくみ」学習支援ツール</div>
+    </div>
+  </footer>
+
+  <!-- ======================================================== -->
+  <!-- JAVASCRIPT: シミュレーション状態制御 & インタラクション -->
+  <!-- ======================================================== -->
+  <script>
+    // アプリケーションの状態管理
+    const state = {
+      activeTab: 'lab',
+      tracerConfig: {
+        I: true,   // デフォルトで問2の設定 (Iに印あり)
+        II: false,
+        III: false
+      },
+      dishTissues: [], // ペトリ皿内の組織パーツ ['I', 'III'] など
+      cultureStage: 0, // 0: 未培養, 1: 培養中, 2: 培養完了
+      illumination: 'normal', // 'normal' | 'fluo'
+      animationTimer: null,
+      quizAnswers: {
+        q1: null,
+        q2: null,
+        q3: null
+      }
+    };
+
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      
+      // タブボタンのアクティブ表示切り替え
+      const tabs = ['lab', 'map', 'quiz'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const view = document.getElementById(`view-${t}`);
+        if (t === tabId) {
+          btn.className = 'px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1.5 transition-all bg-sky-600 text-white shadow-md';
+          view.classList.remove('hidden');
+        } else {
+          btn.className = 'px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white';
+          view.classList.add('hidden');
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleTracerFor(region) {
+      state.tracerConfig[region] = !state.tracerConfig[region];
+      updateTracerUI();
+      // ペトリ皿にも反映して再描画
+      renderPetriDish();
+    }
+
+    function updateTracerUI() {
+      // I のボタン
+      const btnI = document.getElementById('tracer-btn-I');
+      const badgeI = document.getElementById('badge-tracer-I');
+      if (state.tracerConfig.I) {
+        btnI.textContent = 'I に印: ON';
+        btnI.className = 'px-2.5 py-1 rounded-lg transition-all bg-emerald-600 text-white shadow';
+        badgeI.textContent = '★印あり';
+        badgeI.className = 'mt-1 text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 font-bold';
+      } else {
+        btnI.textContent = 'I に印: OFF';
+        btnI.className = 'px-2.5 py-1 rounded-lg transition-all text-slate-400 hover:text-white';
+        badgeI.textContent = '印なし';
+        badgeI.className = 'mt-1 text-[9px] text-slate-500 font-semibold';
+      }
+
+      // III のボタン
+      const btnIII = document.getElementById('tracer-btn-III');
+      const badgeIII = document.getElementById('badge-tracer-III');
+      if (state.tracerConfig.III) {
+        btnIII.textContent = 'III に印: ON';
+        btnIII.className = 'px-2.5 py-1 rounded-lg transition-all bg-emerald-600 text-white shadow';
+        badgeIII.textContent = '★印あり';
+        badgeIII.className = 'mt-1 text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 font-bold';
+      } else {
+        btnIII.textContent = 'III に印: OFF';
+        btnIII.className = 'px-2.5 py-1 rounded-lg transition-all text-slate-400 hover:text-white';
+        badgeIII.textContent = '印なし';
+        badgeIII.className = 'mt-1 text-[9px] text-slate-500 font-semibold';
+      }
+    }
+
+    function addTissueToDish(region) {
+      if (state.dishTissues.length >= 2) {
+        // 最大2つまで組み合わせて培養可能（人間工学的に単純明快にするため）
+        showNotification('ペトリ皿には最大2つの胚片を組み合わせられます。リセットしてから追加してください。');
+        return;
+      }
+      
+      // 同じパーツの重複を防ぐか、組み合わせ可能にする
+      state.dishTissues.push(region);
+      resetCultureState();
+      renderPetriDish();
+    }
+
+    function clearDish() {
+      state.dishTissues = [];
+      resetCultureState();
+      renderPetriDish();
+    }
+
+    function toggleSelectPart(region) {
+      addTissueToDish(region);
+    }
+
+    function setExperimentPreset(type) {
+      clearDish();
+      if (type === 'q2') {
+        // 問2の実験：印ありI + 印なしIII
+        state.tracerConfig.I = true;
+        state.tracerConfig.III = false;
+        updateTracerUI();
+        state.dishTissues = ['I', 'III'];
+      } else if (type === 'singleI') {
+        state.dishTissues = ['I'];
+      } else if (type === 'singleII') {
+        state.dishTissues = ['II'];
+      } else if (type === 'singleIII') {
+        state.dishTissues = ['III'];
+      }
+      resetCultureState();
+      renderPetriDish();
+    }
+
+    function setIllumination(mode) {
+      state.illumination = mode;
+      const btnNormal = document.getElementById('view-mode-normal');
+      const btnFluo = document.getElementById('view-mode-fluo');
+      if (mode === 'normal') {
+        btnNormal.className = 'px-2 py-0.5 rounded-lg text-xs font-bold bg-slate-700 text-white';
+        btnFluo.className = 'px-2 py-0.5 rounded-lg text-xs font-bold text-slate-400 hover:text-emerald-300 flex items-center gap-1';
+      } else {
+        btnFluo.className = 'px-2 py-0.5 rounded-lg text-xs font-bold bg-emerald-600 text-white flex items-center gap-1 shadow-lg shadow-emerald-900/40';
+        btnNormal.className = 'px-2 py-0.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white';
+      }
+      renderPetriDish();
+    }
+
+    function renderPetriDish() {
+      const container = document.getElementById('dish-contents-group');
+      const effectsGroup = document.getElementById('signal-effects-group');
+      const hint = document.getElementById('empty-dish-hint');
+      const countBadge = document.getElementById('results-count-badge');
+      const detailBox = document.getElementById('results-detail-content');
+
+      container.innerHTML = '';
+      effectsGroup.innerHTML = '';
+
+      if (state.dishTissues.length === 0) {
+        hint.classList.remove('hidden');
+        countBadge.textContent = '細胞なし';
+        detailBox.innerHTML = '<span class="text-slate-500">組織パーツを選択してください。</span>';
+        return;
+      }
+      hint.classList.add('hidden');
+
+      const isFluo = (state.illumination === 'fluo');
+      const stage = state.cultureStage;
+
+      // 1. 単独培養の場合
+      if (state.dishTissues.length === 1) {
+        const tissue = state.dishTissues[0];
+        renderSingleTissue(container, tissue, stage, isFluo);
+      }
+      // 2. 組み合わせ培養 (I + III など)
+      else if (state.dishTissues.length === 2) {
+        renderCombinedTissues(container, effectsGroup, state.dishTissues[0], state.dishTissues[1], stage, isFluo);
+      }
+
+      // 結果テキストの更新
+      updateResultsSummary();
+    }
+
+    function renderSingleTissue(group, tissue, stage, isFluo) {
+      const cx = 180;
+      const cy = 135;
+      const hasTracer = state.tracerConfig[tissue] || false;
+      const tracerGlow = isFluo && hasTracer;
+
+      if (stage === 0) {
+        // 培養前：切り出した原基の細胞塊
+        let fill = tissue === 'I' ? '#0284c7' : tissue === 'II' ? '#e11d48' : '#ca8a04';
+        let stroke = tissue === 'I' ? '#38bdf8' : tissue === 'II' ? '#f43f5e' : '#facc15';
+        if (tracerGlow) { fill = '#22c55e'; stroke = '#4ade80'; }
+
+        group.innerHTML += `
+          <g transform="translate(${cx}, ${cy})">
+            <circle cx="0" cy="0" r="34" fill="${fill}" fill-opacity="${tracerGlow ? '0.9' : '0.7'}" stroke="${stroke}" stroke-width="2.5" class="${tracerGlow ? 'glow-tracer' : ''}" />
+            <text x="0" y="5" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">細胞塊 [${tissue}]</text>
+            <text x="0" y="22" font-size="10" fill="#cbd5e1" text-anchor="middle">${hasTracer ? '★印あり' : '印なし'}</text>
+          </g>
+        `;
+      } else {
+        // 培養後：分化完了した組織
+        if (tissue === 'I') {
+          // I単独 → 外胚葉（表皮）のみ！中胚葉・内胚葉なし
+          let fill = tracerGlow ? '#22c55e' : '#0284c7';
+          let stroke = tracerGlow ? '#4ade80' : '#38bdf8';
+          group.innerHTML += `
+            <g transform="translate(${cx}, ${cy})">
+              <!-- 表皮細胞塊の不定形 -->
+              <path d="M -45 -20 Q 0 -50 45 -25 Q 55 10 30 40 Q -10 50 -40 30 Q -55 0 -45 -20 Z" 
+                    fill="${fill}" fill-opacity="${tracerGlow ? '0.9' : '0.8'}" stroke="${stroke}" stroke-width="3" class="${tracerGlow ? 'glow-tracer' : ''}" />
+              <text x="0" y="-2" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">表皮（外胚葉）</text>
+              <text x="0" y="16" font-size="10" fill="#e2e8f0" text-anchor="middle">${hasTracer ? '★印あり' : '印なし'}</text>
+              <text x="0" y="32" font-size="10" fill="#94a3b8" text-anchor="middle">中胚葉: なし / 内胚葉: なし</text>
+            </g>
+          `;
+        } else if (tissue === 'II') {
+          // II単独 → 外胚葉、中胚葉、内胚葉すべて分化！
+          group.innerHTML += `
+            <g transform="translate(${cx}, ${cy})">
+              <!-- 外層：表皮 -->
+              <circle cx="0" cy="0" r="50" fill="#0284c7" fill-opacity="0.4" stroke="#38bdf8" stroke-width="2" />
+              <text x="0" y="-32" font-size="10" font-weight="bold" fill="#bae6fd" text-anchor="middle">外胚葉性 (表皮)</text>
+              
+              <!-- 中層：中胚葉（筋肉・脊索） -->
+              <circle cx="0" cy="0" r="32" fill="#e11d48" fill-opacity="0.7" stroke="#f43f5e" stroke-width="2.5" />
+              <text x="0" y="-2" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">中胚葉性 (筋・脊索)</text>
+              
+              <!-- 内層：内胚葉 -->
+              <circle cx="0" cy="14" r="14" fill="#ca8a04" fill-opacity="0.9" stroke="#facc15" stroke-width="1.5" />
+              <text x="0" y="18" font-size="9" font-weight="bold" fill="#fef08a" text-anchor="middle">内胚葉性</text>
+            </g>
+          `;
+        } else if (tissue === 'III') {
+          // III単独 → 内胚葉（消化管上皮）のみ！
+          let fill = tracerGlow ? '#22c55e' : '#ca8a04';
+          let stroke = tracerGlow ? '#4ade80' : '#facc15';
+          group.innerHTML += `
+            <g transform="translate(${cx}, ${cy})">
+              <path d="M -40 -30 Q 30 -45 45 -10 Q 55 35 10 45 Q -40 40 -45 5 Z" 
+                    fill="${fill}" fill-opacity="${tracerGlow ? '0.9' : '0.85'}" stroke="${stroke}" stroke-width="3" class="${tracerGlow ? 'glow-tracer' : ''}" />
+              <text x="0" y="0" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">内胚葉性組織</text>
+              <text x="0" y="18" font-size="10" fill="#e2e8f0" text-anchor="middle">(消化管組織)</text>
+              <text x="0" y="34" font-size="10" fill="#94a3b8" text-anchor="middle">外胚葉: なし / 中胚葉: なし</text>
+            </g>
+          `;
+        }
+      }
+    }
+
+    function renderCombinedTissues(group, effectsGroup, t1, t2, stage, isFluo) {
+      // 主に [I] と [III] の組み合わせ（ニューコープの実験）
+      const cx = 180;
+      const cy = 135;
+
+      const t1Tracer = state.tracerConfig[t1] || false;
+      const t2Tracer = state.tracerConfig[t2] || false;
+
+      const t1Glow = isFluo && t1Tracer;
+      const t2Glow = isFluo && t2Tracer;
+
+      if (stage === 0) {
+        // 培養前：接触させた2つの細胞塊
+        let f1 = t1 === 'I' ? '#0284c7' : '#ca8a04';
+        let s1 = t1 === 'I' ? '#38bdf8' : '#facc15';
+        if (t1Glow) { f1 = '#22c55e'; s1 = '#4ade80'; }
+
+        let f2 = t2 === 'III' ? '#ca8a04' : '#0284c7';
+        let s2 = t2 === 'III' ? '#facc15' : '#38bdf8';
+        if (t2Glow) { f2 = '#22c55e'; s2 = '#4ade80'; }
+
+        group.innerHTML = `
+          <!-- 上部細胞塊 (t1) -->
+          <g transform="translate(${cx}, ${cy - 30})">
+            <path d="M -40 0 A 40 40 0 1 1 40 0 Z" fill="${f1}" fill-opacity="${t1Glow ? '0.9' : '0.75'}" stroke="${s1}" stroke-width="2.5" class="${t1Glow ? 'glow-tracer' : ''}" />
+            <text x="0" y="-12" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">[${t1}] 動物極側</text>
+            <text x="0" y="3" font-size="9" fill="#e2e8f0" text-anchor="middle">${t1Tracer ? '★印あり' : '印なし'}</text>
+          </g>
+
+          <!-- 接触面ライン -->
+          <line x1="${cx - 42}" y1="${cy}" x2="${cx + 42}" y2="${cy}" stroke="#94a3b8" stroke-width="2" stroke-dasharray="3,3" />
+          <text x="${cx + 65}" y="${cy + 4}" font-size="9" fill="#94a3b8" text-anchor="start">密着面</text>
+
+          <!-- 下部細胞塊 (t2) -->
+          <g transform="translate(${cx}, ${cy + 30})">
+            <path d="M -42 0 A 42 42 0 0 0 42 0 Z" fill="${f2}" fill-opacity="${t2Glow ? '0.9' : '0.85'}" stroke="${s2}" stroke-width="2.5" class="${t2Glow ? 'glow-tracer' : ''}" />
+            <text x="0" y="24" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">[${t2}] 植物極側</text>
+            <text x="0" y="38" font-size="9" fill="#e2e8f0" text-anchor="middle">${t2Tracer ? '★印あり' : '印なし'}</text>
+          </g>
+        `;
+      } else if (stage === 1) {
+        // 培養進行中：中胚葉誘導シグナル（ノーダル等）がIIIからIへ伝播するアニメーション
+        renderCombinedTissues(group, effectsGroup, t1, t2, 0, isFluo);
+
+        // シグナル分子パーティクル
+        effectsGroup.innerHTML = `
+          <circle cx="${cx}" cy="${cy + 15}" class="signal-particle" fill="none" stroke="#f59e0b" stroke-width="2" />
+          <circle cx="${cx - 15}" cy="${cy + 10}" class="signal-particle" style="animation-delay: 0.4s;" fill="none" stroke="#f43f5e" stroke-width="2" />
+          <circle cx="${cx + 15}" cy="${cy + 10}" class="signal-particle" style="animation-delay: 0.8s;" fill="none" stroke="#f43f5e" stroke-width="2" />
+          <text x="${cx}" y="${cy - 8}" font-size="11" font-weight="extrabold" fill="#f43f5e" text-anchor="middle" filter="drop-shadow(0 0 4px #000)">⚡ ノーダルシグナル伝達中！</text>
+        `;
+      } else if (stage === 2) {
+        // 培養完了：問2の実験結果！
+        // [I]の上部は「表皮」、[I]の接触部が「筋肉（中胚葉誘導）」、[III]は「腸管（内胚葉）」
+        
+        // I由来組織の蛍光判定 (Iに印があれば光る)
+        const iTracer = (t1 === 'I' ? t1Tracer : t2Tracer);
+        const iiiTracer = (t1 === 'III' ? t1Tracer : t2Tracer);
+
+        // 色決定
+        let skinFill = (isFluo && iTracer) ? '#22c55e' : '#0284c7';
+        let skinStroke = (isFluo && iTracer) ? '#4ade80' : '#38bdf8';
+
+        let muscleFill = (isFluo && iTracer) ? '#22c55e' : '#e11d48';
+        let muscleStroke = (isFluo && iTracer) ? '#4ade80' : '#f43f5e';
+
+        let gutFill = (isFluo && iiiTracer) ? '#22c55e' : '#ca8a04';
+        let gutStroke = (isFluo && iiiTracer) ? '#4ade80' : '#facc15';
+
+        const isMuscleGlow = (isFluo && iTracer);
+
+        group.innerHTML = `
+          <!-- 外胚葉：表皮 (上側) -->
+          <g transform="translate(${cx}, ${cy - 50})">
+            <ellipse cx="0" cy="0" rx="55" ry="24" fill="${skinFill}" fill-opacity="${(isFluo && iTracer) ? '0.9' : '0.8'}" stroke="${skinStroke}" stroke-width="2.5" class="${(isFluo && iTracer) ? 'glow-tracer' : ''}" />
+            <text x="0" y="-3" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">表皮 (外胚葉性)</text>
+            <text x="0" y="11" font-size="9" fill="#e2e8f0" text-anchor="middle">由来: I 【${iTracer ? '★印あり(ク)' : '印なし(ケ)'}】</text>
+          </g>
+
+          <!-- 誘導された中胚葉：筋肉・脊索 (接触していた中央部) -->
+          <g transform="translate(${cx}, ${cy})">
+            <ellipse cx="0" cy="0" rx="48" ry="20" fill="${muscleFill}" fill-opacity="${isMuscleGlow ? '0.95' : '0.85'}" stroke="${muscleStroke}" stroke-width="3" class="${isMuscleGlow ? 'glow-tracer' : ''}" />
+            <text x="0" y="-2" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">筋肉・中胚葉組織</text>
+            <text x="0" y="12" font-size="9" fill="#fef08a" font-weight="bold" text-anchor="middle">由来: I が誘導！【${iTracer ? '★印あり(コ)' : '印なし(サ)'}】</text>
+          </g>
+
+          <!-- 内胚葉：腸管 (下側) -->
+          <g transform="translate(${cx}, ${cy + 52})">
+            <ellipse cx="0" cy="0" rx="58" ry="26" fill="${gutFill}" fill-opacity="${(isFluo && iiiTracer) ? '0.9' : '0.85'}" stroke="${gutStroke}" stroke-width="2.5" class="${(isFluo && iiiTracer) ? 'glow-tracer' : ''}" />
+            <text x="0" y="-2" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">腸管 (内胚葉性)</text>
+            <text x="0" y="12" font-size="9" fill="#e2e8f0" text-anchor="middle">由来: III 【${iiiTracer ? '印あり(シ)' : '★印なし(ス)'}】</text>
+          </g>
+        `;
+      }
+    }
+
+    function startCultureAnimation() {
+      if (state.dishTissues.length === 0) return;
+      if (state.cultureStage === 2) {
+        resetCultureState();
+      }
+
+      const btn = document.getElementById('btn-start-culture');
+      const progressBar = document.getElementById('culture-progress-bar');
+      const progressLabel = document.getElementById('progress-percent');
+      const timeLabel = document.getElementById('culture-time-label');
+      const inductionBadge = document.getElementById('induction-status-badge');
+
+      btn.disabled = true;
+      state.cultureStage = 1;
+
+      // 組み合わせ培養（I + III）のとき誘導バッジを表示
+      if (state.dishTissues.includes('I') && state.dishTissues.includes('III')) {
+        inductionBadge.classList.remove('hidden');
+      }
+
+      let progress = 0;
+      renderPetriDish();
+
+      state.animationTimer = setInterval(() => {
+        progress += 4;
+        if (progress > 100) progress = 100;
+
+        progressBar.style.width = `${progress}%`;
+        progressLabel.textContent = `${progress}%`;
+        
+        // 時間経過シミュレーション (0h -> 48h)
+        const hours = Math.round((progress / 100) * 48);
+        timeLabel.textContent = `Time: ${hours}h (原腸胚〜尾芽胚)`;
+
+        if (progress >= 100) {
+          clearInterval(state.animationTimer);
+          state.cultureStage = 2; // 完了
+          inductionBadge.classList.add('hidden');
+          btn.disabled = false;
+          renderPetriDish();
+        }
+      }, 50);
+    }
+
+    function resetCultureState() {
+      if (state.animationTimer) clearInterval(state.animationTimer);
+      state.cultureStage = 0;
+      
+      const progressBar = document.getElementById('culture-progress-bar');
+      const progressLabel = document.getElementById('progress-percent');
+      const timeLabel = document.getElementById('culture-time-label');
+      const inductionBadge = document.getElementById('induction-status-badge');
+      const btn = document.getElementById('btn-start-culture');
+
+      progressBar.style.width = '0%';
+      progressLabel.textContent = '0%';
+      timeLabel.textContent = 'Time: 0h (培養前)';
+      inductionBadge.classList.add('hidden');
+      btn.disabled = false;
+
+      renderPetriDish();
+    }
+
+    function updateResultsSummary() {
+      const countBadge = document.getElementById('results-count-badge');
+      const detailBox = document.getElementById('results-detail-content');
+
+      if (state.dishTissues.length === 0) return;
+
+      if (state.cultureStage === 0) {
+        countBadge.textContent = '培養待機中';
+        detailBox.innerHTML = `
+          <div class="text-slate-400">
+            選択された組織片: <span class="font-bold text-sky-400">[${state.dishTissues.join(' + ')}]</span>。<br>
+            「培養開始」ボタンを押して、どのような胚葉性組織に分化するか確かめましょう。
+          </div>
+        `;
+        return;
+      }
+
+      if (state.cultureStage === 1) {
+        countBadge.textContent = '誘導・分化中...';
+        detailBox.innerHTML = `
+          <div class="text-amber-300 font-semibold animate-pulse">
+            細胞間でノーダルシグナル等のやり取りが行われ、遺伝子発現が変化しています...
+          </div>
+        `;
+        return;
+      }
+
+      // 培養完了時
+      countBadge.textContent = '分化完了 (観察可能)';
+      
+      if (state.dishTissues.length === 1) {
+        const t = state.dishTissues[0];
+        if (t === 'I') {
+          detailBox.innerHTML = `
+            <div class="space-y-1">
+              <div class="text-sky-300 font-bold">結果：外胚葉性組織【あり】/ 中胚葉性【なし】/ 内胚葉性【なし】</div>
+              <p>I（動物極）単独では、表皮などの外胚葉組織にしかなれません（問題文の表 I の通り）。</p>
+            </div>
+          `;
+        } else if (t === 'II') {
+          detailBox.innerHTML = `
+            <div class="space-y-1">
+              <div class="text-rose-300 font-bold">結果：外胚葉性【あり】/ 中胚葉性【あり】/ 内胚葉性【あり】</div>
+              <p>II（赤道域）は予定中胚葉を含み、自律的に3胚葉すべての組織に分化します（問題文の表 II の通り）。</p>
+            </div>
+          `;
+        } else if (t === 'III') {
+          detailBox.innerHTML = `
+            <div class="space-y-1">
+              <div class="text-amber-300 font-bold">結果：外胚葉性【なし】/ 中胚葉性【なし】/ 内胚葉性【あり】</div>
+              <p>III（植物極）単独では、消化管組織などの内胚葉組織に分化します。</p>
+            </div>
+          `;
+        }
+      } else if (state.dishTissues.includes('I') && state.dishTissues.includes('III')) {
+        const iTracer = state.tracerConfig.I;
+        const iiiTracer = state.tracerConfig.III;
+
+        detailBox.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-emerald-400 font-bold">★ ニューコープの実験成功！</span>
+              <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/40">問2の解答根拠</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+              <div>
+                <span class="text-sky-300 font-bold">● 表皮 (外胚葉)：</span><br>
+                由来: <strong class="text-white">I</strong> → 印: <strong class="${iTracer ? 'text-emerald-400 font-bold' : 'text-slate-400'}">${iTracer ? '付いている (ク)' : '付いていない (ケ)'}</strong>
+              </div>
+              <div>
+                <span class="text-rose-300 font-bold">● 筋肉 (中胚葉誘導)：</span><br>
+                由来: <strong class="text-emerald-400 underline">I</strong> → 印: <strong class="${iTracer ? 'text-emerald-400 font-bold' : 'text-slate-400'}">${iTracer ? '付いている (コ)' : '付いていない (サ)'}</strong>
+              </div>
+              <div>
+                <span class="text-amber-300 font-bold">● 腸管 (内胚葉)：</span><br>
+                由来: <strong class="text-white">III</strong> → 印: <strong class="${iiiTracer ? 'text-emerald-400 font-bold' : 'text-slate-400'}">${iiiTracer ? '付いている (シ)' : '付いていない (ス)'}</strong>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-300">
+              右上の「照明: 蛍光(印)」を押して確認してください。<strong class="text-emerald-300">筋肉組織が緑色に発光</strong>しています。これは筋肉が植物極IIIからではなく、<strong class="text-sky-300">動物極Iから誘導されて生じた</strong>動かぬ証拠です！
+            </p>
+          </div>
+        `;
+      }
+    }
+
+    const organQuizList = [
+      { name: '心臓', type: '中胚葉', icon: '🫀', hint: '血液を全身に送り出す循環系器官です。' },
+      { name: '胃の上皮', type: '内胚葉', icon: '🍲', hint: '食べ物を消化・吸収する消化管の内側粘膜です。' },
+      { name: '脳・網膜', type: '外胚葉', icon: '🧠', hint: '外界の光を感じ、思考・情報処理を行う神経系です。' },
+      { name: '肝臓・すい臓', type: '内胚葉', icon: '🧪', hint: '消化液やホルモンを分泌する最大の消化腺です。' },
+      { name: '骨格筋・真皮', type: '中胚葉', icon: '💪', hint: '身体を動かす筋肉と、皮膚の深い土台層です。' },
+      { name: '腎臓', type: '中胚葉', icon: '🫘', hint: '血液から老廃物をこしとる排出系器官です。' },
+    ];
+    let currentOrganIdx = 0;
+    let organScore = 0;
+
+    function checkOrganAnswer(selectedType) {
+      const current = organQuizList[currentOrganIdx];
+      const feedback = document.getElementById('organ-feedback');
+      const scoreBadge = document.getElementById('quiz-score');
+
+      if (selectedType === current.type) {
+        organScore++;
+        scoreBadge.textContent = organScore;
+        feedback.innerHTML = `<span class="text-emerald-400 font-bold">⭕ 正解！</span> ${current.name} は <strong class="text-white">${current.type}</strong> 由来です。(${current.hint})`;
+      } else {
+        feedback.innerHTML = `<span class="text-rose-400 font-bold">❌ おしい！</span> ${current.name} は <strong class="text-white">${current.type}</strong> 由来です。(${current.hint})`;
+      }
+
+      currentOrganIdx = (currentOrganIdx + 1) % organQuizList.length;
+      setTimeout(() => {
+        const next = organQuizList[currentOrganIdx];
+        document.getElementById('organ-challenge-name').textContent = next.name;
+        document.getElementById('organ-challenge-icon').textContent = next.icon;
+      }, 700);
+    }
+
+    function submitQ1(ans) {
+      state.quizAnswers.q1 = ans;
+      const exp = document.getElementById('q1-explanation');
+      exp.classList.remove('hidden');
+
+      // 全ボタンリセット
+      for (let i = 1; i <= 9; i++) {
+        const b = document.getElementById(`q1-opt-${i}`);
+        b.className = 'q1-btn p-3 rounded-xl bg-slate-950 border border-slate-800 text-left text-xs text-slate-400';
+      }
+
+      const selectedBtn = document.getElementById(`q1-opt-${ans}`);
+
+      if (ans === 7) {
+        selectedBtn.className = 'q1-btn p-3 rounded-xl bg-emerald-950/80 border-2 border-emerald-500 text-left text-xs text-emerald-200 font-bold';
+        exp.innerHTML = `
+          <div class="text-emerald-400 font-bold text-sm">🎉 正解！【 ⑦ 胃の上皮, 肝臓, すい臓 】</div>
+          <p class="leading-relaxed">
+            図のIIIは植物極側であり、<strong class="text-amber-300">予定内胚葉域</strong>です。<br>
+            内胚葉から分化するのは<strong>消化器系（胃や腸管の上皮、肝臓、すい臓）</strong>および呼吸器系（肺上皮）です。<br>
+            ・脳、網膜、表皮 → <strong>外胚葉</strong><br>
+            ・骨格筋、真皮、腎臓、心臓 → <strong>中胚葉</strong>
+          </p>
+        `;
+      } else {
+        selectedBtn.className = 'q1-btn p-3 rounded-xl bg-rose-950/80 border-2 border-rose-500 text-left text-xs text-rose-200 font-bold';
+        exp.innerHTML = `
+          <div class="text-rose-400 font-bold text-sm">❌ 不正解... もう一度考えてみよう！</div>
+          <p class="leading-relaxed">
+            図のIIIは植物極＝<strong class="text-amber-300">内胚葉</strong>です。選択肢に含まれる「表皮・脳・網膜」は<strong>外胚葉</strong>、「骨格筋・真皮・心臓・腎臓」は<strong>中胚葉</strong>です。すべて内胚葉由来なのは <strong>⑦</strong> だけです。
+          </p>
+        `;
+      }
+    }
+
+    function submitQ2(ans) {
+      state.quizAnswers.q2 = ans;
+      const exp = document.getElementById('q2-explanation');
+      exp.classList.remove('hidden');
+
+      for (let i = 1; i <= 8; i++) {
+        const b = document.getElementById(`q2-opt-${i}`);
+        b.className = 'q2-btn p-3 rounded-xl bg-slate-950 border border-slate-800 text-center text-xs text-slate-400';
+      }
+
+      const selectedBtn = document.getElementById(`q2-opt-${ans}`);
+
+      if (ans === 2) {
+        selectedBtn.className = 'q2-btn p-3 rounded-xl bg-emerald-950/80 border-2 border-emerald-500 text-center text-xs text-emerald-200 font-bold';
+        exp.innerHTML = `
+          <div class="text-emerald-400 font-bold text-sm">🎉 大正解！【 ② ク, コ, ス 】</div>
+          <div class="space-y-1.5 leading-relaxed pt-1">
+            <p><strong>実験室シミュレータで確認した通り：</strong></p>
+            <ul class="list-disc list-inside space-y-1 text-slate-300">
+              <li><strong>表皮 (外胚葉)：</strong>印を付けた I から分化するため、印が【付いている】→ <strong>ク</strong></li>
+              <li><strong>筋肉 (中胚葉)：</strong>III（植物極）からのシグナルによって、印を付けた I が中胚葉誘導されて分化するため、印が【付いている】→ <strong>コ</strong></li>
+              <li><strong>腸管 (内胚葉)：</strong>印のない III から分化するため、印が【付いていない】→ <strong>ス</strong></li>
+            </ul>
+            <p class="text-sky-300 font-bold pt-1">「筋肉がIIIではなく、印のついたI由来である」という事実が中胚葉誘導の証明です！</p>
+          </div>
+        `;
+      } else {
+        selectedBtn.className = 'q2-btn p-3 rounded-xl bg-rose-950/80 border-2 border-rose-500 text-center text-xs text-rose-200 font-bold';
+        exp.innerHTML = `
+          <div class="text-rose-400 font-bold text-sm">❌ 不正解... 「筋肉」はどっち由来？</div>
+          <p class="leading-relaxed">
+            ここがニューコープの実験最大のポイントです！<br>
+            筋肉（中胚葉）は、植物極IIIからできたのではなく、<strong>植物極IIIに誘導された「I（動物極）」からできています</strong>。<br>
+            今回は I に印が付いているため、筋肉の細胞にも印が付きます（<strong>コ</strong>）。腸管は印のないIII由来なので印なし（<strong>ス</strong>）です。よって正解は <strong>②（ク, コ, ス）</strong> です。
+          </p>
+        `;
+      }
+    }
+
+    function submitQ3(ans) {
+      state.quizAnswers.q3 = ans;
+      const exp = document.getElementById('q3-explanation');
+      exp.classList.remove('hidden');
+
+      for (let i = 1; i <= 6; i++) {
+        const b = document.getElementById(`q3-opt-${i}`);
+        b.className = 'q3-btn w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-left text-xs text-slate-400';
+      }
+
+      const selectedBtn = document.getElementById(`q3-opt-${ans}`);
+
+      if (ans === 6) {
+        selectedBtn.className = 'q3-btn w-full p-3 rounded-xl bg-emerald-950/80 border-2 border-emerald-500 text-left text-xs text-emerald-200 font-bold';
+        exp.innerHTML = `
+          <div class="text-emerald-400 font-bold text-sm">🎉 大正解！誤っているのは【 ⑥ 隣接する細胞に速やかに輸送されること 】</div>
+          <p class="leading-relaxed pt-1">
+            細胞追跡（フェイトマッピング・標識）で使われる物質は、<strong class="text-rose-400">「隣の細胞へ漏れ出さない（輸送されない）」</strong>ことが絶対条件です！<br>
+            もし印が隣接する細胞へ勝手に拡散・輸送されてしまったら、<strong>「元々印を付けた細胞の子孫なのか、隣から染み出してきたのか」が区別できなくなり、追跡実験が完全に破綻</strong>してしまいます。<br>
+            そのため、高分子の蛍光デキストランやGFPタンパク質など、細胞膜を通り抜けない物質が使われます。
+          </p>
+        `;
+      } else {
+        selectedBtn.className = 'q3-btn w-full p-3 rounded-xl bg-rose-950/80 border-2 border-rose-500 text-left text-xs text-rose-200 font-bold';
+        exp.innerHTML = `
+          <div class="text-rose-400 font-bold text-sm">❌ 不正解... 問題は「誤っているもの」を選びます！</div>
+          <p class="leading-relaxed">
+            ①〜⑤ は標識物質として<strong>備えていなければならない正しい条件</strong>です（正常な発生を邪魔せず、分解されず、分裂しても娘細胞に受け継がれる必要がある）。<br>
+            もし <strong>⑥「隣の細胞に速やかに輸送される」</strong> と、印が全体に広がってしまい「どの胚片から分化したか」の追跡ができなくなります。したがって誤っているのは <strong>⑥</strong> です。
+          </p>
+        `;
+      }
+    }
+
+    function showNotification(msg) {
+      const existing = document.getElementById('custom-toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.id = 'custom-toast';
+      toast.className = 'fixed bottom-6 right-6 z-50 bg-slate-900 border border-amber-500/80 text-amber-200 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold max-w-sm transition-all duration-300 transform translate-y-0';
+      toast.innerHTML = `⚠️ ${msg}`;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    window.onload = function() {
+      // 初期状態として「問2の実験（印つきI + 印なしIII）」をセット
+      setExperimentPreset('q2');
+    };
+  </script>
+</body>
+</html>
