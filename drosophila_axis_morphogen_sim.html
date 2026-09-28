@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ショウジョウバエ前後軸形成シミュレーター | Lv32 ビコイド濃度勾配と母性効果遺伝子</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=M+PLUS+Rounded+1c:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"M PLUS Rounded 1c"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            bicoid: '#0284c7',   // ビコイド (前極・スカイブルー)
+            nanos: '#e11d48',    // ナノス (後極・ローズレッド)
+            polecell: '#a855f7', // 極細胞/生殖質 (パープル)
+            uvlight: '#8b5cf6',  // 紫外線 (バイオレット)
+            head: '#38bdf8',     // 頭部
+            thorax: '#fbbf24',   // 胸部
+            abdomen: '#34d399',  // 腹部
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 人体工学・タッチターゲット */
+    .touch-target {
+      min-height: 48px;
+      min-width: 48px;
+    }
+    .interactive-card {
+      transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease;
+    }
+    .interactive-card:active {
+      transform: scale(0.97);
+    }
+    /* アニメーション */
+    @keyframes uv-pulse {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 0.85; filter: drop-shadow(0 0 16px rgba(139, 92, 246, 0.8)); }
+    }
+    .uv-beaming {
+      animation: uv-pulse 1.2s infinite ease-in-out;
+    }
+    @keyframes stripe-glow {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    .stripe-anim {
+      animation: stripe-glow 2s infinite ease-in-out;
+    }
+    /* スクロールバー美化 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
+
+  <!-- ヘッダー（人体工学対応・大型ナビゲーション） -->
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <a href="index.html" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-rose-500 to-purple-500 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white font-black text-xl hover:scale-105 transition-transform" title="ポータルへ戻る">
+          蝿
+        </a>
+        <div>
+          <h1 class="text-lg md:text-xl font-bold leading-tight flex items-center gap-2">
+            ショウジョウバエ前後軸形成 & 形態形成ラボ
+            <span class="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded-full font-semibold">Lv32 高校生物</span>
+          </h1>
+          <p class="text-xs text-slate-400">ビコイド濃度勾配と細胞質移植！なぜ前極細胞質を注入すると「双頭ハエ」ができるのか？</p>
+        </div>
+      </div>
+
+      <!-- モード切り替えタブ (48px以上のタッチエリア) -->
+      <nav class="flex items-center bg-slate-800/80 p-1 rounded-2xl border border-slate-700/60 shadow-inner">
+        <button id="tab-transplant" onclick="switchTab('transplant')" class="touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1.5 transition-all bg-purple-600 text-white shadow-md">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+          細胞質移植実験室
+        </button>
+        <button id="tab-gradient" onclick="switchTab('gradient')" class="touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+          濃度勾配＆縞模様
+        </button>
+        <button id="tab-maternal" onclick="switchTab('maternal')" class="touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          母性効果遺伝子の罠
+        </button>
+        <button id="tab-quiz" onclick="switchTab('quiz')" class="touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          入試問題(48番)
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+    <!-- ======================================================== -->
+    <!-- SECTION 1: 細胞質移植実験室 (メインシミュレータ) -->
+    <!-- ======================================================== -->
+    <section id="view-transplant" class="space-y-6">
+      
+      <!-- 探究ガイダンスバナー -->
+      <div class="bg-gradient-to-r from-purple-950/70 via-slate-900 to-indigo-950/70 border border-purple-800/40 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+        <div class="space-y-1.5 max-w-2xl">
+          <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-purple-400 animate-ping"></span>
+            探究の問い：受精卵の「場所」が決まると、なぜ頭やお尻ができるのか？
+          </div>
+          <h2 class="text-base md:text-lg font-bold text-white">
+            前極の細胞質を後極に移植すると何が起きる？
+          </h2>
+          <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+            下の実験プリセットボタンを押して、卵に細胞質を注入したり紫外線を当ててみましょう。<br>
+            前極の <strong class="text-sky-400">ビコイド</strong> と後極の <strong class="text-purple-400">極細胞質（生殖質）</strong> の役割がリアルタイムに確かめられます！
+          </p>
+        </div>
+
+        <!-- 凡例バッジ -->
+        <div class="flex flex-wrap gap-2 text-[11px] bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-bold">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> ビコイド (前極・頭部)
+          </div>
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> ナノス (後極・腹部)
+          </div>
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold">
+            <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span> 極細胞質 (生殖細胞)
+          </div>
+        </div>
+      </div>
+
+      <!-- 実験クイック選択パネル (大型タッチ対応・問題文の実験を完全再現) -->
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        
+        <!-- 正常胚 -->
+        <button id="exp-btn-normal" onclick="selectExpPreset('normal')" class="interactive-card touch-target p-3.5 rounded-2xl border-2 border-purple-500 bg-purple-950/40 text-left space-y-1.5 shadow-lg shadow-purple-950/40">
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-0.5 rounded-lg bg-slate-800 text-slate-300 font-bold">基準</span>
+            <span class="text-[10px] text-emerald-400">正常発生</span>
+          </div>
+          <div class="text-xs md:text-sm font-bold text-white">正常受精卵</div>
+          <p class="text-[11px] text-slate-400 leading-tight">前極ビコイド ＋ 後極ナノス＆極細胞質</p>
+          <div class="pt-1 text-[11px] font-bold text-emerald-400">
+            結果：正常バエ（受精可能）
+          </div>
+        </button>
+
+        <!-- 下線部ア: 前極細胞質を後極へ注入 -->
+        <button id="exp-btn-doublehead" onclick="selectExpPreset('doublehead')" class="interactive-card touch-target p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900/90 text-left space-y-1.5 hover:border-sky-500/60 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-0.5 rounded-lg bg-sky-500/20 text-sky-300 font-bold border border-sky-500/40">下線部ア ★</span>
+            <span class="text-[10px] text-sky-300 font-bold">前極細胞質注入</span>
+          </div>
+          <div class="text-xs md:text-sm font-bold text-white">後極に前極質注入</div>
+          <p class="text-[11px] text-slate-400 leading-tight">後極にもビコイドが出現！両端が前極化</p>
+          <div class="pt-1 text-[11px] font-bold text-sky-400">
+            結果：双頭胚（両端に頭部！）
+          </div>
+        </button>
+
+        <!-- ビコイド欠失変異体 (aa母) -->
+        <button id="exp-btn-bicoidmutant" onclick="selectExpPreset('bicoidmutant')" class="interactive-card touch-target p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900/90 text-left space-y-1.5 hover:border-amber-500/60 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">変異体</span>
+            <span class="text-[10px] text-amber-300">aa母の卵</span>
+          </div>
+          <div class="text-xs md:text-sm font-bold text-white">ビコイド欠失</div>
+          <p class="text-[11px] text-slate-400 leading-tight">前極ビコイド消失 → 頭部・胸部ができない</p>
+          <div class="pt-1 text-[11px] font-bold text-amber-400">
+            結果：双尾胚（頭部欠失）
+          </div>
+        </button>
+
+        <!-- 後極UV照射 -->
+        <button id="exp-btn-uv" onclick="selectExpPreset('uv')" class="interactive-card touch-target p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900/90 text-left space-y-1.5 hover:border-violet-500/60 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-0.5 rounded-lg bg-violet-500/20 text-violet-300 font-bold border border-violet-500/40">UV照射</span>
+            <span class="text-[10px] text-violet-300">紫外線処理</span>
+          </div>
+          <div class="text-xs md:text-sm font-bold text-white">後極に紫外線</div>
+          <p class="text-[11px] text-slate-400 leading-tight">後極の極細胞質（生殖質）を破壊</p>
+          <div class="pt-1 text-[11px] font-bold text-rose-400">
+            結果：不妊ハエ（子を作れない）
+          </div>
+        </button>
+
+        <!-- 下線部イ: UV照射＋正常後極質注入 -->
+        <button id="exp-btn-uvrescue" onclick="selectExpPreset('uvrescue')" class="interactive-card touch-target p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900/90 text-left space-y-1.5 hover:border-purple-500/60 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-0.5 rounded-lg bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40">下線部イ ★</span>
+            <span class="text-[10px] text-purple-300 font-bold">細胞質救出</span>
+          </div>
+          <div class="text-xs md:text-sm font-bold text-white">UV ＋ 後極質移植</div>
+          <p class="text-[11px] text-slate-400 leading-tight">正常後極の細胞質を補充し生殖質を回復</p>
+          <div class="pt-1 text-[11px] font-bold text-emerald-400">
+            結果：生殖能力が回復！
+          </div>
+        </button>
+
+      </div>
+
+      <!-- メイン実験ビューア（受精卵SVG ＆ 成虫・幼虫表現型プレビュー） -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- 左側：実験操作＆パラメータ (4 cols) -->
+        <div class="lg:col-span-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 md:p-5 space-y-4 shadow-lg">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-400 text-xs flex items-center justify-center font-bold">1</span>
+              受精卵への外科的実験
+            </h3>
+            <span class="text-xs text-purple-400 font-mono" id="preset-title-badge">正常受精卵</span>
+          </div>
+
+          <!-- 前極ビコイドmRNA -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+              <span>前極：ビコイドmRNA量</span>
+              <span id="label-bicoid-amount" class="text-sky-400 font-bold">正常 (100%)</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-bicoid-on" onclick="setBicoidState(true)" class="touch-target p-2.5 rounded-xl border border-sky-500/50 bg-sky-950/40 text-xs font-bold text-sky-200 flex items-center justify-center gap-2 transition shadow">
+                <span>正常 (あり)</span>
+              </button>
+              <button id="btn-bicoid-off" onclick="setBicoidState(false)" class="touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white">
+                <span>欠失 (aa母)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 後極への前極細胞質注入（下線部ア） -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+              <span>後極への前極質注入 (注射器)：</span>
+              <span id="label-inject-anterior" class="text-slate-400 font-bold">なし</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-inj-ant-off" onclick="setInjectAnterior(false)" class="touch-target p-2.5 rounded-xl border border-purple-500/50 bg-purple-950/40 text-xs font-bold text-purple-200 flex items-center justify-center gap-2 transition">
+                <span>注入なし</span>
+              </button>
+              <button id="btn-inj-ant-on" onclick="setInjectAnterior(true)" class="touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white">
+                <span>💉 後極へ注入</span>
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400">※前極のビコイドタンパク質・mRNAを後極にも導入します。</p>
+          </div>
+
+          <!-- 後極UV照射 & 救出注入（下線部イ） -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+              <span>後極への紫外線(UV)照射：</span>
+              <span id="label-uv-state" class="text-slate-400 font-bold">なし</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-uv-off" onclick="setUVState(false)" class="touch-target p-2.5 rounded-xl border border-purple-500/50 bg-purple-950/40 text-xs font-bold text-purple-200 flex items-center justify-center gap-2 transition">
+                <span>UVなし</span>
+              </button>
+              <button id="btn-uv-on" onclick="setUVState(true)" class="touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white">
+                <span>☀️ UV照射</span>
+              </button>
+            </div>
+            
+            <div id="box-uv-rescue" class="pt-2 hidden space-y-1">
+              <div class="text-[11px] text-violet-300 font-bold flex items-center justify-between">
+                <span>UV照射卵への後極質注入：</span>
+                <span id="label-rescue-state" class="text-slate-400">なし</span>
+              </div>
+              <button id="btn-rescue-toggle" onclick="toggleRescueInjection()" class="w-full py-2 px-3 rounded-xl border border-purple-600/60 bg-purple-950/50 hover:bg-purple-900/60 text-purple-200 text-xs font-bold flex items-center justify-center gap-1.5 transition">
+                <span>💉 正常な後極細胞質を注入する</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 発生進行ボタン (人体工学大型) -->
+          <div class="pt-3">
+            <button id="btn-run-development" onclick="startDevelopment()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-sky-600 hover:from-purple-500 hover:to-sky-500 text-white font-bold text-sm shadow-lg shadow-purple-900/40 flex items-center justify-center gap-2 transition active:scale-95 border border-purple-400/40">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span>卵を発生させる（成虫・幼虫を観察）</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- 右側：受精卵顕微鏡ビュー ＆ 形態形成プレビュー (8 cols) -->
+        <div class="lg:col-span-8 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 md:p-5 space-y-4 shadow-lg flex flex-col justify-between">
+          
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-400 text-xs flex items-center justify-center font-bold">2</span>
+              <h3 class="text-sm font-bold text-slate-200">受精卵の形態形成と細胞質動態</h3>
+            </div>
+
+            <div class="text-xs text-slate-400 flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800 font-mono">前極 (Anterior)</span>
+              <span>↔</span>
+              <span class="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 font-mono">後極 (Posterior)</span>
+            </div>
+          </div>
+
+          <!-- 受精卵 & 幼虫のSVG描画キャンバス -->
+          <div class="relative w-full aspect-[16/10] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-2xl border-2 border-slate-800 flex items-center justify-center overflow-hidden shadow-inner group">
+            
+            <!-- ステータスラベル -->
+            <div class="absolute top-3.5 left-4 bg-slate-900/90 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs z-10 flex flex-col gap-0.5 backdrop-blur-md">
+              <div class="flex items-center gap-2">
+                <span id="dev-phase-label" class="text-purple-400 font-bold">ステージ: 受精卵 (初期)</span>
+              </div>
+              <div class="text-[11px] text-slate-300 font-mono">
+                生殖細胞 (極細胞): <span id="polecell-status" class="font-bold text-purple-400">形成予定 (正常)</span>
+              </div>
+            </div>
+
+            <!-- SVG キャンバス -->
+            <svg id="egg-svg-canvas" viewBox="0 0 520 320" class="w-full h-full select-none">
+              <defs>
+                <!-- ビコイド濃度グラデーション (左から右へ) -->
+                <linearGradient id="bicoid-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#0284c7" stop-opacity="0.8" />
+                  <stop offset="35%" stop-color="#0284c7" stop-opacity="0.3" />
+                  <stop offset="65%" stop-color="#0284c7" stop-opacity="0.05" />
+                  <stop offset="100%" stop-color="#0284c7" stop-opacity="0" />
+                </linearGradient>
+
+                <!-- 後極ナノスグラデーション (右から左へ) -->
+                <linearGradient id="nanos-gradient" x1="100%" y1="0%" x2="0%" y2="0%">
+                  <stop offset="0%" stop-color="#e11d48" stop-opacity="0.8" />
+                  <stop offset="35%" stop-color="#e11d48" stop-opacity="0.3" />
+                  <stop offset="70%" stop-color="#e11d48" stop-opacity="0.05" />
+                  <stop offset="100%" stop-color="#e11d48" stop-opacity="0" />
+                </linearGradient>
+
+                <!-- 双頭用：後極ビコイド注入グラデーション -->
+                <linearGradient id="bicoid-injected-gradient" x1="100%" y1="0%" x2="0%" y2="0%">
+                  <stop offset="0%" stop-color="#0284c7" stop-opacity="0.85" />
+                  <stop offset="30%" stop-color="#0284c7" stop-opacity="0.35" />
+                  <stop offset="60%" stop-color="#0284c7" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+
+              <!-- 動的レイヤー群 -->
+              <g id="layer-egg-shell"></g>      <!-- 卵の殻・背景 -->
+              <g id="layer-morphogen"></g>      <!-- ビコイド・ナノス濃度勾配 -->
+              <g id="layer-pole-plasm"></g>     <!-- 後極の極細胞質（生殖質） -->
+              <g id="layer-uv-effects"></g>     <!-- UV光線エフェクト -->
+              <g id="layer-syringes"></g>       <!-- 注射器アニメーション -->
+              <g id="layer-phenotype"></g>      <!-- 発生完了後の幼虫・成虫イラスト -->
+              <g id="layer-labels"></g>         <!-- 前極・後極ラベル -->
+            </svg>
+          </div>
+
+          <!-- 発生進行インジケーター -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-semibold text-slate-400">
+              <span>発生ステージ進行度</span>
+              <span id="dev-progress-text" class="text-purple-400 font-mono">0%</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700/60">
+              <div id="dev-progress-bar" class="h-full bg-gradient-to-r from-purple-500 via-indigo-500 to-sky-500 rounded-full transition-all duration-200 w-0"></div>
+            </div>
+          </div>
+
+          <!-- 発生結果レポートカード (大型) -->
+          <div id="outcome-card" class="bg-slate-950/80 rounded-2xl border border-slate-800 p-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span> 発生完了後のハエの形態と能力
+              </span>
+              <span id="outcome-badge" class="text-xs font-black px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400">
+                受精卵 待機中
+              </span>
+            </div>
+            <div id="outcome-text" class="text-xs md:text-sm text-slate-300 leading-relaxed min-h-[3.2rem] flex items-center">
+              上部の実験ボタンを選ぶか、「卵を発生させる」ボタンを押すと、生まれたハエの体節構造（頭部・胸部・腹部）と生殖能力（子を作れるか）がここに判定されます。
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- S.L.O.W. 思考の足場：高校生向けなぜなぜ解説 -->
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 space-y-3">
+        <h4 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+          <span class="text-lg">💡</span> 高校生が感動する「3大ポイント」：ビコイドと生殖質の秘密
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300 leading-relaxed">
+          <div class="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800/60 space-y-1.5">
+            <div class="font-bold text-sky-400 flex items-center gap-1.5">
+              <span>① ビコイドは「頭をつくれ」の司令塔</span>
+            </div>
+            <p>
+              前極にあるビコイドmRNAから作られたタンパク質は、受精卵の中を後ろへ拡散して<strong>濃度勾配（モルフォゲン）</strong>をつくります。ビコイドが高濃度の場所が「頭」、中濃度が「胸」になり、後ろにはビコイドが届かないため「腹」になります。
+            </p>
+          </div>
+          <div class="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800/60 space-y-1.5">
+            <div class="font-bold text-purple-400 flex items-center gap-1.5">
+              <span>② 後極に前極質を入れると「双頭」になる！</span>
+            </div>
+            <p>
+              前極の細胞質（ビコイド）を後極に注射すると、本来ならお尻になるはずの後ろ側でもビコイド濃度が高くなります。その結果、<strong class="text-sky-300">「両端に頭部と胸部がある双頭胚」</strong>という奇跡のハエが誕生します！（下線部アの実証）
+            </p>
+          </div>
+          <div class="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800/60 space-y-1.5">
+            <div class="font-bold text-rose-400 flex items-center gap-1.5">
+              <span>③ 後極の生殖質（ポーラープラズム）とUV</span>
+            </div>
+            <p>
+              後極の細胞質には、将来の精子や卵になる<strong>「極細胞（生殖細胞）」を決める特別な生殖質</strong>が存在します。紫外線（UV）を当てるとこれが壊れて「不妊ハエ」になりますが、正常な後極細胞質を移植すると見事に子を作れるようになります！（下線部イの実証）
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- SECTION 2: 濃度勾配 & 分節カスケード -->
+    <!-- ======================================================== -->
+    <section id="view-gradient" class="space-y-6 hidden">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-5">
+        <div>
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-sky-400 mb-1">
+            <span>📈 モルフォゲン濃度勾配と体節の階層的決定</span>
+          </div>
+          <h2 class="text-lg md:text-xl font-bold text-white">
+            大まかな濃度差から「7本の縞」「14本の縞」ができるまで
+          </h2>
+          <p class="text-xs md:text-sm text-slate-300">
+            ビコイド（前）とナノス（後）がつくる濃度勾配が、どのようにして幾何学的な体節縞模様へと変換されるのかを観察しましょう。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          
+          <!-- グラフ＆体節モデルSVG (8 cols) -->
+          <div class="lg:col-span-8 bg-slate-950 rounded-2xl border-2 border-slate-800 p-4 space-y-4">
+            <div class="text-xs font-bold text-slate-300 flex items-center justify-between">
+              <span>受精卵内のタンパク質濃度グラフ</span>
+              <div class="flex items-center gap-3 text-[11px]">
+                <span class="text-sky-400 font-bold">― ビコイド (前極高)</span>
+                <span class="text-rose-400 font-bold">― ナノス (後極高)</span>
+              </div>
+            </div>
+
+            <!-- SVG 濃度グラフ -->
+            <svg viewBox="0 0 500 240" class="w-full h-auto select-none bg-slate-900/50 rounded-xl p-2 border border-slate-800">
+              <!-- 軸線 -->
+              <line x1="40" y1="180" x2="480" y2="180" stroke="#475569" stroke-width="1.5" />
+              <line x1="40" y1="20" x2="40" y2="180" stroke="#475569" stroke-width="1.5" />
+              <text x="35" y="25" fill="#94a3b8" font-size="10" text-anchor="end">濃度</text>
+              <text x="45" y="195" fill="#94a3b8" font-size="10">前極 (頭部)</text>
+              <text x="475" y="195" fill="#94a3b8" font-size="10" text-anchor="end">後極 (尾部)</text>
+
+              <!-- 閾値ライン -->
+              <line x1="40" y1="80" x2="480" y2="80" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3,3" />
+              <text x="485" y="83" fill="#fbbf24" font-size="9" text-anchor="start">頭部形成閾値</text>
+
+              <!-- ビコイド曲線 (指数関数的減少) -->
+              <path d="M 40 30 Q 140 70 260 140 T 480 175" fill="none" stroke="#0284c7" stroke-width="3.5" />
+              <!-- ナノス曲線 (指数関数的増加) -->
+              <path d="M 40 175 Q 260 140 380 70 T 480 30" fill="none" stroke="#e11d48" stroke-width="3" />
+
+              <!-- 体節領域の区分け塗り -->
+              <rect x="40" y="210" width="120" height="20" fill="#0284c7" fill-opacity="0.4" rx="4" />
+              <text x="100" y="224" fill="#bae6fd" font-size="10" font-weight="bold" text-anchor="middle">頭部領域</text>
+
+              <rect x="165" y="210" width="90" height="20" fill="#fbbf24" fill-opacity="0.4" rx="4" />
+              <text x="210" y="224" fill="#fef08a" font-size="10" font-weight="bold" text-anchor="middle">胸部領域</text>
+
+              <rect x="260" y="210" width="220" height="20" fill="#34d399" fill-opacity="0.4" rx="4" />
+              <text x="370" y="224" fill="#a7f3d0" font-size="10" font-weight="bold" text-anchor="middle">腹部領域</text>
+            </svg>
+
+            <!-- 7本の縞模様（ペアルール遺伝子）可視化 -->
+            <div class="space-y-1.5 pt-2">
+              <div class="text-xs font-bold text-slate-300 flex items-center justify-between">
+                <span>分節遺伝子のカスケード発現：</span>
+                <span class="text-[11px] text-purple-400 font-mono">ペアルール遺伝子 (エーブンスキップト等)</span>
+              </div>
+              <div class="flex h-8 bg-slate-900 rounded-xl overflow-hidden border border-slate-700/80 p-1 gap-1.5">
+                <div class="flex-1 bg-slate-800 rounded"></div>
+                <div class="w-6 bg-purple-500 rounded stripe-anim shadow-sm shadow-purple-500/50"></div>
+                <div class="flex-1 bg-slate-800 rounded"></div>
+                <div class="w-6 bg-purple-500 rounded stripe-anim shadow-sm shadow-purple-500/50"></div>
+                <div class="flex-1 bg-slate-800 rounded"></div>
+                <div class="w-6 bg-purple-500 rounded stripe-anim shadow-sm shadow-purple-500/50"></div>
+                <div class="flex-1 bg-slate-800 rounded"></div>
+                <div class="w-6 bg-purple-500 rounded stripe-anim shadow-sm shadow-purple-500/50"></div>
+                <div class="flex-1 bg-slate-800 rounded"></div>
+                <div class="w-6 bg-purple-500 rounded stripe-anim shadow-sm shadow-purple-500/50"></div>
+                <div class="flex-1 bg-slate-800 rounded"></div>
+                <div class="w-6 bg-purple-500 rounded stripe-anim shadow-sm shadow-purple-500/50"></div>
+                <div class="flex-1 bg-slate-800 rounded"></div>
+                <div class="w-6 bg-purple-500 rounded stripe-anim shadow-sm shadow-purple-500/50"></div>
+                <div class="flex-1 bg-slate-800 rounded"></div>
+              </div>
+              <p class="text-[10px] text-slate-400">大まかな濃度勾配から、正確無比な7本のストライプが自律的に浮かび上がります。</p>
+            </div>
+          </div>
+
+          <!-- 分節遺伝子カスケードの階層ステップ (4 cols) -->
+          <div class="lg:col-span-4 space-y-3 text-xs">
+            <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+              <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold">第1段階</span>
+              <div class="font-bold text-white text-sm">母性効果遺伝子</div>
+              <p class="text-slate-400">ビコイド、ナノス。卵全体の前後軸の大枠（グラデーション）を決める。</p>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+              <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">第2段階</span>
+              <div class="font-bold text-white text-sm">ギャップ遺伝子</div>
+              <p class="text-slate-400">ハンプバック、クルッペル等。胚をいくつかの大まかなブロックに分ける。</p>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+              <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">第3段階</span>
+              <div class="font-bold text-white text-sm">ペアルール遺伝子</div>
+              <p class="text-slate-400">エーブンスキップト等。1つおきの体節に対応する「7本の縞模様」をつくる。</p>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">第4段階</span>
+              <div class="font-bold text-white text-sm">セグメントポラリティ</div>
+              <p class="text-slate-400">エンクレイユド等。全14体節のそれぞれの前後極性を確定する。</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- SECTION 3: 母性効果遺伝子の罠 -->
+    <!-- ======================================================== -->
+    <section id="view-maternal" class="space-y-6 hidden">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-5">
+        <div>
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-amber-400 mb-1">
+            <span>👩‍👦 メンデル遺伝の常識を覆す</span>
+          </div>
+          <h2 class="text-lg md:text-xl font-bold text-white">
+            母性効果遺伝子（Maternal Effect Gene）のからくり
+          </h2>
+          <p class="text-xs md:text-sm text-slate-300">
+            受精卵自身の遺伝子型ではなく、「母親の遺伝子型」だけで子供の形が決まる不思議を解き明かしましょう。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- なぜ母親の遺伝子型で決まるのか？図解 -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <span>🥚</span> 卵ができるとき何が起きているか？
+            </h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              受精卵の中にあるビコイドmRNAは、受精卵自身が転写したものではありません。<strong class="text-amber-300">母親の卵巣にある保育細胞（ナースセル）</strong>が転写し、卵母細胞の前極へと注入したものです！
+            </p>
+
+            <div class="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2 text-xs">
+              <div class="font-bold text-sky-400">母親がヘテロ接合（Aa）の場合：</div>
+              <p class="text-slate-300">
+                母親の細胞には正常な A 遺伝子があるため、ビコイドmRNAを正常に作って卵に詰め込むことができます。<br>
+                → <strong class="text-emerald-400">生まれる卵はすべて正常に頭部をつくれる！</strong>（子の遺伝子型が aa であっても頭部ができる！）
+              </p>
+            </div>
+
+            <div class="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2 text-xs">
+              <div class="font-bold text-rose-400">母親がホモ変異（aa）の場合：</div>
+              <p class="text-slate-300">
+                母親の細胞は機能するビコイドmRNAを作れません。卵にビコイドが入らないまま産卵されます。<br>
+                → 正常な雄の精子（A）が受精して受精卵が <strong class="text-amber-300">Aa</strong> になっても、<strong class="text-rose-400">すでに手遅れ（初期発生に必要なビコイドがない）となり頭部が欠失</strong>します！
+              </p>
+            </div>
+          </div>
+
+          <!-- インタラクティブ交配チェッカー -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+            <div class="space-y-3">
+              <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                <span>🧬</span> 交配シミュレーション
+              </h3>
+              
+              <div class="space-y-2">
+                <div class="text-xs font-semibold text-slate-400">雌親（母）の遺伝子型を選択：</div>
+                <div class="grid grid-cols-3 gap-2">
+                  <button id="mat-btn-AA" onclick="setMaternalCross('AA')" class="touch-target p-2 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-slate-300">母 AA</button>
+                  <button id="mat-btn-Aa" onclick="setMaternalCross('Aa')" class="touch-target p-2 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-slate-300">母 Aa</button>
+                  <button id="mat-btn-aa" onclick="setMaternalCross('aa')" class="touch-target p-2 rounded-xl border border-rose-500 bg-rose-950/60 text-xs font-bold text-rose-200">母 aa ★重要</button>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <div class="text-xs font-semibold text-slate-400">雄親（父）の遺伝子型を選択：</div>
+                <div class="grid grid-cols-2 gap-2">
+                  <button id="pat-btn-AA" onclick="setPaternalCross('AA')" class="touch-target p-2 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-slate-300">父 AA (正常)</button>
+                  <button id="pat-btn-aa" onclick="setPaternalCross('aa')" class="touch-target p-2 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-slate-300">父 aa (変異)</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 交配結果判定ボックス -->
+            <div id="cross-result-box" class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+              <div class="font-bold text-sm text-rose-400" id="cross-phenotype-title">頭部・胸部欠失胚 (致死)</div>
+              <p class="text-slate-300 leading-relaxed" id="cross-phenotype-desc">
+                母が aa のため卵にビコイドが供給されません。父が正常な A を渡して受精卵が Aa になっても、頭部と胸部を欠いた双尾胚になります！
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- SECTION 4: 入試問題 Lv32（48番）に挑戦 -->
+    <!-- ======================================================== -->
+    <section id="view-quiz" class="space-y-6 hidden">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-5 shadow-lg">
+        
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <span class="px-2.5 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-lg text-xs font-bold">Lv32 入試演習</span>
+          <span class="text-xs text-slate-400">48. ショウジョウバエの形態形成 (目安: 5分)</span>
+        </div>
+
+        <p class="text-xs md:text-sm text-slate-200 leading-relaxed">
+          ショウジョウバエの受精卵には、将来の頭部になる前極、尾部になる後極がある。前後軸形成にはたらく調節遺伝子AとBがあり、受精卵にはこれらの遺伝子のmRNAの局在により生じたタンパク質の濃度勾配がある。<br>
+          下線部ア：正常な受精卵の前極の細胞質を抜き取って、別の受精卵の後極部分に注入した場合、二つの頭部が形成された。<br>
+          下線部イ：後極に紫外線を照射した受精卵の後極に、正常な受精卵の後極の細胞質を注入した場合は、生まれたハエは子をつくることができた。
+        </p>
+
+        <!-- 問1 カード -->
+        <div class="p-4 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-sky-400 flex items-center justify-between">
+            <span>【問 1】 遺伝子 A と 遺伝子 B の組合せとして適するものを一つ選べ。</span>
+            <span class="text-slate-500 font-mono">前極A ＆ 後極B</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <button onclick="submitQ1(1)" id="q1-opt-1" class="touch-target p-3 rounded-xl bg-slate-900 border border-slate-800 text-left text-slate-300 hover:bg-slate-800 transition">① 遺伝子A: ギャップ遺伝子 ／ 遺伝子B: 分節遺伝子</button>
+            <button onclick="submitQ1(2)" id="q1-opt-2" class="touch-target p-3 rounded-xl bg-slate-900 border border-slate-800 text-left text-slate-300 hover:bg-slate-800 transition">② 遺伝子A: 分節遺伝子 ／ 遺伝子B: ギャップ遺伝子</button>
+            <button onclick="submitQ1(3)" id="q1-opt-3" class="touch-target p-3 rounded-xl bg-slate-900 border border-slate-800 text-left text-slate-300 hover:bg-slate-800 transition font-bold">③ 遺伝子A: ビコイド遺伝子 ／ 遺伝子B: ナノス遺伝子</button>
+            <button onclick="submitQ1(4)" id="q1-opt-4" class="touch-target p-3 rounded-xl bg-slate-900 border border-slate-800 text-left text-slate-300 hover:bg-slate-800 transition">④ 遺伝子A: ナノス遺伝子 ／ 遺伝子B: ビコイド遺伝子</button>
+          </div>
+          <div id="q1-exp" class="hidden text-xs p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300"></div>
+        </div>
+
+        <!-- 問2 カード -->
+        <div class="p-4 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-amber-400 flex items-center justify-between">
+            <span>【問 2】 雌親によって卵形成中に蓄えられるmRNAやタンパク質の遺伝子を何とよぶか。</span>
+            <span class="text-slate-500 font-mono">用語選択</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <button onclick="submitQ2(1)" id="q2-opt-1" class="touch-target p-3 rounded-xl bg-slate-900 border border-slate-800 text-center text-slate-300 hover:bg-slate-800 transition">① SRY遺伝子</button>
+            <button onclick="submitQ2(2)" id="q2-opt-2" class="touch-target p-3 rounded-xl bg-slate-900 border border-slate-800 text-center text-slate-300 hover:bg-slate-800 transition font-bold">② 母性効果遺伝子</button>
+            <button onclick="submitQ2(3)" id="q2-opt-3" class="touch-target p-3 rounded-xl bg-slate-900 border border-slate-800 text-center text-slate-300 hover:bg-slate-800 transition">③ 伴性遺伝子</button>
+            <button onclick="submitQ2(4)" id="q2-opt-4" class="touch-target p-3 rounded-xl bg-slate-900 border border-slate-800 text-center text-slate-300 hover:bg-slate-800 transition">④ 構造遺伝子</button>
+          </div>
+          <div id="q2-exp" class="hidden text-xs p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300"></div>
+        </div>
+
+        <!-- 問3 カード -->
+        <div class="p-4 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-3">
+          <div class="text-xs font-bold text-purple-400 flex items-center justify-between">
+            <span>【問 3】 下線部ア・イの結果から考えられる記述として適するものを二つ選べ。</span>
+            <span class="text-slate-400 font-bold" id="q3-selection-badge">選択中: 0 / 2</span>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <button onclick="toggleQ3Choice(1)" id="q3-opt-1" class="touch-target w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left text-slate-300 hover:bg-slate-800 transition flex items-start gap-2.5">
+              <span class="font-bold text-slate-400 shrink-0">①</span>
+              <span>将来の頭部の形成は、おもに前極の細胞質中にある物質に依存する。</span>
+            </button>
+            <button onclick="toggleQ3Choice(2)" id="q3-opt-2" class="touch-target w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left text-slate-300 hover:bg-slate-800 transition flex items-start gap-2.5">
+              <span class="font-bold text-slate-400 shrink-0">②</span>
+              <span>前極付近に存在する核の中には、頭部を形成する遺伝子のみが存在する。</span>
+            </button>
+            <button onclick="toggleQ3Choice(3)" id="q3-opt-3" class="touch-target w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left text-slate-300 hover:bg-slate-800 transition flex items-start gap-2.5">
+              <span class="font-bold text-slate-400 shrink-0">③</span>
+              <span>後極の細胞質にも頭部をつくる遺伝子が存在している。</span>
+            </button>
+            <button onclick="toggleQ3Choice(4)" id="q3-opt-4" class="touch-target w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left text-slate-300 hover:bg-slate-800 transition flex items-start gap-2.5">
+              <span class="font-bold text-slate-400 shrink-0">④</span>
+              <span>正常な受精卵の後極の細胞質には生殖細胞を形成するはたらきがある。</span>
+            </button>
+            <button onclick="toggleQ3Choice(5)" id="q3-opt-5" class="touch-target w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left text-slate-300 hover:bg-slate-800 transition flex items-start gap-2.5">
+              <span class="font-bold text-slate-400 shrink-0">⑤</span>
+              <span>紫外線を照射した受精卵の後極部分では遺伝子Bが壊されるが、正常な受精卵の後極の細胞質の注入で遺伝子が修復される。</span>
+            </button>
+          </div>
+
+          <div id="q3-exp" class="hidden text-xs p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 leading-relaxed"></div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-slate-950 border-t border-slate-800/80 py-4 px-4 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>ショウジョウバエ前後軸形成シミュレータ (Drosophila Anterior-Posterior Axis & Bicoid Model)</div>
+      <div class="text-slate-400">高校生物「発生の分子機構・母性効果」学習支援ツール</div>
+    </div>
+  </footer>
+
+  <!-- ======================================================== -->
+  <!-- JAVASCRIPT: シミュレーション状態制御 ＆ SVGレンダラー -->
+  <!-- ======================================================== -->
+  <script>
+    const state = {
+      activeTab: 'transplant',
+      currentPreset: 'normal',
+      bicoidActive: true,      // 前極ビコイドの有無
+      injectAnterior: false,   // 後極への前極細胞質注入
+      uvIrradiation: false,    // 後極UV照射
+      rescueInjection: false,  // UV照射後の後極細胞質救出注入
+      isDeveloping: false,
+      devStage: 0,             // 0: 受精卵, 1: 発生中, 2: 完了
+      animTimer: null,
+      maternalCross: 'aa',
+      paternalCross: 'AA',
+      q3Selections: []
+    };
+
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      const tabs = ['transplant', 'gradient', 'maternal', 'quiz'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const view = document.getElementById(`view-${t}`);
+        if (t === tabId) {
+          btn.className = 'touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1.5 transition-all bg-purple-600 text-white shadow-md';
+          view.classList.remove('hidden');
+        } else {
+          btn.className = 'touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white';
+          view.classList.add('hidden');
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function selectExpPreset(preset) {
+      state.currentPreset = preset;
+      resetDevelopment();
+
+      if (preset === 'normal') {
+        state.bicoidActive = true;
+        state.injectAnterior = false;
+        state.uvIrradiation = false;
+        state.rescueInjection = false;
+      } else if (preset === 'doublehead') {
+        state.bicoidActive = true;
+        state.injectAnterior = true;
+        state.uvIrradiation = false;
+        state.rescueInjection = false;
+      } else if (preset === 'bicoidmutant') {
+        state.bicoidActive = false;
+        state.injectAnterior = false;
+        state.uvIrradiation = false;
+        state.rescueInjection = false;
+      } else if (preset === 'uv') {
+        state.bicoidActive = true;
+        state.injectAnterior = false;
+        state.uvIrradiation = true;
+        state.rescueInjection = false;
+      } else if (preset === 'uvrescue') {
+        state.bicoidActive = true;
+        state.injectAnterior = false;
+        state.uvIrradiation = true;
+        state.rescueInjection = true;
+      }
+
+      updateControlsUI();
+      renderEggCanvas();
+    }
+
+    function setBicoidState(active) {
+      state.currentPreset = 'custom';
+      state.bicoidActive = active;
+      resetDevelopment();
+      updateControlsUI();
+      renderEggCanvas();
+    }
+
+    function setInjectAnterior(inject) {
+      state.currentPreset = 'custom';
+      state.injectAnterior = inject;
+      resetDevelopment();
+      updateControlsUI();
+      renderEggCanvas();
+    }
+
+    function setUVState(uv) {
+      state.currentPreset = 'custom';
+      state.uvIrradiation = uv;
+      if (!uv) state.rescueInjection = false;
+      resetDevelopment();
+      updateControlsUI();
+      renderEggCanvas();
+    }
+
+    function toggleRescueInjection() {
+      state.currentPreset = 'custom';
+      state.rescueInjection = !state.rescueInjection;
+      resetDevelopment();
+      updateControlsUI();
+      renderEggCanvas();
+    }
+
+    function updateControlsUI() {
+      // プリセットボタン
+      ['normal', 'doublehead', 'bicoidmutant', 'uv', 'uvrescue'].forEach(p => {
+        const btn = document.getElementById(`exp-btn-${p}`);
+        if (state.currentPreset === p) {
+          btn.className = 'interactive-card touch-target p-3.5 rounded-2xl border-2 border-purple-400 bg-purple-950/50 text-left space-y-1.5 shadow-lg shadow-purple-950/40';
+        } else {
+          btn.className = 'interactive-card touch-target p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900/90 text-left space-y-1.5 hover:border-slate-600';
+        }
+      });
+
+      const titleMap = {
+        normal: '正常受精卵',
+        doublehead: '下線部ア (後極注入)',
+        bicoidmutant: 'ビコイド欠失変異体',
+        uv: '後極紫外線(UV)照射',
+        uvrescue: '下線部イ (UV＋救出注入)',
+        custom: 'カスタム実験'
+      };
+      document.getElementById('preset-title-badge').textContent = titleMap[state.currentPreset] || 'カスタム';
+
+      // ビコイドボタン
+      const btnBicOn = document.getElementById('btn-bicoid-on');
+      const btnBicOff = document.getElementById('btn-bicoid-off');
+      const lblBic = document.getElementById('label-bicoid-amount');
+      if (state.bicoidActive) {
+        btnBicOn.className = 'touch-target p-2.5 rounded-xl border border-sky-500/50 bg-sky-950/40 text-xs font-bold text-sky-200 flex items-center justify-center gap-2 transition shadow';
+        btnBicOff.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white';
+        lblBic.textContent = '正常 (100%)';
+        lblBic.className = 'text-sky-400 font-bold';
+      } else {
+        btnBicOff.className = 'touch-target p-2.5 rounded-xl border border-amber-500/50 bg-amber-950/40 text-xs font-bold text-amber-200 flex items-center justify-center gap-2 transition shadow';
+        btnBicOn.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white';
+        lblBic.textContent = '欠失 (0% / aa母)';
+        lblBic.className = 'text-amber-400 font-bold';
+      }
+
+      // 注射器ボタン
+      const btnInjOff = document.getElementById('btn-inj-ant-off');
+      const btnInjOn = document.getElementById('btn-inj-ant-on');
+      const lblInj = document.getElementById('label-inject-anterior');
+      if (state.injectAnterior) {
+        btnInjOn.className = 'touch-target p-2.5 rounded-xl border border-sky-500/50 bg-sky-950/40 text-xs font-bold text-sky-200 flex items-center justify-center gap-2 transition shadow';
+        btnInjOff.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white';
+        lblInj.textContent = '注入あり (ビコイド供給)';
+        lblInj.className = 'text-sky-400 font-bold';
+      } else {
+        btnInjOff.className = 'touch-target p-2.5 rounded-xl border border-purple-500/50 bg-purple-950/40 text-xs font-bold text-purple-200 flex items-center justify-center gap-2 transition shadow';
+        btnInjOn.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white';
+        lblInj.textContent = 'なし';
+        lblInj.className = 'text-slate-400 font-bold';
+      }
+
+      // UV照射ボタン
+      const btnUvOff = document.getElementById('btn-uv-off');
+      const btnUvOn = document.getElementById('btn-uv-on');
+      const lblUv = document.getElementById('label-uv-state');
+      const boxRescue = document.getElementById('box-uv-rescue');
+      if (state.uvIrradiation) {
+        btnUvOn.className = 'touch-target p-2.5 rounded-xl border border-violet-500/50 bg-violet-950/40 text-xs font-bold text-violet-200 flex items-center justify-center gap-2 transition shadow';
+        btnUvOff.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white';
+        lblUv.textContent = '後極に照射中 (生殖質破壊)';
+        lblUv.className = 'text-violet-400 font-bold';
+        boxRescue.classList.remove('hidden');
+      } else {
+        btnUvOff.className = 'touch-target p-2.5 rounded-xl border border-purple-500/50 bg-purple-950/40 text-xs font-bold text-purple-200 flex items-center justify-center gap-2 transition shadow';
+        btnUvOn.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white';
+        lblUv.textContent = 'なし';
+        lblUv.className = 'text-slate-400 font-bold';
+        boxRescue.classList.add('hidden');
+      }
+
+      // 救出注入ボタン
+      const btnRescue = document.getElementById('btn-rescue-toggle');
+      const lblRescue = document.getElementById('label-rescue-state');
+      if (state.rescueInjection) {
+        btnRescue.className = 'w-full py-2 px-3 rounded-xl border border-emerald-500 bg-emerald-950/60 text-emerald-200 text-xs font-bold flex items-center justify-center gap-1.5 transition shadow';
+        btnRescue.innerHTML = '<span>💉 正常後極質を注入済み (生殖質回復)</span>';
+        lblRescue.textContent = '注入済み';
+        lblRescue.className = 'text-emerald-400 font-bold';
+      } else {
+        btnRescue.className = 'w-full py-2 px-3 rounded-xl border border-purple-600/60 bg-purple-950/50 hover:bg-purple-900/60 text-purple-200 text-xs font-bold flex items-center justify-center gap-1.5 transition';
+        btnRescue.innerHTML = '<span>💉 正常な後極細胞質を注入する</span>';
+        lblRescue.textContent = 'なし';
+        lblRescue.className = 'text-slate-400 font-bold';
+      }
+    }
+
+    function calculatePhenotype() {
+      // 1. 体節形態（頭・胸・腹）
+      // 前極：bicoidActive があれば頭部
+      // 後極：injectAnterior があれば頭部、なければ尾部
+      let bodyType = 'normal'; // 'normal' | 'double_head' | 'two_tails'
+      if (state.bicoidActive && state.injectAnterior) {
+        bodyType = 'double_head'; // 双頭胚 (頭-胸-腹-胸-頭)
+      } else if (!state.bicoidActive && !state.injectAnterior) {
+        bodyType = 'two_tails';   // 双尾胚 (尾-腹-腹-尾)
+      } else if (!state.bicoidActive && state.injectAnterior) {
+        bodyType = 'reversed';    // 極性逆転 (尾-腹-胸-頭)
+      } else {
+        bodyType = 'normal';      // 正常 (頭-胸-腹-尾)
+      }
+
+      // 2. 生殖能力（極細胞）
+      // UV照射があり、救出注入がない場合は不妊（sterile）
+      let fertility = 'fertile';
+      if (state.uvIrradiation && !state.rescueInjection) {
+        fertility = 'sterile';
+      }
+
+      return { bodyType, fertility };
+    }
+
+    function startDevelopment() {
+      if (state.isDeveloping) return;
+      state.isDeveloping = true;
+      state.devStage = 1;
+
+      const btn = document.getElementById('btn-run-development');
+      const progressBar = document.getElementById('dev-progress-bar');
+      const progressLabel = document.getElementById('dev-progress-text');
+      const phaseLabel = document.getElementById('dev-phase-label');
+
+      btn.disabled = true;
+      phaseLabel.textContent = 'ステージ: 胚発生中 (体節形成・分節)...';
+      phaseLabel.className = 'text-purple-400 font-bold animate-pulse';
+
+      let progress = 0;
+      renderEggCanvas();
+
+      state.animTimer = setInterval(() => {
+        progress += 5;
+        if (progress > 100) progress = 100;
+
+        progressBar.style.width = `${progress}%`;
+        progressLabel.textContent = `${progress}%`;
+
+        if (progress >= 100) {
+          clearInterval(state.animTimer);
+          state.isDeveloping = false;
+          state.devStage = 2; // 完了
+          phaseLabel.textContent = 'ステージ: 発生完了 (幼虫・成虫)';
+          phaseLabel.className = 'text-emerald-400 font-bold';
+          btn.disabled = false;
+          renderEggCanvas();
+        }
+      }, 40);
+    }
+
+    function resetDevelopment() {
+      if (state.animTimer) clearInterval(state.animTimer);
+      state.isDeveloping = false;
+      state.devStage = 0;
+
+      const progressBar = document.getElementById('dev-progress-bar');
+      const progressLabel = document.getElementById('dev-progress-text');
+      const phaseLabel = document.getElementById('dev-phase-label');
+      const btn = document.getElementById('btn-run-development');
+
+      progressBar.style.width = '0%';
+      progressLabel.textContent = '0%';
+      phaseLabel.textContent = 'ステージ: 受精卵 (初期)';
+      phaseLabel.className = 'text-purple-400 font-bold';
+      btn.disabled = false;
+    }
+
+    function renderEggCanvas() {
+      const { bodyType, fertility } = calculatePhenotype();
+      const poleStatus = document.getElementById('polecell-status');
+      if (fertility === 'sterile') {
+        poleStatus.textContent = '破壊・欠失 (不妊)';
+        poleStatus.className = 'font-bold text-rose-400';
+      } else if (state.rescueInjection) {
+        poleStatus.textContent = '移植により回復！(受精可能)';
+        poleStatus.className = 'font-bold text-emerald-400';
+      } else {
+        poleStatus.textContent = '正常形成 (受精可能)';
+        poleStatus.className = 'font-bold text-purple-400';
+      }
+
+      const layerShell = document.getElementById('layer-egg-shell');
+      const layerMorphogen = document.getElementById('layer-morphogen');
+      const layerPole = document.getElementById('layer-pole-plasm');
+      const layerUV = document.getElementById('layer-uv-effects');
+      const layerSyringes = document.getElementById('layer-syringes');
+      const layerPheno = document.getElementById('layer-phenotype');
+      const layerLabels = document.getElementById('layer-labels');
+
+      layerShell.innerHTML = '';
+      layerMorphogen.innerHTML = '';
+      layerPole.innerHTML = '';
+      layerUV.innerHTML = '';
+      layerSyringes.innerHTML = '';
+      layerPheno.innerHTML = '';
+      layerLabels.innerHTML = '';
+
+      const cx = 260;
+      const cy = 150;
+      const rx = 180;
+      const ry = 80;
+
+      if (state.devStage < 2) {
+        // 受精卵の描画
+        // 卵の殻 (楕円形)
+        layerShell.innerHTML = `
+          <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#0f172a" stroke="#475569" stroke-width="3" />
+        `;
+
+        // ビコイド勾配 (前極・左側)
+        if (state.bicoidActive) {
+          layerMorphogen.innerHTML += `
+            <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#bicoid-gradient)" />
+            <!-- 前極mRNA局在マーカー -->
+            <path d="M ${cx - rx + 4} ${cy - 40} Q ${cx - rx + 25} ${cy} ${cx - rx + 4} ${cy + 40}" stroke="#38bdf8" stroke-width="6" fill="none" stroke-linecap="round" />
+            <text x="${cx - rx + 28}" y="${cy - 45}" fill="#38bdf8" font-size="10" font-weight="bold">ビコイドmRNA</text>
+          `;
+        }
+
+        // ナノス勾配 (後極・右側)
+        layerMorphogen.innerHTML += `
+          <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#nanos-gradient)" />
+          <!-- 後極mRNA局在マーカー -->
+          <path d="M ${cx + rx - 4} ${cy - 40} Q ${cx + rx - 25} ${cy} ${cx + rx - 4} ${cy + 40}" stroke="#fb7185" stroke-width="6" fill="none" stroke-linecap="round" />
+          <text x="${cx + rx - 28}" y="${cy - 45}" fill="#fb7185" font-size="10" font-weight="bold" text-anchor="end">ナノスmRNA</text>
+        `;
+
+        // 後極へのビコイド注入 (下線部ア)
+        if (state.injectAnterior) {
+          layerMorphogen.innerHTML += `
+            <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#bicoid-injected-gradient)" />
+          `;
+          // 注射器グラフィック
+          layerSyringes.innerHTML += `
+            <g transform="translate(${cx + rx + 30}, ${cy - 20}) rotate(-35)">
+              <rect x="-8" y="-40" width="16" height="50" fill="#0284c7" stroke="#38bdf8" stroke-width="2" rx="3" />
+              <line x1="0" y1="10" x2="0" y2="40" stroke="#cbd5e1" stroke-width="3" />
+              <polygon points="0,48 -4,38 4,38" fill="#38bdf8" />
+              <text x="25" y="-15" fill="#38bdf8" font-size="11" font-weight="black">前極質注入！</text>
+            </g>
+          `;
+        }
+
+        // 後極の生殖質 (極細胞質)
+        if (!state.uvIrradiation || state.rescueInjection) {
+          layerPole.innerHTML = `
+            <!-- 極細胞質 (紫の顆粒集合) -->
+            <g transform="translate(${cx + rx - 20}, ${cy})">
+              <ellipse cx="0" cy="0" rx="16" ry="35" fill="#a855f7" fill-opacity="0.6" stroke="#c084fc" stroke-width="2" />
+              <circle cx="-4" cy="-12" r="3" fill="#e9d5ff" />
+              <circle cx="2" cy="0" r="3.5" fill="#e9d5ff" />
+              <circle cx="-2" cy="14" r="3" fill="#e9d5ff" />
+              <text x="-25" y="4" fill="#d8b4fe" font-size="10" font-weight="bold" text-anchor="end">生殖質 (極細胞)</text>
+            </g>
+          `;
+        }
+
+        // UV照射エフェクト
+        if (state.uvIrradiation) {
+          layerUV.innerHTML = `
+            <!-- 紫外線ビーム -->
+            <g transform="translate(${cx + rx}, ${cy})">
+              <polygon points="-30,-80 30,-80 15,40 -15,40" fill="url(#uv-gradient)" class="uv-beaming" fill="#8b5cf6" fill-opacity="0.3" />
+              <line x1="0" y1="-80" x2="0" y2="40" stroke="#a78bfa" stroke-width="3" stroke-dasharray="4,4" class="uv-beaming" />
+              <text x="0" y="-85" fill="#c4b5fd" font-size="11" font-weight="black" text-anchor="middle">☀️ 紫外線(UV)照射中</text>
+              ${!state.rescueInjection ? '<text x="0" y="55" fill="#f43f5e" font-size="10" font-weight="bold" text-anchor="middle">✕ 生殖質破壊</text>' : ''}
+            </g>
+          `;
+        }
+
+        // 救出注入注射器 (下線部イ)
+        if (state.uvIrradiation && state.rescueInjection) {
+          layerSyringes.innerHTML += `
+            <g transform="translate(${cx + rx + 30}, ${cy + 30}) rotate(30)">
+              <rect x="-8" y="-40" width="16" height="50" fill="#a855f7" stroke="#c084fc" stroke-width="2" rx="3" />
+              <line x1="0" y1="10" x2="0" y2="40" stroke="#cbd5e1" stroke-width="3" />
+              <polygon points="0,48 -4,38 4,38" fill="#c084fc" />
+              <text x="25" y="20" fill="#c084fc" font-size="11" font-weight="black">正常後極質を注入！</text>
+            </g>
+          `;
+        }
+
+        // 前後ラベル
+        layerLabels.innerHTML = `
+          <text x="${cx - rx - 10}" y="${cy + 5}" fill="#38bdf8" font-size="13" font-weight="black" text-anchor="end">前極 [頭部側]</text>
+          <text x="${cx + rx + 10}" y="${cy + 5}" fill="#fb7185" font-size="13" font-weight="black" text-anchor="start">後極 [尾部側]</text>
+        `;
+
+      } else {
+        // 発生完了後の幼虫・成虫の形態描画
+        if (bodyType === 'double_head') {
+          // 双頭胚 (両端に頭部と胸部)
+          layerPheno.innerHTML = `
+            <g transform="translate(${cx}, ${cy})">
+              <!-- 左の頭 -->
+              <ellipse cx="-130" cy="0" rx="32" ry="24" fill="#0284c7" stroke="#38bdf8" stroke-width="2.5" />
+              <text x="-130" y="4" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">頭部①</text>
+              <!-- 左の胸 -->
+              <rect x="-98" y="-22" width="45" height="44" rx="6" fill="#ca8a04" stroke="#fbbf24" stroke-width="2" />
+              <text x="-75" y="4" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">胸部①</text>
+              <!-- 中央の腹 -->
+              <rect x="-50" y="-18" width="100" height="36" rx="6" fill="#059669" stroke="#34d399" stroke-width="2" />
+              <text x="0" y="4" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">腹部</text>
+              <!-- 右の胸 -->
+              <rect x="53" y="-22" width="45" height="44" rx="6" fill="#ca8a04" stroke="#fbbf24" stroke-width="2" />
+              <text x="75" y="4" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">胸部②</text>
+              <!-- 右の頭 -->
+              <ellipse cx="130" cy="0" rx="32" ry="24" fill="#0284c7" stroke="#38bdf8" stroke-width="2.5" />
+              <text x="130" y="4" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">頭部②</text>
+            </g>
+            <text x="${cx}" y="${cy - 50}" fill="#38bdf8" font-size="15" font-weight="black" text-anchor="middle">
+              ★ 双頭胚の形成！（下線部ア：両端に頭部が分化）
+            </text>
+          `;
+        } else if (bodyType === 'two_tails') {
+          // 双尾胚 (頭部・胸部消失、両端がお尻)
+          layerPheno.innerHTML = `
+            <g transform="translate(${cx}, ${cy})">
+              <!-- 左の尾 -->
+              <ellipse cx="-120" cy="0" rx="28" ry="18" fill="#e11d48" stroke="#fb7185" stroke-width="2.5" />
+              <text x="-120" y="4" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">尾部①</text>
+              <!-- 中央の腹部連続 -->
+              <rect x="-90" y="-20" width="180" height="40" rx="8" fill="#059669" stroke="#34d399" stroke-width="2" />
+              <text x="0" y="4" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">腹部のみ（頭部・胸部なし）</text>
+              <!-- 右の尾 -->
+              <ellipse cx="120" cy="0" rx="28" ry="18" fill="#e11d48" stroke="#fb7185" stroke-width="2.5" />
+              <text x="120" y="4" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">尾部②</text>
+            </g>
+            <text x="${cx}" y="${cy - 50}" fill="#f59e0b" font-size="15" font-weight="black" text-anchor="middle">
+              双尾胚（ビコイド欠失：頭部・胸部が完全に欠損）
+            </text>
+          `;
+        } else {
+          // 正常ハエ (頭-胸-腹-尾)
+          layerPheno.innerHTML = `
+            <g transform="translate(${cx}, ${cy})">
+              <!-- 頭部 -->
+              <ellipse cx="-120" cy="0" rx="34" ry="26" fill="#0284c7" stroke="#38bdf8" stroke-width="2.5" />
+              <text x="-120" y="4" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">頭部</text>
+              <!-- 胸部 -->
+              <rect x="-82" y="-25" width="55" height="50" rx="8" fill="#ca8a04" stroke="#fbbf24" stroke-width="2" />
+              <text x="-55" y="4" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">胸部</text>
+              <!-- 腹部 -->
+              <rect x="-24" y="-22" width="115" height="44" rx="8" fill="#059669" stroke="#34d399" stroke-width="2" />
+              <text x="33" y="4" fill="#fff" font-size="12" font-weight="bold" text-anchor="middle">腹部 (8体節)</text>
+              <!-- 尾部 -->
+              <ellipse cx="108" cy="0" rx="20" ry="16" fill="#e11d48" stroke="#fb7185" stroke-width="2" />
+              <text x="108" y="4" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">尾部</text>
+            </g>
+            <text x="${cx}" y="${cy - 50}" fill="#34d399" font-size="15" font-weight="black" text-anchor="middle">
+              正常な前後軸構造（頭部・胸部・腹部が完成）
+            </text>
+          `;
+        }
+
+        // 生殖能力バッジ
+        layerPheno.innerHTML += `
+          <g transform="translate(${cx}, ${cy + 60})">
+            <rect x="-110" y="-12" width="220" height="24" rx="12" fill="${fertility === 'fertile' ? '#065f46' : '#881337'}" stroke="${fertility === 'fertile' ? '#34d399' : '#f43f5e'}" stroke-width="1.5" />
+            <text x="0" y="4" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">
+              生殖能力：${fertility === 'fertile' ? '子をつくることができる (妊性あり)' : '子をつくれない (不妊)'}
+            </text>
+          </g>
+        `;
+      }
+
+      updateOutcomeReport(bodyType, fertility);
+    }
+
+    function updateOutcomeReport(bodyType, fertility) {
+      const badge = document.getElementById('outcome-badge');
+      const text = document.getElementById('outcome-text');
+
+      if (state.devStage === 0) {
+        badge.textContent = '受精卵 待機中';
+        badge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400';
+        text.innerHTML = `
+          <div class="text-slate-400">
+            実験条件：【前極ビコイド: ${state.bicoidActive ? 'あり' : '欠失'}】＋【後極への前極質注入: ${state.injectAnterior ? 'あり(下線部ア)' : 'なし'}】＋【後極UV照射: ${state.uvIrradiation ? (state.rescueInjection ? 'あり(救出注入済み・下線部イ)' : 'あり') : 'なし'}】。<br>
+            「卵を発生させる」ボタンを押して成虫・幼虫の表現型を観察しましょう。
+          </div>
+        `;
+        return;
+      }
+
+      if (state.devStage === 1) {
+        badge.textContent = '発生進行中...';
+        badge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse';
+        text.innerHTML = `
+          <div class="text-purple-300 font-semibold">
+            ビコイドタンパク質とナノスタンパク質の濃度勾配に基づき、ギャップ・ペアルール遺伝子が順次活性化しています...
+          </div>
+        `;
+        return;
+      }
+
+      // 発生完了時
+      if (bodyType === 'double_head') {
+        badge.textContent = '結果：双頭胚 (Two Heads)';
+        badge.className = 'text-xs font-black px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/50 shadow-md';
+        text.innerHTML = `
+          <div class="space-y-1">
+            <div class="text-sky-300 font-bold">★ 下線部アの完全実証：前極と後極の両端に「頭部と胸部」が形成！</div>
+            <p class="text-slate-300">
+              前極の細胞質（ビコイドmRNA/タンパク質）を後極に注入したことで、後極でもビコイド濃度が高くなりました。これにより「頭部・胸部形成」の指令が両端で実行され、鏡像対称の双頭胚となりました。
+            </p>
+          </div>
+        `;
+      } else if (bodyType === 'two_tails') {
+        badge.textContent = '結果：双尾胚 (頭部・胸部欠損)';
+        badge.className = 'text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md';
+        text.innerHTML = `
+          <div class="space-y-1">
+            <div class="text-amber-300 font-bold">ビコイド欠失変異体（母aa）：頭部と胸部がつくれない！</div>
+            <p class="text-slate-300">
+              前極にビコイドが存在しないため、頭部および胸部を決定するシグナルがゼロになり、腹部と尾部だけの異常な個体（双尾胚）になりました。
+            </p>
+          </div>
+        `;
+      } else {
+        if (fertility === 'sterile') {
+          badge.textContent = '結果：成虫形成・不妊 (Sterile)';
+          badge.className = 'text-xs font-black px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/50 shadow-md';
+          text.innerHTML = `
+            <div class="space-y-1">
+              <div class="text-rose-400 font-bold">紫外線(UV)照射の影響：体節は正常だが「不妊（子をつくれない）」！</div>
+              <p class="text-slate-300">
+                後極の細胞質にある「極細胞質（生殖質）」が紫外線で破壊されたため、将来精子や卵になる極細胞（生殖細胞）がつくれませんでした。生まれたハエは元気ですが、子孫を残すことができません。
+              </p>
+            </div>
+          `;
+        } else if (state.rescueInjection) {
+          badge.textContent = '結果：正常成虫・生殖能力回復！';
+          badge.className = 'text-xs font-black px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-md';
+          text.innerHTML = `
+            <div class="space-y-1">
+              <div class="text-emerald-300 font-bold">★ 下線部イの完全実証：正常後極細胞質により生殖能力が救出！</div>
+              <p class="text-slate-300">
+                UVで生殖質が破壊された後極に、正常な受精卵の後極細胞質を注入したため、極細胞が正常に形成され、生殖能力（妊性）が見事に復活しました！
+              </p>
+            </div>
+          `;
+        } else {
+          badge.textContent = '結果：完全な正常個体';
+          badge.className = 'text-xs font-black px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-md';
+          text.innerHTML = `
+            <div class="space-y-1">
+              <div class="text-emerald-300 font-bold">正常発生：頭部・胸部・腹部・尾部が完全形成＆受精可能！</div>
+              <p class="text-slate-300">
+                ビコイド濃度勾配による前後軸決定と、後極の生殖質による生殖細胞形成がすべて正しく行われました。
+              </p>
+            </div>
+          `;
+        }
+      }
+    }
+
+    // 母性効果交配チェッカー
+    function setMaternalCross(geno) {
+      state.maternalCross = geno;
+      updateCrossUI();
+    }
+    function setPaternalCross(geno) {
+      state.paternalCross = geno;
+      updateCrossUI();
+    }
+    function updateCrossUI() {
+      ['AA', 'Aa', 'aa'].forEach(g => {
+        const b = document.getElementById(`mat-btn-${g}`);
+        b.className = state.maternalCross === g 
+          ? 'touch-target p-2 rounded-xl border border-purple-500 bg-purple-950 text-xs font-bold text-purple-200 shadow'
+          : 'touch-target p-2 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-slate-400';
+      });
+      ['AA', 'aa'].forEach(g => {
+        const b = document.getElementById(`pat-btn-${g}`);
+        b.className = state.paternalCross === g 
+          ? 'touch-target p-2 rounded-xl border border-purple-500 bg-purple-950 text-xs font-bold text-purple-200 shadow'
+          : 'touch-target p-2 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-slate-400';
+      });
+
+      const title = document.getElementById('cross-phenotype-title');
+      const desc = document.getElementById('cross-phenotype-desc');
+
+      if (state.maternalCross === 'aa') {
+        title.textContent = '❌ 頭部・胸部欠失胚（致死）';
+        title.className = 'font-bold text-sm text-rose-400';
+        desc.innerHTML = `
+          母が <strong class="text-rose-300">aa</strong> のため、卵形成時にビコイドmRNAが卵へ注入されません。<br>
+          たとえ父親が正常な A を渡して受精卵が <strong class="text-amber-300">Aa</strong> になっても、<strong class="text-rose-400 font-bold">頭部・胸部が欠失した双尾胚</strong>になります！<br>
+          これこそが「母性効果遺伝子」の定義です。
+        `;
+      } else {
+        title.textContent = '⭕ 正常なハエが誕生！';
+        title.className = 'font-bold text-sm text-emerald-400';
+        desc.innerHTML = `
+          母が <strong class="text-emerald-300">${state.maternalCross}</strong> なので、母親自身の保育細胞が正常なビコイドmRNAを卵にたっぷり蓄積します。<br>
+          受精卵がどのような遺伝子型になっても、<strong class="text-emerald-400 font-bold">正常な頭部・胸部を持ったハエ</strong>に発生できます！
+        `;
+      }
+    }
+
+    // 入試問題演習
+    function submitQ1(ans) {
+      const exp = document.getElementById('q1-exp');
+      exp.classList.remove('hidden');
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`q1-opt-${i}`).className = 'touch-target p-3 rounded-xl bg-slate-900 border border-slate-800 text-left text-xs text-slate-400';
+      }
+      const sel = document.getElementById(`q1-opt-${ans}`);
+      if (ans === 3) {
+        sel.className = 'touch-target p-3 rounded-xl bg-sky-950 border-2 border-sky-400 text-left text-xs text-sky-100 font-bold';
+        exp.innerHTML = `<span class="text-emerald-400 font-bold">🎉 正解！【 ③ 遺伝子A: ビコイド ／ 遺伝子B: ナノス 】</span><br>前極に局在して頭部を決めるのがビコイド、後極に局在して腹部・尾部を決めるのがナノスです。`;
+      } else {
+        sel.className = 'touch-target p-3 rounded-xl bg-rose-950 border-2 border-rose-500 text-left text-xs text-rose-200 font-bold';
+        exp.innerHTML = `<span class="text-rose-400 font-bold">❌ 不正解...</span> 前極Aはビコイド、後極Bはナノスです。正解は ③ です。`;
+      }
+    }
+
+    function submitQ2(ans) {
+      const exp = document.getElementById('q2-exp');
+      exp.classList.remove('hidden');
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById(`q2-opt-${i}`).className = 'touch-target p-3 rounded-xl bg-slate-900 border border-slate-800 text-center text-xs text-slate-400';
+      }
+      const sel = document.getElementById(`q2-opt-${ans}`);
+      if (ans === 2) {
+        sel.className = 'touch-target p-3 rounded-xl bg-amber-950 border-2 border-amber-400 text-center text-xs text-amber-100 font-bold';
+        exp.innerHTML = `<span class="text-emerald-400 font-bold">🎉 正解！【 ② 母性効果遺伝子 】</span><br>雌親の卵形成中に蓄積されたmRNAやタンパク質によって受精卵の発生が決まる遺伝子を「母性効果遺伝子（maternal effect gene）」とよびます。`;
+      } else {
+        sel.className = 'touch-target p-3 rounded-xl bg-rose-950 border-2 border-rose-500 text-center text-xs text-rose-200 font-bold';
+        exp.innerHTML = `<span class="text-rose-400 font-bold">❌ 不正解...</span> SRYは哺乳類のY染色体上の性決定遺伝子、伴性遺伝は性染色体上の遺伝、構造遺伝子はオペロンのタンパク質遺伝子です。正解は ② 母性効果遺伝子 です。`;
+      }
+    }
+
+    function toggleQ3Choice(num) {
+      const idx = state.q3Selections.indexOf(num);
+      if (idx >= 0) {
+        state.q3Selections.splice(idx, 1);
+      } else {
+        if (state.q3Selections.length >= 2) state.q3Selections.shift();
+        state.q3Selections.push(num);
+      }
+
+      document.getElementById('q3-selection-badge').textContent = `選択中: ${state.q3Selections.length} / 2`;
+
+      for (let i = 1; i <= 5; i++) {
+        const b = document.getElementById(`q3-opt-${i}`);
+        if (state.q3Selections.includes(i)) {
+          b.className = 'touch-target w-full p-3.5 rounded-xl bg-purple-950 border-2 border-purple-400 text-left text-purple-100 font-bold flex items-start gap-2.5';
+        } else {
+          b.className = 'touch-target w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left text-slate-300 hover:bg-slate-800 transition flex items-start gap-2.5';
+        }
+      }
+
+      if (state.q3Selections.length === 2) {
+        checkQ3Result();
+      }
+    }
+
+    function checkQ3Result() {
+      const exp = document.getElementById('q3-exp');
+      exp.classList.remove('hidden');
+
+      const isCorrect = state.q3Selections.includes(1) && state.q3Selections.includes(4);
+      if (isCorrect) {
+        exp.innerHTML = `
+          <div class="text-emerald-400 font-bold text-sm">🎉 大正解！【 ① と ④ 】</div>
+          <ul class="list-disc list-inside space-y-1 pt-1.5 text-slate-300">
+            <li><strong>① 正しい：</strong>下線部アで、前極の細胞質を後極に注入すると頭部ができたことから、頭部形成は前極の細胞質にある物質（ビコイド等）に依存します。</li>
+            <li><strong>④ 正しい：</strong>下線部イで、後極UV照射で不妊になり、正常後極細胞質を注入すると生殖能力が回復したことから、後極の細胞質（極細胞質・生殖質）には生殖細胞を形成するはたらきがあります。</li>
+            <li><strong>② 誤り：</strong>すべての核には全身を作る全遺伝子が含まれています（ゲノムの等質性）。</li>
+            <li><strong>③ 誤り：</strong>遺伝子（DNA）は核に存在し、細胞質に存在するわけではありません。</li>
+            <li><strong>⑤ 誤り：</strong>注入した細胞質で「遺伝子が修復された」のではなく、正常な生殖質が補われて極細胞が分化したためです。</li>
+          </ul>
+        `;
+      } else {
+        exp.innerHTML = `
+          <div class="text-rose-400 font-bold text-sm">❌ おしい！正しい組合せは 【 ① と ④ 】 です。</div>
+          <p class="pt-1 text-slate-300">
+            下線部ア（前極質注入で双頭）から <strong>①</strong> が導かれ、下線部イ（後極質注入で子を作れる）から <strong>④</strong> が導かれます。
+          </p>
+        `;
+      }
+    }
+
+    // 初期化
+    window.onload = function() {
+      selectExpPreset('normal');
+      updateCrossUI();
+    };
+  </script>
+</body>
+</html>
