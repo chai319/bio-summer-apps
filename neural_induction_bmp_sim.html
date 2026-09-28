@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>神経誘導とBMP二重否定シミュレーター | Lv31 カエル初期発生の分子メカニズム</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=M+PLUS+Rounded+1c:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"M PLUS Rounded 1c"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            epidermis: '#f59e0b', // 表皮 (温かい琥珀・オレンジ)
+            neural: '#06b6d4',    // 神経 (知的なシアン・青)
+            organizer: '#f43f5e', // 形成体 (活力のローズ)
+            bmp: '#ec4899',       // BMP分子 (鮮やかなピンク/マゼンタ)
+            noggin: '#10b981',    // ノギン・コーディン (抑制のエメラルド)
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 人体工学・タッチターゲット */
+    .touch-target {
+      min-height: 48px;
+      min-width: 48px;
+    }
+    .interactive-card {
+      transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease;
+    }
+    .interactive-card:active {
+      transform: scale(0.97);
+    }
+    /* アニメーション */
+    @keyframes float-particle {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(8deg); }
+    }
+    .floating-anim {
+      animation: float-particle 3s ease-in-out infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-ring-anim {
+      animation: pulse-ring 2.5s infinite ease-in-out;
+    }
+    /* スクロールバー美化 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
+
+  <!-- ヘッダー（人体工学対応・大型ナビゲーション） -->
+  <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <a href="index.html" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-emerald-500 to-amber-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-white font-black text-xl hover:scale-105 transition-transform" title="ポータルへ戻る">
+          神
+        </a>
+        <div>
+          <h1 class="text-lg md:text-xl font-bold leading-tight flex items-center gap-2">
+            形成体のはたらき & 神経誘導ラボ
+            <span class="text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded-full font-semibold">Lv31 高校生物</span>
+          </h1>
+          <p class="text-xs text-slate-400">なぜ細胞を「ばらばら」にすると神経になるのか？BMP二重否定モデルの謎を解く！</p>
+        </div>
+      </div>
+
+      <!-- モード切り替えタブ (48px以上のタッチエリア) -->
+      <nav class="flex items-center bg-slate-800/80 p-1 rounded-2xl border border-slate-700/60 shadow-inner">
+        <button id="tab-lab" onclick="switchTab('lab')" class="touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1.5 transition-all bg-cyan-600 text-white shadow-md">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+          4つの対比実験室
+        </button>
+        <button id="tab-micro" onclick="switchTab('micro')" class="touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+          分子ミクロ顕微鏡
+        </button>
+        <button id="tab-logic" onclick="switchTab('logic')" class="touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          二重否定の論理
+        </button>
+        <button id="tab-quiz" onclick="switchTab('quiz')" class="touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          入試問題(47番)
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+    <!-- ======================================================== -->
+    <!-- SECTION 1: 4つの対比実験室 (メインシミュレータ) -->
+    <!-- ======================================================== -->
+    <section id="view-lab" class="space-y-6">
+      
+      <!-- 探究ガイダンスバナー -->
+      <div class="bg-gradient-to-r from-cyan-950/70 via-slate-900 to-indigo-950/70 border border-cyan-800/40 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+        <div class="space-y-1.5 max-w-2xl">
+          <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cyan-400">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+            探究の核心：神経になるのは「命令されたから」か「邪魔が消えたから」か？
+          </div>
+          <h2 class="text-base md:text-lg font-bold text-white">
+            予定表皮域の細胞を「ばらばら」にすると何が起きる？
+          </h2>
+          <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+            下の <strong class="text-amber-300">実験a〜dボタン</strong> を押して培養皿の様子を比較してみましょう。細胞同士がくっついている時と、ばらばらに離した時で、運命が劇的に反転します！
+          </p>
+        </div>
+
+        <!-- 凡例バッジ -->
+        <div class="flex flex-wrap gap-2 text-[11px] bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> 表皮に分化
+          </div>
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> 神経に分化
+          </div>
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">
+            <span class="w-2 h-2 rounded-full bg-pink-400"></span> BMP分子
+          </div>
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> ノギン(形成体)
+          </div>
+        </div>
+      </div>
+
+      <!-- 実験クイック選択パネル (大型タッチ対応・4つの対比) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        
+        <!-- 実験 a -->
+        <button id="exp-btn-a" onclick="selectExperiment('a')" class="interactive-card touch-target p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900/90 text-left space-y-1.5 group hover:border-amber-500/60 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40">実験 a</span>
+            <span class="text-[10px] text-slate-400">標準状態</span>
+          </div>
+          <div class="text-xs md:text-sm font-bold text-white group-hover:text-amber-200">組織塊 単独培養</div>
+          <p class="text-[11px] text-slate-400 leading-tight">予定表皮域をそのまま培養 → 自前のBMPで充満</p>
+          <div class="pt-1 text-[11px] font-bold text-amber-400 flex items-center gap-1">
+            <span>結果：</span><span class="underline decoration-amber-400">表皮</span> に分化
+          </div>
+        </button>
+
+        <!-- 実験 b -->
+        <button id="exp-btn-b" onclick="selectExperiment('b')" class="interactive-card touch-target p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900/90 text-left space-y-1.5 group hover:border-cyan-500/60 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40">実験 b</span>
+            <span class="text-[10px] text-slate-400">シュペーマン誘導</span>
+          </div>
+          <div class="text-xs md:text-sm font-bold text-white group-hover:text-cyan-200">形成体と接触培養</div>
+          <p class="text-[11px] text-slate-400 leading-tight">形成体（原口背唇部）と接触 → ノギンがBMPを阻止</p>
+          <div class="pt-1 text-[11px] font-bold text-cyan-400 flex items-center gap-1">
+            <span>結果：</span><span class="underline decoration-cyan-400">神経</span> に分化
+          </div>
+        </button>
+
+        <!-- 実験 c (超重要・パラダイムシフト) -->
+        <button id="exp-btn-c" onclick="selectExperiment('c')" class="interactive-card touch-target p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900/90 text-left space-y-1.5 group hover:border-cyan-500/60 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40">実験 c ★核心</span>
+            <span class="text-[10px] text-cyan-300 font-bold">驚きの結果</span>
+          </div>
+          <div class="text-xs md:text-sm font-bold text-white group-hover:text-cyan-200">細胞をばらばらに孤立</div>
+          <p class="text-[11px] text-slate-400 leading-tight">接触を断つ → 自前BMPが培養液に拡散・希釈！</p>
+          <div class="pt-1 text-[11px] font-bold text-cyan-400 flex items-center gap-1">
+            <span>結果：</span><span class="underline decoration-cyan-400 font-black">神経</span> に分化！？
+          </div>
+        </button>
+
+        <!-- 実験 d (決定打) -->
+        <button id="exp-btn-d" onclick="selectExperiment('d')" class="interactive-card touch-target p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900/90 text-left space-y-1.5 group hover:border-amber-500/60 transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs px-2 py-0.5 rounded-lg bg-pink-500/20 text-pink-300 font-bold border border-pink-500/40">実験 d</span>
+            <span class="text-[10px] text-slate-400">BMP添加検証</span>
+          </div>
+          <div class="text-xs md:text-sm font-bold text-white group-hover:text-amber-200">ばらばら ＋ BMP添加</div>
+          <p class="text-[11px] text-slate-400 leading-tight">外からBMPを補充 → 再びBMPシグナルが届く</p>
+          <div class="pt-1 text-[11px] font-bold text-amber-400 flex items-center gap-1">
+            <span>結果：</span><span class="underline decoration-amber-400">表皮</span> に戻る！
+          </div>
+        </button>
+
+      </div>
+
+      <!-- メイン実験ビューア（ペトリ皿 ＆ リアルタイム動態SVG） -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- 左側：コントロール ＆ パラメータ調整 (4 cols) -->
+        <div class="lg:col-span-4 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 md:p-5 space-y-4 shadow-lg">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center font-bold">1</span>
+              培養条件の自由カスタム
+            </h3>
+            <span class="text-xs text-slate-400 font-mono" id="custom-indicator">実験 a 設定中</span>
+          </div>
+
+          <!-- 条件1: 細胞の密集度 -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+              <span>① 細胞の配置状態：</span>
+              <span id="label-cell-density" class="text-amber-400 font-bold">組織塊 (高密度・密集)</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-density-cluster" onclick="setCellDensity('cluster')" class="touch-target p-2.5 rounded-xl border border-amber-500/50 bg-amber-950/40 text-xs font-bold text-amber-200 flex flex-col items-center justify-center gap-1 transition">
+                <span class="text-base">🧫</span>
+                <span>組織塊 (密着)</span>
+              </button>
+              <button id="btn-density-single" onclick="setCellDensity('single')" class="touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex flex-col items-center justify-center gap-1 transition hover:text-white">
+                <span class="text-base">✨</span>
+                <span>ばらばら (孤立)</span>
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400">※密着していると自前BMPが周囲に留まり、ばらばらだと培地へ希釈されます。</p>
+          </div>
+
+          <!-- 条件2: 形成体の有無 -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+              <span>② 形成体 (オーガナイザー)：</span>
+              <span id="label-organizer-state" class="text-slate-400 font-bold">なし</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-org-off" onclick="setOrganizer(false)" class="touch-target p-2.5 rounded-xl border border-cyan-500/50 bg-cyan-950/40 text-xs font-bold text-cyan-200 flex items-center justify-center gap-2 transition">
+                <span>なし</span>
+              </button>
+              <button id="btn-org-on" onclick="setOrganizer(true)" class="touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                <span>接触させる</span>
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400">※形成体はBMPと特異的に結合するタンパク質（ノギン）を分泌します。</p>
+          </div>
+
+          <!-- 条件3: 外因性BMPの添加 -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+            <label class="text-xs font-semibold text-slate-300 flex items-center justify-between">
+              <span>③ 培地へのBMP添加：</span>
+              <span id="label-bmp-state" class="text-slate-400 font-bold">なし (0 nM)</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-bmp-off" onclick="setAddedBMP(false)" class="touch-target p-2.5 rounded-xl border border-cyan-500/50 bg-cyan-950/40 text-xs font-bold text-cyan-200 flex items-center justify-center gap-2 transition">
+                <span>無添加</span>
+              </button>
+              <button id="btn-bmp-on" onclick="setAddedBMP(true)" class="touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white">
+                <span class="w-2.5 h-2.5 rounded-full bg-pink-500"></span>
+                <span>BMPを添加</span>
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400">※培地全体に高濃度のBMPタンパク質を加えます。</p>
+          </div>
+
+          <!-- 培養実行ボタン (人体工学・大型) -->
+          <div class="pt-3">
+            <button id="btn-run-culture" onclick="startCulture()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-cyan-900/40 flex items-center justify-center gap-2 transition active:scale-95 border border-cyan-400/40">
+              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span>一定時間 培養する（分化判定）</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- 右側：ペトリ皿顕微鏡ビュー ＆ リアルタイムSVG動態 (8 cols) -->
+        <div class="lg:col-span-8 bg-slate-900/80 border border-slate-800 rounded-2xl p-4 md:p-5 space-y-4 shadow-lg flex flex-col justify-between">
+          
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 text-xs flex items-center justify-center font-bold">2</span>
+              <h3 class="text-sm font-bold text-slate-200">培養ペトリ皿の顕微鏡動態</h3>
+            </div>
+
+            <!-- 分子可視化トグル -->
+            <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+              <span class="text-slate-400 font-medium">分子描画:</span>
+              <button id="toggle-molecules-btn" onclick="toggleMoleculesVisibility()" class="px-2 py-0.5 rounded-lg font-bold bg-cyan-600 text-white">
+                ON (BMP/ノギン表示)
+              </button>
+            </div>
+          </div>
+
+          <!-- ペトリ皿グラフィック（SVG） -->
+          <div class="relative w-full aspect-[16/10] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 rounded-2xl border-2 border-slate-800 flex items-center justify-center overflow-hidden shadow-inner group">
+            
+            <!-- ガラス縁と目盛り -->
+            <div class="absolute inset-3 rounded-full border-4 border-slate-700/30 pointer-events-none shadow-[inset_0_0_40px_rgba(0,0,0,0.85)]"></div>
+            
+            <!-- リアルタイムステータスバッジ -->
+            <div class="absolute top-4 left-4 bg-slate-900/90 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs z-10 flex flex-col gap-0.5 backdrop-blur-md">
+              <div class="flex items-center gap-2">
+                <span id="culture-phase-label" class="text-cyan-400 font-bold">状態: 培養待機中</span>
+              </div>
+              <div class="text-[11px] text-slate-300 font-mono">
+                受容体のBMP結合率: <span id="bmp-binding-rate" class="font-bold text-pink-400">計算中</span>
+              </div>
+            </div>
+
+            <!-- SVG キャンバス -->
+            <svg id="dish-svg-canvas" viewBox="0 0 500 320" class="w-full h-full select-none">
+              <defs>
+                <!-- 放射状グラデーション (密集BMPハロー) -->
+                <radialGradient id="bmp-cloud" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#ec4899" stop-opacity="0.35" />
+                  <stop offset="60%" stop-color="#ec4899" stop-opacity="0.1" />
+                  <stop offset="100%" stop-color="#ec4899" stop-opacity="0" />
+                </radialGradient>
+                <!-- 形成体ノギングラデーション -->
+                <radialGradient id="noggin-cloud" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.4" />
+                  <stop offset="70%" stop-color="#10b981" stop-opacity="0.15" />
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+                </radialGradient>
+                <!-- 蛍光フィルター -->
+                <filter id="glow-effect" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+
+              <!-- 顕微鏡目盛りグリッド -->
+              <g stroke="#1e293b" stroke-width="0.75" stroke-dasharray="3,6" opacity="0.6">
+                <circle cx="250" cy="160" r="135" fill="none" />
+                <circle cx="250" cy="160" r="75" fill="none" />
+                <line x1="250" y1="20" x2="250" y2="300" />
+                <line x1="100" y1="160" x2="400" y2="160" />
+              </g>
+
+              <!-- 動的レイヤー群 -->
+              <g id="layer-clouds"></g>      <!-- BMPやノギンの濃度ハロー -->
+              <g id="layer-tissues"></g>     <!-- 形成体や細胞塊のベース -->
+              <g id="layer-molecules"></g>   <!-- 浮遊するBMP・ノギン分子 -->
+              <g id="layer-cells"></g>       <!-- 細胞本体 (表皮/神経へのモーフィング) -->
+              <g id="layer-labels"></g>      <!-- 各種テキストラベル -->
+            </svg>
+          </div>
+
+          <!-- 培養進行度インジケーター -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-semibold text-slate-400">
+              <span>分化プロセス進行度</span>
+              <span id="culture-progress-text" class="text-cyan-400 font-mono">0%</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700/60">
+              <div id="culture-progress-bar" class="h-full bg-gradient-to-r from-cyan-500 via-indigo-500 to-amber-500 rounded-full transition-all duration-200 w-0"></div>
+            </div>
+          </div>
+
+          <!-- 分化結果レポートカード (大型) -->
+          <div id="outcome-card" class="bg-slate-950/80 rounded-2xl border border-slate-800 p-4 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-300 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> 顕微鏡下の判定結果
+              </span>
+              <span id="outcome-badge" class="text-xs font-black px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400">
+                培養待機中
+              </span>
+            </div>
+            <div id="outcome-text" class="text-xs md:text-sm text-slate-300 leading-relaxed min-h-[3.2rem] flex items-center">
+              上部の「実験a〜d」ボタンを選ぶか、「培養する」ボタンを押すと、細胞が表皮・神経のどちらに分化したかとその分子的な理由がここに表示されます。
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- S.L.O.W. 思考の足場：高校生向けなぜなぜ解説 -->
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 space-y-3">
+        <h4 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+          <span class="text-lg">💡</span> 高校生が100%つまずく「最大の謎」：なぜ細胞をばらばらにすると神経になるのか？
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300 leading-relaxed">
+          <div class="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800/60 space-y-1.5">
+            <div class="font-bold text-amber-400 flex items-center gap-1.5">
+              <span>① 普通にしていると表皮になる理由</span>
+            </div>
+            <p>
+              カエルの胞胚期、予定表皮域の細胞は<strong>みんな自分で「BMP」を分泌</strong>しています。細胞がぎゅっと集まっている（組織塊）と、自分や隣の細胞が出したBMPが周囲に高濃度で溜まり、全員の受容体に結合して<strong class="text-amber-300">「表皮になれ！」</strong>と指令が出続けます。
+            </p>
+          </div>
+          <div class="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800/60 space-y-1.5">
+            <div class="font-bold text-cyan-400 flex items-center gap-1.5">
+              <span>② ばらばらにすると神経になる理由（核心）</span>
+            </div>
+            <p>
+              ところが細胞同士をばらばらに離すと、細胞が出したBMPは<strong>広い培養液の中へあっという間に拡散して薄まってしまいます</strong>。その結果、受容体にBMPが結合できなくなり、<strong class="text-cyan-300">「表皮になれ」というシグナルが消滅</strong>します！
+            </p>
+          </div>
+          <div class="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800/60 space-y-1.5">
+            <div class="font-bold text-emerald-400 flex items-center gap-1.5">
+              <span>③ 結論：外胚葉の「本来の姿」は神経だった！</span>
+            </div>
+            <p>
+              つまり、外胚葉細胞は<strong>「何もしなければ本来は神経になる」</strong>のです！BMPは「神経になるのを邪魔して表皮にさせていたブレーキ」に過ぎません。形成体（ノギン）はBMPを捕まえて無力化することで、<strong class="text-emerald-300">ブレーキを外して神経への分化を許していた</strong>のです！
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- SECTION 2: 分子ミクロ顕微鏡 (受容体とシグナル伝達) -->
+    <!-- ======================================================== -->
+    <section id="view-micro" class="space-y-6 hidden">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-5">
+        <div>
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-cyan-400 mb-1">
+            <span>🧬 分子レベルのシグナル伝達を可視化</span>
+          </div>
+          <h2 class="text-lg md:text-xl font-bold text-white">
+            細胞膜上で何が起きているのか？（BMP vs ノギンの攻防）
+          </h2>
+          <p class="text-xs md:text-sm text-slate-300">
+            細胞表面にある「BMP受容体」と、形成体から分泌される「ノギン・コーディン」の相互作用を観察しましょう。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          
+          <!-- ミクロSVGグラフィック -->
+          <div class="relative w-full aspect-[4/3] bg-slate-950 rounded-2xl border-2 border-slate-800 flex items-center justify-center overflow-hidden p-2">
+            <svg viewBox="0 0 400 300" class="w-full h-full select-none">
+              <!-- 細胞内部 (下部) -->
+              <rect x="0" y="180" width="400" height="120" fill="#0f172a" />
+              <text x="200" y="240" fill="#334155" font-size="20" font-weight="bold" text-anchor="middle">細胞質 (細胞内)</text>
+              
+              <!-- 細胞膜 (二重リン脂質風ライン) -->
+              <line x1="0" y1="180" x2="400" y2="180" stroke="#38bdf8" stroke-width="6" />
+              <line x1="0" y1="186" x2="400" y2="186" stroke="#0284c7" stroke-width="2" />
+              <text x="350" y="172" fill="#38bdf8" font-size="10" text-anchor="end">細胞膜</text>
+
+              <!-- BMP受容体 (Y字型アンカー) -->
+              <g id="micro-receptor-left" transform="translate(130, 180)">
+                <path d="M -15 0 L -15 -30 L -25 -50 M -15 -30 L -5 -50" stroke="#f59e0b" stroke-width="5" fill="none" stroke-linecap="round" />
+                <path d="M 15 0 L 15 -30 L 5 -50 M 15 -30 L 25 -50" stroke="#f59e0b" stroke-width="5" fill="none" stroke-linecap="round" />
+                <rect x="-20" y="0" width="40" height="15" fill="#d97706" rx="4" />
+                <text x="0" y="-58" fill="#fbbf24" font-size="10" font-weight="bold" text-anchor="middle">BMP受容体</text>
+              </g>
+
+              <g id="micro-receptor-right" transform="translate(270, 180)">
+                <path d="M -15 0 L -15 -30 L -25 -50 M -15 -30 L -5 -50" stroke="#f59e0b" stroke-width="5" fill="none" stroke-linecap="round" />
+                <path d="M 15 0 L 15 -30 L 5 -50 M 15 -30 L 25 -50" stroke="#f59e0b" stroke-width="5" fill="none" stroke-linecap="round" />
+                <rect x="-20" y="0" width="40" height="15" fill="#d97706" rx="4" />
+                <text x="0" y="-58" fill="#fbbf24" font-size="10" font-weight="bold" text-anchor="middle">BMP受容体</text>
+              </g>
+
+              <!-- 左側：BMPが結合している様子 (表皮シグナルON) -->
+              <g transform="translate(130, 135)" class="floating-anim">
+                <circle cx="0" cy="0" r="14" fill="#ec4899" stroke="#f472b6" stroke-width="2" />
+                <text x="0" y="4" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">BMP</text>
+              </g>
+              <!-- 細胞内シグナル波 (左) -->
+              <g transform="translate(130, 205)">
+                <path d="M 0 0 L 0 50 M -8 40 L 0 52 L 8 40" stroke="#ec4899" stroke-width="3" fill="none" />
+                <text x="12" y="30" fill="#f472b6" font-size="10" font-weight="bold">シグナルON</text>
+                <text x="12" y="45" fill="#fbbf24" font-size="11" font-weight="black">→ 表皮へ分化！</text>
+              </g>
+
+              <!-- 右側：ノギンがBMPを捕まえている様子 (結合して受容体へ届かない) -->
+              <g transform="translate(270, 75)">
+                <!-- ノギン (U字型キャッチャー) -->
+                <path d="M -22 -15 C -25 15, 25 15, 22 -15" stroke="#10b981" stroke-width="6" fill="none" stroke-linecap="round" />
+                <text x="0" y="-22" fill="#34d399" font-size="10" font-weight="bold" text-anchor="middle">ノギン(形成体由来)</text>
+                <!-- 捕獲されたBMP -->
+                <circle cx="0" cy="2" r="13" fill="#ec4899" stroke="#f472b6" stroke-width="2" />
+                <text x="0" y="6" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">BMP捕獲</text>
+                <text x="0" y="24" fill="#ef4444" font-size="10" font-weight="bold" text-anchor="middle">結合阻害！</text>
+              </g>
+              <!-- 細胞内シグナルOFF (右) -->
+              <g transform="translate(270, 205)">
+                <text x="0" y="20" fill="#64748b" font-size="12" font-weight="bold" text-anchor="middle">✕ シグナル遮断 (OFF)</text>
+                <text x="0" y="45" fill="#38bdf8" font-size="12" font-weight="black" text-anchor="middle">→ 本来の 神経 へ分化！</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- 解説カード -->
+          <div class="space-y-4">
+            <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+              <div class="text-sm font-bold text-pink-300 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-pink-500"></span> BMP（骨形成因子）のはたらき
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                BMPは外胚葉細胞の受容体に結合することで、細胞内にリン酸化シグナル（Smad経路）を送り、<strong class="text-amber-300">表皮関連の遺伝子をONにし、神経関連の遺伝子を強力に抑制（ブレーキ）</strong>します。
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+              <div class="text-sm font-bold text-emerald-300 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span> ノギン・コーディン（形成体タンパク質）のはたらき
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                形成体から分泌されるノギンやコーディンは、<strong class="text-emerald-400">細胞外でBMP分子と直接がっちり結合</strong>します。これによりBMPは細胞の受容体に結合できなくなります（競合的トラップ）。
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-cyan-950/40 border border-cyan-800/40 space-y-1">
+              <div class="text-xs font-bold text-cyan-300">要点の一言まとめ：</div>
+              <p class="text-xs text-slate-200">
+                形成体は「神経になれ」という指令分子を出しているのではなく、<strong class="text-cyan-400">「神経になるのを妨害しているBMPを掃除する分子（ノギン）」</strong>を出していた！
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- SECTION 3: 二重否定の論理 (パラダイムシフト図解) -->
+    <!-- ======================================================== -->
+    <section id="view-logic" class="space-y-6 hidden">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-5">
+        <div>
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-amber-400 mb-1">
+            <span>🧠 思考のパラダイムシフト</span>
+          </div>
+          <h2 class="text-lg md:text-xl font-bold text-white">
+            「正の誘導」から「二重否定（脱抑制）」への大逆転
+          </h2>
+          <p class="text-xs md:text-sm text-slate-300">
+            発生生物学の歴史において、科学者たちの常識がどのように覆されたのかを体験しましょう。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- 昔の考え方 (誤解モデル) -->
+          <div class="bg-slate-950/70 border-2 border-slate-800 rounded-2xl p-5 space-y-3 opacity-80 hover:opacity-100 transition">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <span class="text-sm font-bold text-slate-400 flex items-center gap-1.5">
+                <span>❌</span> 昔の考え方（古典的誘導モデル）
+              </span>
+              <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">1924年〜</span>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              「外胚葉はもともと表皮になる予定で、形成体が特別な『神経誘導物質』を放出して神経へと作り替えている」と考えられていました。
+            </p>
+
+            <!-- フロー図 -->
+            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-2 text-xs text-center font-mono">
+              <div class="p-2 bg-amber-950/40 text-amber-300 rounded border border-amber-600/30">デフォルト：表皮</div>
+              <div class="text-slate-500 font-bold">＋ 形成体からのプラスの命令 ⬇</div>
+              <div class="p-2 bg-cyan-950/40 text-cyan-300 rounded border border-cyan-600/30">神経に変化する</div>
+            </div>
+            <div class="text-[11px] text-rose-400/90 font-semibold">
+              ⚠️ 破綻：もしこれが本当なら、実験cで「細胞をばらばらにしただけ」で神経になる理由が説明できません！
+            </div>
+          </div>
+
+          <!-- 現代の解明 (二重否定モデル) -->
+          <div class="bg-gradient-to-b from-cyan-950/40 to-slate-950 border-2 border-cyan-500/60 rounded-2xl p-5 space-y-3 shadow-lg shadow-cyan-950/30">
+            <div class="flex items-center justify-between pb-2 border-b border-cyan-500/40">
+              <span class="text-sm font-bold text-cyan-300 flex items-center gap-1.5">
+                <span>⭕</span> 現代の解明（二重否定・脱抑制モデル）
+              </span>
+              <span class="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded font-bold font-mono">現在の定説 ★</span>
+            </div>
+            <p class="text-xs text-slate-200 leading-relaxed font-medium">
+              「外胚葉の基本設定（デフォルト）は【神経】である！表皮になるのは、自前のBMPで神経化にブレーキをかけているからだ。」
+            </p>
+
+            <!-- フロー図 -->
+            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-2 text-xs text-center font-mono">
+              <div class="p-2 bg-cyan-950/40 text-cyan-300 rounded border border-cyan-600/30 font-bold">デフォルト：神経</div>
+              <div class="text-pink-400 font-bold">＋ 自前BMPによるブレーキ (阻害) ⬇</div>
+              <div class="p-2 bg-amber-950/40 text-amber-300 rounded border border-amber-600/30">表皮になる</div>
+              <div class="text-emerald-400 font-bold">＋ 形成体（ノギン）がブレーキを破壊 (阻害の阻害) ⬇</div>
+              <div class="p-2 bg-cyan-600 text-white rounded font-bold shadow">本来の姿「神経」へ分化！</div>
+            </div>
+            <div class="text-[11px] text-cyan-300 font-bold">
+              ✨ 完璧な説明：細胞をばらばらにすると自前BMPが拡散・消失するため、ブレーキが勝手に外れて神経になったのです！
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 3行でわかる要点グリッド -->
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-center">
+            <div class="text-slate-400 mb-1">外胚葉の素顔</div>
+            <div class="text-sm font-bold text-cyan-400">神経細胞</div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-center">
+            <div class="text-slate-400 mb-1">BMPのはたらき</div>
+            <div class="text-sm font-bold text-pink-400">神経化を阻害（表皮化）</div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-center">
+            <div class="text-slate-400 mb-1">形成体のはたらき</div>
+            <div class="text-sm font-bold text-emerald-400">BMPを阻害（神経化を救出）</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- SECTION 4: 入試問題 Lv31（47番）に挑戦 -->
+    <!-- ======================================================== -->
+    <section id="view-quiz" class="space-y-6 hidden">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 md:p-6 space-y-5 shadow-lg">
+        
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <span class="px-2.5 py-1 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-lg text-xs font-bold">Lv31 入試演習</span>
+          <span class="text-xs text-slate-400">47. 形成体のはたらきと細胞の分化 (目安: 4分)</span>
+        </div>
+
+        <div class="space-y-3 text-sm text-slate-100 leading-relaxed">
+          <p class="font-semibold">
+            カエル胚では、原腸胚期に原腸陥入が起こって形成体が神経を誘導する。<br>
+            この現象について、次の実験結果 a 〜 d および BMPに関する記述（(ア)〜(ウ)）から、<strong class="text-cyan-300 underline decoration-cyan-500 underline-offset-4">どのような結論が導けるか</strong>。下の ① 〜 ④ のうちから正しいと考えられるものを一つ選べ。
+          </p>
+
+          <!-- 実験 a〜d カード -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs bg-slate-950/70 p-4 rounded-xl border border-slate-800">
+            <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
+              <strong class="text-amber-400">実験 a：</strong> 胞胚の動物極側の予定表皮域を取り出して培養すると、<strong class="text-amber-300">表皮</strong>に分化した。
+            </div>
+            <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
+              <strong class="text-rose-400">実験 b：</strong> 胞胚の動物極側の予定表皮域から取り出した組織を形成体と接触させて培養すると、<strong class="text-cyan-300">神経</strong>に分化した。
+            </div>
+            <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
+              <strong class="text-cyan-400">実験 c：</strong> 胞胚の動物極側の予定表皮域を取り出し、細胞をばらばらにして互いに接触しないようにした状態で培養すると、<strong class="text-cyan-300">神経</strong>に分化した。
+            </div>
+            <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
+              <strong class="text-pink-400">実験 d：</strong> 胞胚の動物極側の予定表皮域を取り出し、細胞をばらばらにして互いに接触しないようにした状態で <strong class="text-pink-300">BMP を加えて</strong>培養すると、<strong class="text-amber-300">表皮</strong>に分化した。
+            </div>
+          </div>
+
+          <!-- BMPに関する記述 -->
+          <div class="text-xs bg-slate-950/50 p-3.5 rounded-xl border border-slate-800/80 text-slate-300 space-y-1">
+            <div>(ア) BMP は細胞表面の受容体に結合して、細胞の増殖や分化を促進するタンパク質である。</div>
+            <div>(イ) BMP は胞胚期には胚の全域に分布している。</div>
+            <div>(ウ) 形成体から分泌されるタンパク質は、BMP と結合する性質がある。</div>
+          </div>
+        </div>
+
+        <!-- 選択肢 ①〜④ (48px以上のタッチターゲット) -->
+        <div class="space-y-2.5 pt-2">
+          <button onclick="submitQuizAnswer(1)" id="quiz-opt-1" class="touch-target w-full p-4 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs md:text-sm text-slate-200 transition flex items-start gap-3">
+            <span class="font-bold text-slate-400 shrink-0">①</span>
+            <span>表皮になる部分も神経になる部分も、形成体からの誘導を受けると表皮になる。</span>
+          </button>
+
+          <button onclick="submitQuizAnswer(2)" id="quiz-opt-2" class="touch-target w-full p-4 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs md:text-sm text-slate-200 transition flex items-start gap-3">
+            <span class="font-bold text-slate-400 shrink-0">②</span>
+            <span>予定表皮域は本来神経に分化する性質があるが、形成体から分泌されるタンパク質により神経への分化を阻害される。</span>
+          </button>
+
+          <button onclick="submitQuizAnswer(3)" id="quiz-opt-3" class="touch-target w-full p-4 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs md:text-sm text-slate-200 transition flex items-start gap-3 font-semibold">
+            <span class="font-bold text-slate-400 shrink-0">③</span>
+            <span>予定表皮域は本来神経に分化する性質があるが、BMP により神経への分化を阻害され表皮になる。</span>
+          </button>
+
+          <button onclick="submitQuizAnswer(4)" id="quiz-opt-4" class="touch-target w-full p-4 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left text-xs md:text-sm text-slate-200 transition flex items-start gap-3">
+            <span class="font-bold text-slate-400 shrink-0">④</span>
+            <span>形成体から分泌されるタンパク質は、BMP を活性化させ神経への分化を誘導する。</span>
+          </button>
+        </div>
+
+        <!-- 解説表示エリア -->
+        <div id="quiz-explanation" class="hidden p-5 rounded-2xl bg-slate-950 border border-slate-800 text-xs md:text-sm text-slate-300 space-y-3 leading-relaxed"></div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-slate-950 border-t border-slate-800/80 py-4 px-4 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>カエル初期発生・神経誘導シミュレータ (Neural Induction & BMP Double-Negative Model)</div>
+      <div class="text-slate-400">高校生物「発生と誘導の分子機構」学習支援ツール</div>
+    </div>
+  </footer>
+
+  <!-- ======================================================== -->
+  <!-- JAVASCRIPT: リアルタイムSVGレンダラー & インタラクション -->
+  <!-- ======================================================== -->
+  <script>
+    // アプリケーション状態
+    const state = {
+      activeTab: 'lab',
+      currentExp: 'a', // 'a' | 'b' | 'c' | 'd' | 'custom'
+      cellDensity: 'cluster', // 'cluster' (密集塊) | 'single' (ばらばら)
+      hasOrganizer: false,   // 形成体接触
+      addedBMP: false,       // 外因性BMP添加
+      isCulturing: false,
+      cultureStage: 0,       // 0: 培養前, 1: 培養中, 2: 培養完了
+      showMolecules: true,
+      animationTimer: null
+    };
+
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      const tabs = ['lab', 'micro', 'logic', 'quiz'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        const view = document.getElementById(`view-${t}`);
+        if (t === tabId) {
+          btn.className = 'touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-1.5 transition-all bg-cyan-600 text-white shadow-md';
+          view.classList.remove('hidden');
+        } else {
+          btn.className = 'touch-target px-3.5 py-2 rounded-xl text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all text-slate-300 hover:text-white';
+          view.classList.add('hidden');
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function selectExperiment(type) {
+      state.currentExp = type;
+      resetCulture();
+
+      if (type === 'a') {
+        state.cellDensity = 'cluster';
+        state.hasOrganizer = false;
+        state.addedBMP = false;
+      } else if (type === 'b') {
+        state.cellDensity = 'cluster';
+        state.hasOrganizer = true;
+        state.addedBMP = false;
+      } else if (type === 'c') {
+        state.cellDensity = 'single';
+        state.hasOrganizer = false;
+        state.addedBMP = false;
+      } else if (type === 'd') {
+        state.cellDensity = 'single';
+        state.hasOrganizer = false;
+        state.addedBMP = true;
+      }
+
+      updateControlsUI();
+      renderDish();
+    }
+
+    function setCellDensity(density) {
+      state.currentExp = 'custom';
+      state.cellDensity = density;
+      resetCulture();
+      updateControlsUI();
+      renderDish();
+    }
+
+    function setOrganizer(has) {
+      state.currentExp = 'custom';
+      state.hasOrganizer = has;
+      resetCulture();
+      updateControlsUI();
+      renderDish();
+    }
+
+    function setAddedBMP(added) {
+      state.currentExp = 'custom';
+      state.addedBMP = added;
+      resetCulture();
+      updateControlsUI();
+      renderDish();
+    }
+
+    function toggleMoleculesVisibility() {
+      state.showMolecules = !state.showMolecules;
+      const btn = document.getElementById('toggle-molecules-btn');
+      if (state.showMolecules) {
+        btn.textContent = 'ON (BMP/ノギン表示)';
+        btn.className = 'px-2 py-0.5 rounded-lg font-bold bg-cyan-600 text-white';
+      } else {
+        btn.textContent = 'OFF (非表示)';
+        btn.className = 'px-2 py-0.5 rounded-lg font-bold bg-slate-700 text-slate-400';
+      }
+      renderDish();
+    }
+
+    function updateControlsUI() {
+      // 実験クイックボタンのハイライト
+      ['a', 'b', 'c', 'd'].forEach(t => {
+        const btn = document.getElementById(`exp-btn-${t}`);
+        if (state.currentExp === t) {
+          btn.className = 'interactive-card touch-target p-3.5 rounded-2xl border-2 border-cyan-400 bg-cyan-950/40 text-left space-y-1.5 shadow-lg shadow-cyan-900/30';
+        } else {
+          btn.className = 'interactive-card touch-target p-3.5 rounded-2xl border-2 border-slate-700 bg-slate-900/90 text-left space-y-1.5 hover:border-slate-600';
+        }
+      });
+
+      document.getElementById('custom-indicator').textContent = 
+        state.currentExp === 'custom' ? 'カスタム設定' : `実験 ${state.currentExp} 設定中`;
+
+      // 密度ボタン
+      const btnCluster = document.getElementById('btn-density-cluster');
+      const btnSingle = document.getElementById('btn-density-single');
+      const lblDensity = document.getElementById('label-cell-density');
+      if (state.cellDensity === 'cluster') {
+        btnCluster.className = 'touch-target p-2.5 rounded-xl border border-amber-500/50 bg-amber-950/40 text-xs font-bold text-amber-200 flex flex-col items-center justify-center gap-1 transition shadow';
+        btnSingle.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex flex-col items-center justify-center gap-1 transition hover:text-white';
+        lblDensity.textContent = '組織塊 (高密度・密集)';
+        lblDensity.className = 'text-amber-400 font-bold';
+      } else {
+        btnSingle.className = 'touch-target p-2.5 rounded-xl border border-cyan-500/50 bg-cyan-950/40 text-xs font-bold text-cyan-200 flex flex-col items-center justify-center gap-1 transition shadow';
+        btnCluster.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex flex-col items-center justify-center gap-1 transition hover:text-white';
+        lblDensity.textContent = 'ばらばら (孤立・希釈)';
+        lblDensity.className = 'text-cyan-400 font-bold';
+      }
+
+      // 形成体ボタン
+      const btnOrgOff = document.getElementById('btn-org-off');
+      const btnOrgOn = document.getElementById('btn-org-on');
+      const lblOrg = document.getElementById('label-organizer-state');
+      if (state.hasOrganizer) {
+        btnOrgOn.className = 'touch-target p-2.5 rounded-xl border border-rose-500/50 bg-rose-950/40 text-xs font-bold text-rose-200 flex items-center justify-center gap-2 transition shadow';
+        btnOrgOff.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white';
+        lblOrg.textContent = '接触あり (ノギン分泌)';
+        lblOrg.className = 'text-rose-400 font-bold';
+      } else {
+        btnOrgOff.className = 'touch-target p-2.5 rounded-xl border border-cyan-500/50 bg-cyan-950/40 text-xs font-bold text-cyan-200 flex items-center justify-center gap-2 transition shadow';
+        btnOrgOn.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white';
+        lblOrg.textContent = 'なし';
+        lblOrg.className = 'text-slate-400 font-bold';
+      }
+
+      // BMP添加ボタン
+      const btnBmpOff = document.getElementById('btn-bmp-off');
+      const btnBmpOn = document.getElementById('btn-bmp-on');
+      const lblBmp = document.getElementById('label-bmp-state');
+      if (state.addedBMP) {
+        btnBmpOn.className = 'touch-target p-2.5 rounded-xl border border-pink-500/50 bg-pink-950/40 text-xs font-bold text-pink-200 flex items-center justify-center gap-2 transition shadow';
+        btnBmpOff.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white';
+        lblBmp.textContent = '高濃度添加 (+50 nM)';
+        lblBmp.className = 'text-pink-400 font-bold';
+      } else {
+        btnBmpOff.className = 'touch-target p-2.5 rounded-xl border border-cyan-500/50 bg-cyan-950/40 text-xs font-bold text-cyan-200 flex items-center justify-center gap-2 transition shadow';
+        btnBmpOn.className = 'touch-target p-2.5 rounded-xl border border-slate-700 bg-slate-950/60 text-xs font-semibold text-slate-400 flex items-center justify-center gap-2 transition hover:text-white';
+        lblBmp.textContent = '無添加 (0 nM)';
+        lblBmp.className = 'text-slate-400 font-bold';
+      }
+    }
+
+    function calculateFate() {
+      // 生物学的ロジック判定
+      // BMPシグナルが有効かどうかの計算
+      // 1. 組織塊（cluster）の場合：自前分泌BMPが周囲に高濃度（80%）
+      // 2. ばらばら（single）の場合：自前分泌BMPは拡散して届かない（5%）
+      // 3. 外因性BMP添加（addedBMP）：+85%
+      // 4. 形成体（hasOrganizer）：ノギンがBMPを中和（-80%）
+
+      let effectiveBMP = 0;
+      if (state.cellDensity === 'cluster') effectiveBMP += 80;
+      else effectiveBMP += 5;
+
+      if (state.addedBMP) effectiveBMP += 85;
+
+      if (state.hasOrganizer) {
+        effectiveBMP -= 75; // ノギンにより中和
+      }
+
+      if (effectiveBMP < 0) effectiveBMP = 0;
+      if (effectiveBMP > 100) effectiveBMP = 100;
+
+      // 閾値判定：有効BMPが40%以上なら受容体に結合して「表皮」、40%未満なら「神経」
+      const fate = effectiveBMP >= 40 ? 'epidermis' : 'neural';
+      return { effectiveBMP, fate };
+    }
+
+    function startCulture() {
+      if (state.isCulturing) return;
+      state.isCulturing = true;
+      state.cultureStage = 1;
+
+      const btn = document.getElementById('btn-run-culture');
+      const progressBar = document.getElementById('culture-progress-bar');
+      const progressLabel = document.getElementById('culture-progress-text');
+      const phaseLabel = document.getElementById('culture-phase-label');
+
+      btn.disabled = true;
+      phaseLabel.textContent = '状態: 培養中 (シグナル受容・遺伝子発現)...';
+      phaseLabel.className = 'text-amber-400 font-bold animate-pulse';
+
+      let progress = 0;
+      renderDish();
+
+      state.animationTimer = setInterval(() => {
+        progress += 5;
+        if (progress > 100) progress = 100;
+
+        progressBar.style.width = `${progress}%`;
+        progressLabel.textContent = `${progress}%`;
+
+        if (progress >= 100) {
+          clearInterval(state.animationTimer);
+          state.isCulturing = false;
+          state.cultureStage = 2; // 完了
+          phaseLabel.textContent = '状態: 培養完了 (分化確定)';
+          phaseLabel.className = 'text-emerald-400 font-bold';
+          btn.disabled = false;
+          renderDish();
+        }
+      }, 40);
+    }
+
+    function resetCulture() {
+      if (state.animationTimer) clearInterval(state.animationTimer);
+      state.isCulturing = false;
+      state.cultureStage = 0;
+
+      const progressBar = document.getElementById('culture-progress-bar');
+      const progressLabel = document.getElementById('culture-progress-text');
+      const phaseLabel = document.getElementById('culture-phase-label');
+      const btn = document.getElementById('btn-run-culture');
+
+      progressBar.style.width = '0%';
+      progressLabel.textContent = '0%';
+      phaseLabel.textContent = '状態: 培養待機中';
+      phaseLabel.className = 'text-cyan-400 font-bold';
+      btn.disabled = false;
+    }
+
+    function renderDish() {
+      const { effectiveBMP, fate } = calculateFate();
+      const bindingBadge = document.getElementById('bmp-binding-rate');
+      bindingBadge.textContent = `${effectiveBMP}% (${effectiveBMP >= 40 ? '高 (表皮指令)' : '低 (ブレーキ解除)'})`;
+      bindingBadge.className = effectiveBMP >= 40 ? 'font-bold text-amber-400' : 'font-bold text-cyan-400';
+
+      const clouds = document.getElementById('layer-clouds');
+      const tissues = document.getElementById('layer-tissues');
+      const molecules = document.getElementById('layer-molecules');
+      const cells = document.getElementById('layer-cells');
+      const labels = document.getElementById('layer-labels');
+
+      clouds.innerHTML = '';
+      tissues.innerHTML = '';
+      molecules.innerHTML = '';
+      cells.innerHTML = '';
+      labels.innerHTML = '';
+
+      const cx = 250;
+      const cy = 160;
+      const stage = state.cultureStage;
+
+      // 1. 形成体（オーガナイザー）の描画
+      if (state.hasOrganizer) {
+        const orgX = 140;
+        const orgY = 160;
+        tissues.innerHTML += `
+          <!-- 形成体組織片 -->
+          <g transform="translate(${orgX}, ${orgY})">
+            <path d="M -30 -40 Q 0 -50 30 -30 Q 40 10 20 40 Q -20 50 -40 20 Z" fill="#e11d48" fill-opacity="0.8" stroke="#f43f5e" stroke-width="2.5" />
+            <text x="0" y="2" fill="#fff" font-size="11" font-weight="black" text-anchor="middle">形成体</text>
+            <text x="0" y="16" fill="#fecdd3" font-size="9" text-anchor="middle">(原口背唇部)</text>
+          </g>
+        `;
+
+        // ノギン分泌ハロー
+        if (state.showMolecules) {
+          clouds.innerHTML += `
+            <circle cx="${orgX + 35}" cy="${orgY}" r="75" fill="url(#noggin-cloud)" />
+          `;
+          // 浮遊ノギン分子
+          for (let i = 0; i < 6; i++) {
+            const nx = orgX + 20 + (i * 12) + (Math.sin(i) * 10);
+            const ny = orgY - 25 + (i * 10);
+            molecules.innerHTML += `
+              <path d="M ${nx-6} ${ny-4} C ${nx-8} ${ny+4}, ${nx+8} ${ny+4}, ${nx+6} ${ny-4}" stroke="#10b981" stroke-width="3" fill="none" class="floating-anim" />
+            `;
+          }
+        }
+      }
+
+      // 2. 予定表皮域の細胞描画
+      const targetX = state.hasOrganizer ? 290 : cx;
+      const targetY = cy;
+
+      // 密集塊（cluster）か ばらばら（single）か
+      if (state.cellDensity === 'cluster') {
+        // 組織塊 (密集)
+        if (state.showMolecules && !state.hasOrganizer) {
+          clouds.innerHTML += `
+            <circle cx="${targetX}" cy="${targetY}" r="85" fill="url(#bmp-cloud)" />
+          `;
+        }
+
+        if (stage < 2) {
+          // 培養前〜培養中：未分化の外胚葉細胞塊
+          cells.innerHTML += `
+            <g transform="translate(${targetX}, ${targetY})">
+              <!-- 細胞塊（複数の六角形・球の集合） -->
+              <circle cx="-18" cy="-15" r="16" fill="#0284c7" stroke="#38bdf8" stroke-width="1.5" />
+              <circle cx="16" cy="-15" r="16" fill="#0284c7" stroke="#38bdf8" stroke-width="1.5" />
+              <circle cx="-20" cy="15" r="16" fill="#0284c7" stroke="#38bdf8" stroke-width="1.5" />
+              <circle cx="18" cy="15" r="16" fill="#0284c7" stroke="#38bdf8" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="18" fill="#0369a1" stroke="#38bdf8" stroke-width="2" />
+              <text x="0" y="4" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">予定表皮域</text>
+            </g>
+          `;
+        } else {
+          // 培養完了：分化後の形態
+          if (fate === 'epidermis') {
+            // 表皮に分化（扁平・黄色）
+            cells.innerHTML += `
+              <g transform="translate(${targetX}, ${targetY})">
+                <ellipse cx="0" cy="0" rx="55" ry="32" fill="#d97706" fill-opacity="0.85" stroke="#f59e0b" stroke-width="3" />
+                <path d="M -45 -10 Q 0 -30 45 -10 M -45 10 Q 0 30 45 10" stroke="#fef3c7" stroke-width="1.5" stroke-dasharray="2,4" />
+                <text x="0" y="-2" fill="#fff" font-size="13" font-weight="black" text-anchor="middle">表皮組織 (外胚葉)</text>
+                <text x="0" y="14" fill="#fef3c7" font-size="10" font-weight="bold" text-anchor="middle">【表皮へ分化】</text>
+              </g>
+            `;
+          } else {
+            // 神経に分化（突起・シアン青）
+            cells.innerHTML += `
+              <g transform="translate(${targetX}, ${targetY})">
+                <ellipse cx="0" cy="0" rx="50" ry="28" fill="#0891b2" fill-opacity="0.9" stroke="#22d3ee" stroke-width="3" />
+                <!-- 伸びる神経突起 (軸索風) -->
+                <path d="M 50 0 Q 75 -20 100 -5 M 50 10 Q 80 25 105 15 M -50 -5 Q -75 -25 -95 -10" stroke="#67e8f9" stroke-width="2.5" fill="none" />
+                <text x="0" y="-2" fill="#fff" font-size="13" font-weight="black" text-anchor="middle">神経組織 (神経板)</text>
+                <text x="0" y="14" fill="#cffafe" font-size="10" font-weight="bold" text-anchor="middle">【神経へ分化！】</text>
+              </g>
+            `;
+          }
+        }
+      } else {
+        // ばらばら (単一細胞・孤立)
+        const coords = [
+          { x: targetX - 50, y: targetY - 35 },
+          { x: targetX + 50, y: targetY - 30 },
+          { x: targetX - 35, y: targetY + 35 },
+          { x: targetX + 45, y: targetY + 35 },
+          { x: targetX, y: targetY }
+        ];
+
+        coords.forEach((c, idx) => {
+          if (stage < 2) {
+            cells.innerHTML += `
+              <g transform="translate(${c.x}, ${c.y})">
+                <circle cx="0" cy="0" r="14" fill="#0284c7" stroke="#38bdf8" stroke-width="1.5" />
+                <circle cx="0" cy="0" r="4" fill="#bae6fd" />
+              </g>
+            `;
+          } else {
+            if (fate === 'epidermis') {
+              // 孤立表皮細胞
+              cells.innerHTML += `
+                <g transform="translate(${c.x}, ${c.y})">
+                  <rect x="-14" y="-10" width="28" height="20" rx="6" fill="#d97706" stroke="#f59e0b" stroke-width="2" />
+                  <circle cx="0" cy="0" r="3" fill="#fef3c7" />
+                </g>
+              `;
+            } else {
+              // 孤立神経細胞（突起が四方八方に伸びる）
+              cells.innerHTML += `
+                <g transform="translate(${c.x}, ${c.y})">
+                  <path d="M 0 0 L 18 -12 M 0 0 L -18 -10 M 0 0 L 12 18 M 0 0 L -15 15" stroke="#22d3ee" stroke-width="2" />
+                  <circle cx="0" cy="0" r="10" fill="#0891b2" stroke="#67e8f9" stroke-width="2" />
+                  <circle cx="0" cy="0" r="3" fill="#ecfeff" />
+                </g>
+              `;
+            }
+          }
+        });
+
+        labels.innerHTML += `
+          <text x="${targetX}" y="${targetY - 55}" fill="#94a3b8" font-size="11" font-weight="bold" text-anchor="middle">
+            互いに接触しない孤立状態 (${stage === 2 ? (fate === 'neural' ? '★神経細胞へ分化！' : '表皮細胞へ分化') : '培養中'})
+          </text>
+        `;
+      }
+
+      // 3. BMP分子の浮遊描画
+      if (state.showMolecules) {
+        // 自前分泌BMP
+        if (state.cellDensity === 'cluster') {
+          // 密集部に留まるBMP粒子
+          for (let i = 0; i < 8; i++) {
+            const bx = targetX - 30 + (i * 8) + (Math.sin(i * 2) * 12);
+            const by = targetY - 25 + (i * 7);
+            molecules.innerHTML += `
+              <circle cx="${bx}" cy="${by}" r="3.5" fill="#ec4899" stroke="#f472b6" stroke-width="1" class="floating-anim" />
+            `;
+          }
+        } else {
+          // ばらばらの場合、BMPは四方に拡散して希釈
+          for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const dist = 90 + (i * 8);
+            const bx = targetX + Math.cos(angle) * dist;
+            const by = targetY + Math.sin(angle) * dist;
+            molecules.innerHTML += `
+              <circle cx="${bx}" cy="${by}" r="2.5" fill="#ec4899" opacity="0.4" stroke="#f472b6" stroke-width="0.8" />
+            `;
+          }
+        }
+
+        // 外因性BMP添加がある場合、画面全体にBMP粒子が充満
+        if (state.addedBMP) {
+          for (let i = 0; i < 24; i++) {
+            const rx = 120 + ((i * 37) % 260);
+            const ry = 60 + ((i * 43) % 200);
+            molecules.innerHTML += `
+              <circle cx="${rx}" cy="${ry}" r="4" fill="#ec4899" stroke="#fff" stroke-width="1" class="floating-anim" />
+            `;
+          }
+          labels.innerHTML += `
+            <text x="380" y="45" fill="#f472b6" font-size="11" font-weight="bold" text-anchor="end">
+              ⚡ 培地にBMPが高濃度充満中
+            </text>
+          `;
+        }
+      }
+
+      // レポートテキスト更新
+      updateOutcomeReport(effectiveBMP, fate);
+    }
+
+    function updateOutcomeReport(effectiveBMP, fate) {
+      const badge = document.getElementById('outcome-badge');
+      const text = document.getElementById('outcome-text');
+
+      if (state.cultureStage === 0) {
+        badge.textContent = '培養待機中';
+        badge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400';
+        text.innerHTML = `
+          <div class="text-slate-400">
+            設定された条件：【${state.cellDensity === 'cluster' ? '組織塊' : 'ばらばら細胞'}】＋【${state.hasOrganizer ? '形成体あり' : '形成体なし'}】＋【${state.addedBMP ? 'BMP添加' : 'BMP無添加'}】。<br>
+            「培養する」ボタンを押すと、分化の結果と受容体シグナルの動態が確定します。
+          </div>
+        `;
+        return;
+      }
+
+      if (state.cultureStage === 1) {
+        badge.textContent = '分化シグナル伝達中...';
+        badge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse';
+        text.innerHTML = `
+          <div class="text-amber-300 font-semibold">
+            細胞表面のBMP受容体にリガンドが結合しているかを判定し、遺伝子発現カスケード（Smad経路）が進行しています...
+          </div>
+        `;
+        return;
+      }
+
+      // 培養完了時
+      if (fate === 'epidermis') {
+        badge.textContent = '分化結果：表皮 (外胚葉)';
+        badge.className = 'text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md';
+        
+        let reason = '';
+        if (state.currentExp === 'a' || (state.cellDensity === 'cluster' && !state.hasOrganizer && !state.addedBMP)) {
+          reason = '【実験 a の結果】組織塊のため自前分泌のBMPが周囲に留まり、BMP受容体に結合して「神経化阻害（表皮化）」の指令が持続しました。';
+        } else if (state.currentExp === 'd' || (state.cellDensity === 'single' && state.addedBMP)) {
+          reason = '【実験 d の結果】ばらばらにしても、外からBMPを加えたため再び受容体にBMPが結合し、神経への分化が妨げられて表皮になりました！';
+        } else {
+          reason = 'BMPの有効濃度が高いため、受容体が刺激されて表皮組織へと分化しました。';
+        }
+
+        text.innerHTML = `
+          <div class="space-y-1">
+            <div class="text-amber-300 font-bold flex items-center gap-1.5">
+              <span>● 判定：外胚葉は【 表皮 】に分化しました</span>
+            </div>
+            <p class="text-slate-300">${reason}</p>
+          </div>
+        `;
+      } else {
+        badge.textContent = '分化結果：神経 (神経板/脳)';
+        badge.className = 'text-xs font-black px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-md';
+        
+        let reason = '';
+        if (state.currentExp === 'b' || (state.cellDensity === 'cluster' && state.hasOrganizer)) {
+          reason = '【実験 b の結果】形成体から分泌されたノギンがBMPと結合して中和したため、受容体にBMPが届かず、ブレーキが外れて神経に分化しました（シュペーマンの神経誘導）。';
+        } else if (state.currentExp === 'c' || (state.cellDensity === 'single' && !state.addedBMP)) {
+          reason = '【実験 c の驚異的結果】細胞をばらばらにしたことで、自前BMPが培養液中に拡散・希釈され、受容体に届かなくなりました。その結果、本来の性質である「神経」への分化が自然に現れました！';
+        } else {
+          reason = '受容体にBMPが結合しなかったため、ブレーキが解除されて本来のデフォルトである神経へ分化しました。';
+        }
+
+        text.innerHTML = `
+          <div class="space-y-1">
+            <div class="text-cyan-300 font-bold flex items-center gap-1.5">
+              <span>● 判定：外胚葉は【 神経 】に分化しました！</span>
+            </div>
+            <p class="text-slate-300">${reason}</p>
+          </div>
+        `;
+      }
+    }
+
+    // 入試問題 (47番) の正誤判定
+    function submitQuizAnswer(ans) {
+      const exp = document.getElementById('quiz-explanation');
+      exp.classList.remove('hidden');
+
+      for (let i = 1; i <= 4; i++) {
+        const b = document.getElementById(`quiz-opt-${i}`);
+        b.className = 'touch-target w-full p-4 rounded-xl bg-slate-950 border border-slate-800 text-left text-xs md:text-sm text-slate-400 transition flex items-start gap-3';
+      }
+
+      const selected = document.getElementById(`quiz-opt-${ans}`);
+
+      if (ans === 3) {
+        selected.className = 'touch-target w-full p-4 rounded-xl bg-cyan-950/80 border-2 border-cyan-400 text-left text-xs md:text-sm text-cyan-100 font-bold transition flex items-start gap-3 shadow-lg shadow-cyan-950/40';
+        exp.innerHTML = `
+          <div class="text-cyan-300 font-bold text-sm md:text-base flex items-center gap-2">
+            <span>🎉 大正解！【 ③ 予定表皮域は本来神経に分化する性質があるが、BMPにより神経への分化を阻害され表皮になる。 】</span>
+          </div>
+          <div class="space-y-2 pt-2 text-slate-300 text-xs md:text-sm leading-relaxed">
+            <p><strong>【論理のステップ解説】：</strong></p>
+            <ul class="list-disc list-inside space-y-1.5 pl-1">
+              <li><strong>実験 c（ばらばらで培養 → 神経）：</strong>細胞を単離して周囲からのシグナル（BMP）を無くすと神経になることから、外胚葉細胞は<strong>「本来は神経になる性質（デフォルト）」</strong>を持っていることが証明されます。</li>
+              <li><strong>実験 d（ばらばら ＋ BMP → 表皮）：</strong>孤立細胞にBMPを加えると表皮に戻ることから、<strong>BMPには「神経分化を妨害して表皮化させるはたらき（ブレーキ）」</strong>があることがわかります。</li>
+              <li><strong>実験 b ＆ 記述(ウ)（形成体と接触 → 神経）：</strong>形成体タンパク質（ノギン・コーディン）はBMPと結合してそのはたらきを阻害するため、ブレーキが解除されて神経になります。</li>
+            </ul>
+            <p class="text-amber-300 pt-1 font-semibold">
+              以上より、正しい結論は ③ です。「形成体が命令して神経にさせる」のではなく、「BMPが邪魔していたのを解除した」という二重否定モデルの完全な理解が問われる名問です！
+            </p>
+          </div>
+        `;
+      } else {
+        selected.className = 'touch-target w-full p-4 rounded-xl bg-rose-950/80 border-2 border-rose-500 text-left text-xs md:text-sm text-rose-200 font-bold transition flex items-start gap-3';
+        
+        let wrongReason = '';
+        if (ans === 1) {
+          wrongReason = '① は誤りです。表皮になる部分も神経になる部分も外胚葉であり、形成体からの誘導（ノギンによるBMP阻害）を受けると【神経】に分化します。表皮になるのではありません。';
+        } else if (ans === 2) {
+          wrongReason = '② は誤りです。形成体から分泌されるタンパク質は、神経への分化を阻害するのではなく、BMPの表皮化シグナルを阻害して【神経への分化を促進（脱抑制）】させます。';
+        } else if (ans === 4) {
+          wrongReason = '④ は誤りです。形成体タンパク質はBMPを「活性化」させるのではなく、BMPと結合して【受容体への結合を阻害（無力化）】させます。';
+        }
+
+        exp.innerHTML = `
+          <div class="text-rose-400 font-bold text-sm md:text-base flex items-center gap-2">
+            <span>❌ 不正解... もう一度論理を整理してみよう！</span>
+          </div>
+          <div class="space-y-1.5 pt-1 text-slate-300">
+            <p class="text-rose-300 font-medium">${wrongReason}</p>
+            <p>実験cで「ばらばらにしたら神経になった」という事実の意味（何もしないと神経になる）を考えてみましょう。正解は <strong>③</strong> です。</p>
+          </div>
+        `;
+      }
+    }
+
+    // 初期起動
+    window.onload = function() {
+      selectExperiment('a');
+    };
+  </script>
+</body>
+</html>
