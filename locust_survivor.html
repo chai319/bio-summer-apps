@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <title>バッタサバイバー｜アフリカ防除最前線と相変異のカタストロフィ</title>
+  <style>
+    :root {
+      --bg-desert: #f59e0b;
+      --farm-green: #10b981;
+      --locust-green: #22c55e;
+      --locust-greg: #0f172a;
+      --locust-orange: #ea580c;
+      --accent: #eab308;
+      --text: #0f172a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #0f172a; font-family: system-ui, -apple-system, sans-serif;
+      touch-action: none; color: #fff;
+    }
+    #gameContainer {
+      position: relative; width: 100%; height: 100%; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    canvas {
+      position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+      z-index: 1; display: block;
+    }
+
+    /* Top HUD */
+    .hud {
+      position: absolute; top: 12px; left: 12px; right: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 10; pointer-events: none;
+    }
+    .hud-chip {
+      background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+      border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 99px;
+      padding: 6px 14px; font-size: 0.9rem; font-weight: 900;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 6px;
+    }
+    .hud-timer { color: #38bdf8; font-family: ui-monospace, monospace; font-size: 1.15rem; min-width: 60px; }
+    .hud-kills { color: #fde047; }
+    .hud-phase { color: #4ade80; border-color: #22c55e; }
+    .hud-phase.gregarious {
+      background: rgba(220, 38, 38, 0.9); border-color: #facc15;
+      color: #fff; animation: pulseWarning 0.6s infinite alternate;
+    }
+    @keyframes pulseWarning {
+      from { transform: scale(1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.6); }
+      to { transform: scale(1.08); box-shadow: 0 0 25px rgba(250, 204, 21, 0.9); }
+    }
+
+    /* Farm HP Bar */
+    .farm-health-wrap {
+      position: absolute; top: 62px; left: 50%; transform: translateX(-50%);
+      width: 90%; max-width: 380px; z-index: 10; pointer-events: none;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .farm-health-label {
+      font-size: 0.78rem; font-weight: 800; color: #cbd5e1;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+    .farm-health-bar {
+      width: 100%; height: 12px; background: rgba(0,0,0,0.7);
+      border: 2px solid rgba(255,255,255,0.4); border-radius: 99px; overflow: hidden;
+    }
+    .farm-health-inner {
+      width: 100%; height: 100%; background: linear-gradient(90deg, #10b981, #4ade80);
+      transition: width 0.15s ease-out, background 0.3s;
+    }
+
+    /* Warning Overlay */
+    #warningBanner {
+      position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) scale(0.8);
+      background: linear-gradient(135deg, rgba(220,38,38,0.95), rgba(153,27,27,0.95));
+      border: 3px solid #fde047; border-radius: 20px; padding: 18px 24px;
+      color: #fff; text-align: center; z-index: 50; pointer-events: none;
+      box-shadow: 0 0 40px rgba(239,68,68,0.8); opacity: 0; transition: all 0.3s ease;
+    }
+    #warningBanner.active {
+      opacity: 1; transform: translate(-50%, -50%) scale(1);
+    }
+    #warningBanner h2 { font-size: 1.45rem; color: #fde047; margin-bottom: 6px; letter-spacing: 0.05em; }
+    #warningBanner p { font-size: 0.9rem; line-height: 1.4; color: #fef08a; font-weight: 700; }
+
+    /* Touch Controls (Virtual Joystick) */
+    .touch-stick-zone {
+      position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+      z-index: 5; pointer-events: auto; touch-action: none;
+    }
+    .joystick-base {
+      position: absolute; width: 100px; height: 100px; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12); border: 2px solid rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%); pointer-events: none; display: none; z-index: 6;
+    }
+    .joystick-knob {
+      position: absolute; width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(56, 189, 248, 0.85); box-shadow: 0 0 14px rgba(56, 189, 248, 0.8);
+      transform: translate(-50%, -50%); pointer-events: none; display: none; z-index: 7;
+    }
+
+    /* Modals (Start, LevelUp, GameOver, Learning) */
+    .modal-overlay {
+      position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(10px);
+      z-index: 100; display: flex; justify-content: center; align-items: center;
+      padding: 16px;
+    }
+    .modal-card {
+      width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto;
+      background: #0f172a; border: 3px solid #38bdf8; border-radius: 24px;
+      padding: 22px 20px; color: #fff; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      text-align: center;
+    }
+    .modal-card h1 { font-size: 1.5rem; color: #fde047; margin-bottom: 8px; }
+    .modal-card h2 { font-size: 1.25rem; color: #38bdf8; margin-bottom: 12px; }
+    .modal-card p { font-size: 0.9rem; line-height: 1.55; color: #cbd5e1; margin-bottom: 14px; text-align: left; }
+    .btn-primary {
+      display: inline-block; width: 100%; padding: 14px; border-radius: 14px;
+      background: linear-gradient(135deg, #f59e0b, #d97706); border: none;
+      color: #fff; font-size: 1.1rem; font-weight: 900; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4); transition: transform 0.1s;
+    }
+    .btn-primary:active { transform: scale(0.96); }
+
+    /* Upgrade Cards */
+    .upgrade-grid { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+    .upgrade-card {
+      background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(56, 189, 248, 0.4);
+      border-radius: 14px; padding: 12px 14px; text-align: left; cursor: pointer;
+      display: flex; align-items: center; gap: 12px; transition: all 0.15s;
+    }
+    .upgrade-card:hover, .upgrade-card:active {
+      background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; transform: translateY(-2px);
+    }
+    .upgrade-icon { font-size: 2rem; }
+    .upgrade-info h4 { font-size: 1rem; color: #fde047; margin-bottom: 2px; }
+    .upgrade-info p { font-size: 0.8rem; color: #94a3b8; margin: 0; }
+
+    /* Learning Tabs */
+    .tabs-nav { display: flex; gap: 6px; margin: 12px 0; border-bottom: 2px solid rgba(255,255,255,0.1); }
+    .tab-btn {
+      flex: 1; padding: 8px 4px; background: none; border: none; color: #94a3b8;
+      font-size: 0.85rem; font-weight: 800; cursor: pointer; border-bottom: 3px solid transparent;
+    }
+    .tab-btn.active { color: #fde047; border-bottom-color: #fde047; }
+    .tab-content { display: none; text-align: left; font-size: 0.86rem; line-height: 1.55; color: #e2e8f0; }
+    .tab-content.active { display: block; }
+    .species-badge {
+      display: inline-block; background: rgba(56,189,248,0.2); border: 1px solid #38bdf8;
+      color: #7dd3fc; border-radius: 6px; padding: 2px 6px; font-size: 0.78rem; font-weight: 800; margin-bottom: 6px;
+    }
+
+    /* Fast Action Hint */
+    .pc-hint { font-size: 0.78rem; color: #64748b; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Top HUD -->
+    <div class="hud">
+      <div class="hud-chip">
+        <span>⏱️</span>
+        <span class="hud-timer" id="timerDisplay">0.0s</span>
+      </div>
+      <div class="hud-chip" id="phaseChip">
+        <span id="phaseIcon">🦗</span>
+        <span id="phaseText">孤独相（低密度）</span>
+      </div>
+      <div class="hud-chip">
+        <span>💥</span>
+        <span class="hud-kills" id="killCount">0 匹駆除</span>
+      </div>
+    </div>
+
+    <!-- Farm / Oasis HP -->
+    <div class="farm-health-wrap">
+      <div class="farm-health-label">🌿 アフリカ農場・緑地オアシス防衛ライン</div>
+      <div class="farm-health-bar">
+        <div class="farm-health-inner" id="farmHpBar" style="width: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- Phase Change Warning -->
+    <div id="warningBanner">
+      <h2>🚨 警告：臨界密度を突破！</h2>
+      <p>仲間との後脚の接触刺激により<br><strong style="color:#fde047;font-size:1.15rem">【群生相】へ相変異が発生！</strong><br>黒色化・長翅化し、暴走飛翔が始まります！</p>
+    </div>
+
+    <!-- Virtual Joystick Zone -->
+    <div class="touch-stick-zone" id="touchZone">
+      <div class="joystick-base" id="joyBase"></div>
+      <div class="joystick-knob" id="joyKnob"></div>
+    </div>
+
+    <!-- Start Modal -->
+    <div class="modal-overlay" id="startModal">
+      <div class="modal-card">
+        <h1>🦗 バッタサバイバー</h1>
+        <h2>〜アフリカ防除最前線！相変異のカタストロフィ〜</h2>
+        <p>
+          あなたはアフリカのサバクトビバッタ防除隊員です。<br>
+          最初は砂漠の草むらにおとなしい<strong>緑色のバッタ（孤独相）</strong>がポツポツと出現します。<br>
+          スプレーやドローンで駆除してください。<br><br>
+          <strong style="color:#f87171">⚠️ 注意：駆除が追いつかずバッタが密集すると、仲間との接触刺激で黒い【群生相】へ変異します。一度相変異が起きると、数千匹の津波となって農場を食い尽くします！</strong>
+        </p>
+        <button type="button" class="btn-primary" id="startBtn">防除作戦 開始！（60秒防衛）</button>
+        <div class="pc-hint">📱 iPad：画面をスライドして移動（自動攻撃）<br>💻 PC：マウスドラッグ または WASD/矢印キー</div>
+      </div>
+    </div>
+
+    <!-- Upgrade / Level Up Modal -->
+    <div class="modal-overlay" id="upgradeModal" style="display: none;">
+      <div class="modal-card">
+        <h2>⚡ 防除装備のパワーアップ！</h2>
+        <p style="text-align:center">駆除データをもとに装備を1つ強化してください：</p>
+        <div class="upgrade-grid" id="upgradeList"></div>
+      </div>
+    </div>
+
+    <!-- Game Over / Catastrophe Result Modal -->
+    <div class="modal-overlay" id="resultModal" style="display: none;">
+      <div class="modal-card">
+        <h1 id="resultTitle">💥 カタストロフィ発生！</h1>
+        <h2 id="resultSubtitle" style="color:#f87171">農場はバッタの黒い大群に食い尽くされました</h2>
+        
+        <div style="background:rgba(255,255,255,0.06);padding:12px;border-radius:12px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-around;font-weight:800">
+            <div>生存タイム: <span style="color:#38bdf8" id="resTime">0s</span></div>
+            <div>駆除数: <span style="color:#fde047" id="resKills">0匹</span></div>
+            <div>最大密度: <span style="color:#f87171" id="resDensity">0匹/画面</span></div>
+          </div>
+        </div>
+
+        <!-- Learning Exploration Tabs -->
+        <div class="tabs-nav">
+          <button type="button" class="tab-btn active" data-tab="tab1">🦗 なぜ相変異が？</button>
+          <button type="button" class="tab-btn" data-tab="tab2">🌍 現実の防除</button>
+          <button type="button" class="tab-btn" data-tab="tab3">🐛 他の生物の相変異</button>
+        </div>
+
+        <div class="tab-content active" id="tab1">
+          <p>
+            <strong>【孤独相から群生相への変身メカニズム】</strong><br>
+            サバクトビバッタはDNA（遺伝子）が同じでも、<strong>密度の違い</strong>によって姿・行動・性格が激変します。<br>
+            密集して仲間同士の後脚の感覚毛が頻繁に擦れ合うと、脳から<strong>セロトニン</strong>が分泌され、数時間で集団行動を好むようになります。さらに体色が緑から黒・黄色に変化し、飛翔用の長い翅が発達します。
+          </p>
+        </div>
+
+        <div class="tab-content" id="tab2">
+          <p>
+            <strong>【現実でも飛び立ったらほぼ防除不可能！？】</strong><br>
+            実際の蝗害（サバクトビバッタの大群）は<strong>数百億匹、東京23区以上の広さ</strong>に達し、1日に100km以上を飛翔します。<br>
+            飛行機で殺虫剤をいくら撒いても全体の数%しか倒せません。<br>
+            そのため国連FAOや研究者（前野ウルド浩太郎氏ら）は、<strong>「相変異が起きる前の孤独相の時期に、砂漠の発生源を突き止めて予防的に叩く」</strong>早期警戒しか解決策がないと結論づけています。
+          </p>
+        </div>
+
+        <div class="tab-content" id="tab3">
+          <div>
+            <span class="species-badge">ヨトウムシ（アワヨトウ）</span>
+            <p style="margin-bottom:8px">
+              畑を荒らすガの幼虫。密度が低いうちは<strong>淡緑色</strong>でおとなしく隠れて食べますが、過密になると<strong>真っ黒（メラニン沈着）</strong>になり、獰猛に集団で畑を行進して暴食します（入試頻出！）。
+            </p>
+            <span class="species-badge">アブラムシ</span>
+            <p style="margin-bottom:8px">
+              普段は羽のない「無翅型」でどんどん増えますが、葉の上が密集して仲間と押し合いになると、突然<strong>羽のある「有翅型」</strong>が生まれ、別の植物へ飛翔脱出します。
+            </p>
+            <span class="species-badge">トノサマバッタ</span>
+            <p>
+              日本でおなじみのトノサマバッタも、狭いカゴで過密飼育すると黒褐色で翅の長い群生相が出現します。
+            </p>
+          </div>
+        </div>
+
+        <button type="button" class="btn-primary" id="retryBtn" style="margin-top:14px">もう一度挑戦する</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================
+       Audio Synthesizer (Web Audio API)
+       ======================================================== */
+    let audioCtx = null;
+    function getAudio(){
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    function playSndShoot(){
+      try{
+        const ctx = getAudio(), osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.08);
+        g.gain.setValueAtTime(0.2, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.08);
+      }catch(e){}
+    }
+    function playSndHit(){
+      try{
+        const ctx = getAudio(), osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.06);
+        g.gain.setValueAtTime(0.25, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.06);
+      }catch(e){}
+    }
+    function playSndAlarm(){
+      try{
+        const ctx = getAudio(), osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.setValueAtTime(440, ctx.currentTime + 0.15);
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.3);
+        g.gain.setValueAtTime(0.35, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.5);
+      }catch(e){}
+    }
+
+    /* ========================================================
+       Game State & Constants
+       ======================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let W = window.innerWidth, H = window.innerHeight;
+    function resize(){
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W; canvas.height = H;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const STATE = {
+      running: false,
+      startTime: 0,
+      elapsed: 0,
+      kills: 0,
+      farmHp: 100,
+      maxFarmHp: 100,
+      phase: 'solitary', // solitary or gregarious
+      phaseTriggered: false,
+      locusts: [],
+      projectiles: [],
+      particles: [],
+      clouds: [],
+      upgrades: {
+        sprayLevel: 1,      // 1: single, 2: 3-way, 3: 5-way
+        hasDrone: false,    // auto orbiting drone
+        droneLevel: 0,
+        hasBioFungus: false,// poison clouds
+        speedBoost: 1
+      },
+      level: 0,
+      nextLevelKills: 15,
+      lastFungusBomb: 0,
+      player: {
+        x: W / 2, y: H / 2,
+        vx: 0, vy: 0,
+        speed: 3.8,
+        radius: 18,
+        lastShoot: 0,
+        shootCooldown: 220
+      },
+      joystick: {
+        active: false,
+        startX: 0, startY: 0,
+        curX: 0, curY: 0,
+        dirX: 0, dirY: 0
+      },
+      keys: {}
+    };
+
+    /* Keyboard controls */
+    window.addEventListener('keydown', e => { STATE.keys[e.key.toLowerCase()] = true; });
+    window.addEventListener('keyup', e => { STATE.keys[e.key.toLowerCase()] = false; });
+
+    /* Touch Controls */
+    const touchZone = document.getElementById('touchZone');
+    const joyBase = document.getElementById('joyBase');
+    const joyKnob = document.getElementById('joyKnob');
+
+    touchZone.addEventListener('pointerdown', e => {
+      if(!STATE.running) return;
+      STATE.joystick.active = true;
+      STATE.joystick.startX = e.clientX;
+      STATE.joystick.startY = e.clientY;
+      STATE.joystick.curX = e.clientX;
+      STATE.joystick.curY = e.clientY;
+      joyBase.style.left = `${e.clientX}px`;
+      joyBase.style.top = `${e.clientY}px`;
+      joyKnob.style.left = `${e.clientX}px`;
+      joyKnob.style.top = `${e.clientY}px`;
+      joyBase.style.display = 'block';
+      joyKnob.style.display = 'block';
+    });
+
+    touchZone.addEventListener('pointermove', e => {
+      if(!STATE.joystick.active) return;
+      const dx = e.clientX - STATE.joystick.startX;
+      const dy = e.clientY - STATE.joystick.startY;
+      const dist = Math.hypot(dx, dy);
+      const maxR = 45;
+      const angle = Math.atan2(dy, dx);
+      const clampedDist = Math.min(dist, maxR);
+      STATE.joystick.dirX = Math.cos(angle) * (clampedDist / maxR);
+      STATE.joystick.dirY = Math.sin(angle) * (clampedDist / maxR);
+
+      joyKnob.style.left = `${STATE.joystick.startX + Math.cos(angle) * clampedDist}px`;
+      joyKnob.style.top = `${STATE.joystick.startY + Math.sin(angle) * clampedDist}px`;
+    });
+
+    const endJoy = () => {
+      STATE.joystick.active = false;
+      STATE.joystick.dirX = 0;
+      STATE.joystick.dirY = 0;
+      joyBase.style.display = 'none';
+      joyKnob.style.display = 'none';
+    };
+    touchZone.addEventListener('pointerup', endJoy);
+    touchZone.addEventListener('pointercancel', endJoy);
+
+    /* ========================================================
+       Spawning & Entity Logic
+       ======================================================== */
+    function spawnLocust(isGreg = false){
+      const edge = Math.floor(Math.random() * 4);
+      let x, y;
+      if(edge === 0){ x = Math.random() * W; y = -30; }
+      else if(edge === 1){ x = W + 30; y = Math.random() * H; }
+      else if(edge === 2){ x = Math.random() * W; y = H + 30; }
+      else { x = -30; y = Math.random() * H; }
+
+      const speed = isGreg ? (2.8 + Math.random() * 2.2) : (1.1 + Math.random() * 0.9);
+      STATE.locusts.push({
+        x, y,
+        vx: 0, vy: 0,
+        speed: speed,
+        isGreg: isGreg,
+        hp: isGreg ? 2 : 1,
+        angle: 0,
+        wingPhase: Math.random() * Math.PI * 2,
+        wobble: Math.random() * 10
+      });
+    }
+
+    function triggerPhaseChange(){
+      if(STATE.phaseTriggered) return;
+      STATE.phaseTriggered = true;
+      STATE.phase = 'gregarious';
+
+      playSndAlarm();
+      const chip = document.getElementById('phaseChip');
+      chip.className = 'hud-chip gregarious';
+      document.getElementById('phaseIcon').textContent = '⚠️';
+      document.getElementById('phaseText').textContent = '群生相（過密暴走中！）';
+
+      const banner = document.getElementById('warningBanner');
+      banner.classList.add('active');
+      setTimeout(() => banner.classList.remove('active'), 3600);
+
+      // Convert all existing solitary locusts to gregarious!
+      STATE.locusts.forEach(l => {
+        l.isGreg = true;
+        l.speed *= 2.2;
+        l.hp = Math.max(l.hp, 2);
+      });
+    }
+
+    function fireProjectiles(){
+      const now = performance.now();
+      if(now - STATE.player.lastShoot < STATE.player.shootCooldown) return;
+      STATE.player.lastShoot = now;
+
+      // Find nearest locust
+      let target = null, minDist = 99999;
+      STATE.locusts.forEach(l => {
+        const d = Math.hypot(l.x - STATE.player.x, l.y - STATE.player.y);
+        if(d < minDist){ minDist = d; target = l; }
+      });
+
+      const baseAngle = target 
+        ? Math.atan2(target.y - STATE.player.y, target.x - STATE.player.x)
+        : -Math.PI / 2;
+
+      playSndShoot();
+
+      const lvl = STATE.upgrades.sprayLevel;
+      const count = lvl === 1 ? 1 : (lvl === 2 ? 3 : 5);
+      const spread = lvl === 1 ? 0 : (lvl === 2 ? 0.35 : 0.6);
+
+      for(let i = 0; i < count; i++){
+        const angle = count === 1 ? baseAngle : (baseAngle - spread / 2 + (spread / (count - 1)) * i);
+        STATE.projectiles.push({
+          x: STATE.player.x,
+          y: STATE.player.y,
+          vx: Math.cos(angle) * 11,
+          vy: Math.sin(angle) * 11,
+          life: 45,
+          color: '#38bdf8'
+        });
+      }
+    }
+
+    /* Drone Orbit Weapon */
+    let droneAngle = 0;
+    function updateDrone(){
+      if(!STATE.upgrades.hasDrone) return;
+      droneAngle += 0.06;
+      const radius = 80;
+      const dx = STATE.player.x + Math.cos(droneAngle) * radius;
+      const dy = STATE.player.y + Math.sin(droneAngle) * radius;
+
+      // Drone auto pulses spray
+      if(Math.random() < 0.22){
+        STATE.projectiles.push({
+          x: dx, y: dy,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.5) * 8,
+          life: 25,
+          color: '#fde047'
+        });
+      }
+    }
+
+    /* ========================================================
+       Main Game Loop
+       ======================================================== */
+    let lastTime = performance.now();
+
+    function gameLoop(now){
+      if(!STATE.running) return;
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      STATE.elapsed = (now - STATE.startTime) / 1000;
+      document.getElementById('timerDisplay').textContent = `${STATE.elapsed.toFixed(1)}s`;
+
+      // 1. Player Movement (Joystick or Keys)
+      let mx = STATE.joystick.dirX, my = STATE.joystick.dirY;
+      if(STATE.keys['a'] || STATE.keys['arrowleft']) mx -= 1;
+      if(STATE.keys['d'] || STATE.keys['arrowright']) mx += 1;
+      if(STATE.keys['w'] || STATE.keys['arrowup']) my -= 1;
+      if(STATE.keys['s'] || STATE.keys['arrowdown']) my += 1;
+
+      const len = Math.hypot(mx, my);
+      if(len > 0){
+        mx /= len; my /= len;
+        STATE.player.x += mx * STATE.player.speed * STATE.upgrades.speedBoost;
+        STATE.player.y += my * STATE.player.speed * STATE.upgrades.speedBoost;
+      }
+      // Clamping to screen
+      STATE.player.x = Math.max(25, Math.min(W - 25, STATE.player.x));
+      STATE.player.y = Math.max(60, Math.min(H - 30, STATE.player.y));
+
+      // 2. Weapons & Firing
+      fireProjectiles();
+      updateDrone();
+
+      // 3. Spawning Locusts
+      // Phase 1 (0-18s): Gentle solitary locusts
+      // Phase 2 (18s+): Density explodes & triggers phase transformation!
+      const spawnInterval = STATE.phase === 'solitary' 
+        ? Math.max(0.18, 0.7 - STATE.elapsed * 0.02)
+        : Math.max(0.03, 0.12 - (STATE.elapsed - 18) * 0.003); // Tsunami of gregarious locusts!
+
+      if(Math.random() < dt / spawnInterval){
+        spawnLocust(STATE.phase === 'gregarious');
+      }
+
+      // Check for density trigger (18s mark OR screen crowding)
+      if(!STATE.phaseTriggered && (STATE.elapsed >= 18 || STATE.locusts.length >= 35)){
+        triggerPhaseChange();
+      }
+
+      // Level up check (controlled progression)
+      if(STATE.kills >= STATE.nextLevelKills && STATE.level < 3){
+        STATE.level++;
+        STATE.nextLevelKills += 25 + STATE.level * 20;
+        showUpgradeModal();
+        return;
+      }
+
+      // Bio-Fungus Bomb logic (Green Muscle)
+      if(STATE.upgrades.hasBioFungus && now - STATE.lastFungusBomb > 2400){
+        STATE.lastFungusBomb = now;
+        if(STATE.locusts.length > 0){
+          const target = STATE.locusts[Math.floor(Math.random() * STATE.locusts.length)];
+          STATE.clouds.push({ x: target.x, y: target.y, r: 60, life: 120, maxLife: 120 });
+        }
+      }
+
+      // Update Bio-Fungus Clouds
+      for(let i = STATE.clouds.length - 1; i >= 0; i--){
+        const c = STATE.clouds[i];
+        c.life--;
+        // Area of effect damage
+        STATE.locusts.forEach(l => {
+          if(Math.hypot(l.x - c.x, l.y - c.y) < c.r){
+            l.hp -= 0.05;
+          }
+        });
+        if(c.life <= 0) STATE.clouds.splice(i, 1);
+      }
+
+      // 4. Update Projectiles
+      for(let i = STATE.projectiles.length - 1; i >= 0; i--){
+        const p = STATE.projectiles[i];
+        p.x += p.vx; p.y += p.vy;
+        p.life--;
+        if(p.life <= 0 || p.x < 0 || p.x > W || p.y < 0 || p.y > H){
+          STATE.projectiles.splice(i, 1);
+        }
+      }
+
+      // 5. Update Locusts & Collisions
+      const farmCenter = { x: W / 2, y: H / 2 };
+      for(let i = STATE.locusts.length - 1; i >= 0; i--){
+        const l = STATE.locusts[i];
+        l.wingPhase += 0.35;
+
+        // Direction towards farm / player
+        const target = STATE.phase === 'gregarious' ? farmCenter : STATE.player;
+        const angle = Math.atan2(target.y - l.y, target.x - l.x) + Math.sin(STATE.elapsed * 5 + l.wobble) * 0.3;
+        l.x += Math.cos(angle) * l.speed;
+        l.y += Math.sin(angle) * l.speed;
+        l.angle = angle;
+
+        // Collision with projectiles
+        for(let j = STATE.projectiles.length - 1; j >= 0; j--){
+          const p = STATE.projectiles[j];
+          if(Math.hypot(p.x - l.x, p.y - l.y) < 24){
+            l.hp--;
+            STATE.projectiles.splice(j, 1);
+            playSndHit();
+            spawnDeathParticles(l.x, l.y, l.isGreg ? '#ea580c' : '#22c55e');
+
+            if(l.hp <= 0){
+              STATE.locusts.splice(i, 1);
+              STATE.kills++;
+              document.getElementById('killCount').textContent = `${STATE.kills} 匹駆除`;
+              break;
+            }
+          }
+        }
+
+        // Damage Farm when reaching center oasis
+        if(Math.hypot(l.x - farmCenter.x, l.y - farmCenter.y) < 70){
+          STATE.farmHp = Math.max(0, STATE.farmHp - (l.isGreg ? 0.35 : 0.08));
+          document.getElementById('farmHpBar').style.width = `${STATE.farmHp}%`;
+          if(STATE.farmHp <= 0){
+            endGame(false);
+            return;
+          }
+        }
+      }
+
+      // 6. Time limit survival (60 seconds)
+      if(STATE.elapsed >= 60){
+        endGame(true);
+        return;
+      }
+
+      // 7. Render Everything
+      renderCanvas();
+      requestAnimationFrame(gameLoop);
+    }
+
+    /* ========================================================
+       Canvas Rendering
+       ======================================================== */
+    function renderCanvas(){
+      // Background Desert & Central Oasis Farm
+      ctx.fillStyle = '#b45309'; // Desert sand
+      ctx.fillRect(0, 0, W, H);
+
+      // Desert sand waves
+      ctx.fillStyle = 'rgba(180, 83, 9, 0.4)';
+      for(let y = 0; y < H; y += 40){
+        ctx.fillRect(0, y, W, 2);
+      }
+
+      // Central Oasis Farm (Green Sanctuary)
+      const farmR = 90;
+      const grad = ctx.createRadialGradient(W/2, H/2, 20, W/2, H/2, farmR);
+      grad.addColorStop(0, '#10b981');
+      grad.addColorStop(0.7, '#047857');
+      grad.addColorStop(1, 'rgba(4, 120, 87, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(W/2, H/2, farmR, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Oasis Trees / Crops
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🌴', W/2 - 35, H/2 - 10);
+      ctx.fillText('🌾', W/2 + 30, H/2 + 20);
+      ctx.fillText('🌽', W/2 - 10, H/2 + 35);
+      ctx.fillText('🌴', W/2 + 20, H/2 - 25);
+
+      // Drone
+      if(STATE.upgrades.hasDrone){
+        const r = 80;
+        const dx = STATE.player.x + Math.cos(droneAngle) * r;
+        const dy = STATE.player.y + Math.sin(droneAngle) * r;
+        ctx.font = '22px sans-serif';
+        ctx.fillText('🚁', dx, dy);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(STATE.player.x, STATE.player.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Draw Player (Researcher in white lab coat with spray)
+      ctx.save();
+      ctx.translate(STATE.player.x, STATE.player.y);
+      // Researcher Body
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath();
+      ctx.arc(0, 0, STATE.player.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Hat & Goggles
+      ctx.font = '22px sans-serif';
+      ctx.fillText('👨‍🔬', 0, 8);
+      ctx.restore();
+
+      // Draw Projectiles (Spray Mist)
+      STATE.projectiles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+
+      // Draw Locusts (Solitary: Green & small / Gregarious: Black, Orange & Wings!)
+      STATE.locusts.forEach(l => {
+        ctx.save();
+        ctx.translate(l.x, l.y);
+        ctx.rotate(l.angle + Math.PI / 2);
+
+        if(!l.isGreg){
+          // Solitary Phase (緑色・おとなしい・脚長)
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 7, 14, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#15803d';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Green Head
+          ctx.fillStyle = '#4ade80';
+          ctx.beginPath();
+          ctx.arc(0, -12, 5, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          // Gregarious Phase (黒×オレンジ・巨大な羽・凶暴)
+          const wingSpread = Math.sin(l.wingPhase) * 16;
+          // Black Body with orange stripes
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 9, 18, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ea580c';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+
+          // Orange Warning Stripes
+          ctx.fillStyle = '#f97316';
+          ctx.fillRect(-6, -4, 12, 3);
+          ctx.fillRect(-6, 3, 12, 3);
+
+          // Head with red glowing eyes
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(0, -15, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-3, -16, 2, 2);
+          ctx.fillRect(1, -16, 2, 2);
+
+          // Flapping Long Wings
+          ctx.fillStyle = 'rgba(254, 240, 138, 0.75)';
+          ctx.strokeStyle = '#ca8a04';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.ellipse(-12, -2, 14, 5 + Math.abs(wingSpread * 0.3), -0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.ellipse(12, -2, 14, 5 + Math.abs(wingSpread * 0.3), 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+
+      // Draw Bio-Fungus Spore Clouds
+      STATE.clouds.forEach(c => {
+        ctx.fillStyle = 'rgba(74, 222, 128, 0.28)';
+        ctx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.font = '16px sans-serif';
+        ctx.fillText('🍄', c.x, c.y + 6);
+      });
+
+      // Draw Particles
+      for(let i = STATE.particles.length - 1; i >= 0; i--){
+        const pt = STATE.particles[i];
+        pt.x += pt.vx; pt.y += pt.vy;
+        pt.life--;
+        ctx.fillStyle = pt.color;
+        ctx.globalAlpha = pt.life / 20;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        if(pt.life <= 0) STATE.particles.splice(i, 1);
+      }
+    }
+
+    function spawnDeathParticles(x, y, color){
+      for(let i = 0; i < 6; i++){
+        STATE.particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          r: 2 + Math.random() * 3,
+          color,
+          life: 20
+        });
+      }
+    }
+
+    /* ========================================================
+       Modals & Upgrades
+       ======================================================== */
+    const UPGRADES_POOL = [
+      { id: 'spray', icon: '💨', title: '拡散農薬スプレー', desc: '噴射が3ウェイ／5ウェイに広がり、大群をまとめて薙ぎ払う！' },
+      { id: 'drone', icon: '🚁', title: '全自動防除ドローン', desc: '自機の周囲を自動旋回し、近づくバッタに連続散布！' },
+      { id: 'fungus', icon: '🍄', title: '生物農薬グリーンマッスル', desc: '糸状菌の胞子爆弾！着弾地点に病原カビの胞子雲を展開！' },
+      { id: 'speed', icon: '👟', title: '砂漠防除シューズ', desc: '移動速度が1.4倍にアップ！素早く農場救援へ急行！' }
+    ];
+
+    function showUpgradeModal(){
+      STATE.running = false;
+      const modal = document.getElementById('upgradeModal');
+      const list = document.getElementById('upgradeList');
+      list.innerHTML = '';
+
+      UPGRADES_POOL.forEach(up => {
+        const card = document.createElement('div');
+        card.className = 'upgrade-card';
+        card.innerHTML = `
+          <div class="upgrade-icon">${up.icon}</div>
+          <div class="upgrade-info">
+            <h4>${up.title}</h4>
+            <p>${up.desc}</p>
+          </div>
+        `;
+        const selectUpgrade = (e) => {
+          if(e.cancelable) e.preventDefault();
+          e.stopPropagation();
+          applyUpgrade(up.id);
+          modal.style.display = 'none';
+          STATE.running = true;
+          lastTime = performance.now();
+          requestAnimationFrame(gameLoop);
+        };
+        card.addEventListener('pointerdown', selectUpgrade);
+        card.addEventListener('click', selectUpgrade);
+        list.appendChild(card);
+      });
+      modal.style.display = 'flex';
+    }
+
+    function applyUpgrade(id){
+      if(id === 'spray') STATE.upgrades.sprayLevel++;
+      if(id === 'drone') STATE.upgrades.hasDrone = true;
+      if(id === 'fungus') STATE.upgrades.hasBioFungus = true;
+      if(id === 'speed') STATE.upgrades.speedBoost *= 1.4;
+    }
+
+    function startGame(){
+      document.getElementById('startModal').style.display = 'none';
+      document.getElementById('resultModal').style.display = 'none';
+      document.getElementById('upgradeModal').style.display = 'none';
+      STATE.running = true;
+      STATE.startTime = performance.now();
+      STATE.elapsed = 0;
+      STATE.kills = 0;
+      STATE.farmHp = 100;
+      STATE.phase = 'solitary';
+      STATE.phaseTriggered = false;
+      STATE.level = 0;
+      STATE.nextLevelKills = 15;
+      STATE.locusts = [];
+      STATE.projectiles = [];
+      STATE.clouds = [];
+      STATE.upgrades = { sprayLevel: 1, hasDrone: false, droneLevel: 0, hasBioFungus: false, speedBoost: 1 };
+      STATE.player.x = W / 2;
+      STATE.player.y = H / 2;
+
+      const chip = document.getElementById('phaseChip');
+      chip.className = 'hud-chip';
+      document.getElementById('phaseIcon').textContent = '🦗';
+      document.getElementById('phaseText').textContent = '孤独相（低密度）';
+      document.getElementById('farmHpBar').style.width = '100%';
+
+      lastTime = performance.now();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function endGame(isSurvive){
+      STATE.running = false;
+      const modal = document.getElementById('resultModal');
+      const title = document.getElementById('resultTitle');
+      const sub = document.getElementById('resultSubtitle');
+
+      if(isSurvive){
+        title.textContent = '🎉 60秒生存達成！';
+        title.style.color = '#4ade80';
+        sub.textContent = '激しい群生相の猛攻を耐え抜き、農場の一部を防衛しました！';
+      } else {
+        title.textContent = '💥 カタストロフィ発生！';
+        title.style.color = '#ef4444';
+        sub.textContent = '相変異した黒い大群が津波となり、農場は全滅しました…';
+      }
+
+      document.getElementById('resTime').textContent = `${STATE.elapsed.toFixed(1)}s`;
+      document.getElementById('resKills').textContent = `${STATE.kills}匹`;
+      document.getElementById('resDensity').textContent = `${STATE.locusts.length}匹`;
+
+      modal.style.display = 'flex';
+    }
+
+    /* Tab navigation in Result Modal */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('retryBtn').addEventListener('click', startGame);
+  </script>
+</body>
+</html>
