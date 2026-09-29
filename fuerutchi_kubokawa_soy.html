@@ -185,6 +185,19 @@
     .total-sum-bar .total-val{font-size:2rem;font-weight:900;color:#86efac}
     .fluctuation-note{margin-top:10px;padding:10px 14px;background:rgba(59,130,246,.15);border-radius:10px;border-left:4px solid #3b82f6;font-size:0.84rem;line-height:1.5;color:#cbd5e1}
 
+    /* Plant Individual Water Gauges & OK Badge */
+    .plant-water-hud{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;z-index:20;white-space:nowrap}
+    .plant-water-bar{width:36px;height:6px;background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.4);border-radius:4px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.5)}
+    .plant-water-fill{height:100%;background:linear-gradient(90deg,#38bdf8,#0ea5e9);border-radius:3px;transition:width 0.15s ease}
+    .plant-ok-badge{font-size:0.68rem;font-weight:900;color:#fff;background:#0284c7;border:1px solid #38bdf8;border-radius:4px;padding:1px 5px;box-shadow:0 0 10px #38bdf8;opacity:0;transform:scale(0.5);transition:all 0.25s cubic-bezier(0.175,0.885,0.32,1.275)}
+    .plant-ok-badge.visible{opacity:1;transform:scale(1)}
+
+    /* Leaf Overlap Badge (Photocompetition Penalty) */
+    .leaf-overlap-badge{position:absolute;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#ef4444 0%,#b91c1c 100%);color:#fff;font-weight:900;font-size:0.95rem;display:flex;align-items:center;justify-content:center;border:2px solid #fecaca;box-shadow:0 0 12px rgba(239,68,68,0.85),0 2px 6px rgba(0,0,0,0.5);cursor:pointer;z-index:50 !important;pointer-events:auto !important;touch-action:manipulation;animation:overlapPulse 1.2s ease-in-out infinite}
+    @keyframes overlapPulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.15);box-shadow:0 0 18px rgba(239,68,68,1),0 2px 8px rgba(0,0,0,0.6)}}
+    .leaf-overlap-badge.penalized{background:#475569;border-color:#94a3b8;color:#cbd5e1;box-shadow:none;animation:none;cursor:default;opacity:0.65;pointer-events:none !important}
+    .overlap-penalty-toast{position:absolute;left:50%;top:18px;transform:translateX(-50%);background:rgba(220,38,38,0.92);border:2px solid #fecaca;color:#fff;font-weight:900;font-size:0.92rem;padding:8px 18px;border-radius:99px;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:100;pointer-events:none;animation:toastFade 2.4s forwards}
+    @keyframes toastFade{0%{opacity:0;transform:translate(-50%,-10px)}15%{opacity:1;transform:translate(-50%,0)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-10px)}}
   </style>
 </head>
 <body>
@@ -341,10 +354,10 @@
 </main>
 <script>
 const CROPS=[
-  {density:10,total:520,mean:52,visible:2,scale:1.18,name:'ゆったり区'},
-  {density:50,total:575,mean:11.5,visible:4,scale:.91,name:'ほどほど区'},
-  {density:100,total:595,mean:5.95,visible:7,scale:.74,name:'こんでいる区'},
-  {density:500,total:610,mean:1.22,visible:12,scale:.52,name:'ぎっしり区'}
+  {density:10,baseTotal:520,baseMean:52,total:520,mean:52,visible:2,scale:1.18,name:'ゆったり区'},
+  {density:50,baseTotal:575,baseMean:11.5,total:575,mean:11.5,visible:4,scale:.91,name:'ほどほど区'},
+  {density:100,baseTotal:595,baseMean:5.95,total:595,mean:5.95,visible:7,scale:.74,name:'こんでいる区'},
+  {density:500,baseTotal:610,baseMean:1.22,total:610,mean:1.22,visible:12,scale:.52,name:'ぎっしり区'}
 ];
 const CHECKPOINTS=[
   {day:0,label:'種うえ',title:'好きな位置に種をまこう'},
@@ -364,11 +377,14 @@ const state = {
   seeds: CROPS.map(() => []),
   plantPositions: CROPS.map(() => []), // 生徒が蒔いた位置（その後の全成長ステージで完全反映）
   waterByPlot: [0, 0, 0, 0],
+  plantWater: CROPS.map(c => Array(c.visible).fill(0)), // 各個体ごとの水分ゲージ (0〜100%)
   waterHitCount: [0, 0, 0, 0],
   fertilizer: [0, 0, 0, 0],
   fertCoverSum: [0, 0, 0, 0],
   phrases: [],
   observed: new Set(),
+  observedOverlaps: new Set(), // 45日目：観察・減点された重なりペア
+  overlapPenalty: 0, // 葉の重なり（光競合）による減点ペナルティ
   bugs: new Set(),
   harvested: new Set(),
   plotTask: 0,
@@ -386,10 +402,10 @@ const state = {
   // 揺らぎ係数 (基準値に対する倍率 0.95〜1.05)
   fluctuationFactor: 1.0,
 
-  // タイピングゲーム状態
+  // タイピングゲーム状態（ひらがな選択式）
   typing: {
     qIndex: 0,
-    charIndex: 0,
+    matchedKanaLen: 0,
     missCount: 0,
     startTime: 0,
     elapsed: 0,
@@ -531,19 +547,49 @@ function renderTimeline(){
 }
 
 function renderFieldTargets(ci){
-  if(state.checkpoint === 4 && ci < 3 && !state.observed.has(ci)){
-    const s = [[24,38],[62,31],[72,47]];
-    return `<button type="button" class="leaf-clue" data-target="${ci}" style="left:${s[ci][0]}%;top:${s[ci][1]}%" aria-label="葉の重なりを観察">葉</button>`;
+  if(state.checkpoint === 4){
+    // 45日目：株同士の重なり（距離が近いペア）を検出
+    const positions = getFieldPlantPositions(ci);
+    let html = '';
+    for(let i = 0; i < positions.length; i++){
+      for(let j = i + 1; j < positions.length; j++){
+        const p1 = positions[i], p2 = positions[j];
+        const dist = Math.hypot(p1.x - p2.x, (p1.y - p2.y) * 0.55);
+        if(dist < 18){
+          const pairKey = `${ci}_${i}_${j}`;
+          const isPenalized = state.observedOverlaps.has(pairKey);
+          const midX = ((p1.x + p2.x) / 2).toFixed(1);
+          const midBottom = Math.round((p1.y + p2.y) / 2 + 28);
+          html += `<button type="button" class="leaf-overlap-badge ${isPenalized ? 'penalized' : ''}" data-plot="${ci}" data-pair="${pairKey}" style="left:${midX}%;bottom:${midBottom}px;top:auto" aria-label="葉の重なり（光不足）">${isPenalized ? '薄' : '重'}</button>`;
+        }
+      }
+    }
+    return html;
   }
   return '';
 }
 
 function fieldFoot(ci, crop){
   if(state.checkpoint === 0) return `まいた種 ${state.seeds[ci].length}/${crop.visible}粒`;
-  if(state.checkpoint === 1) return `水やり ${state.waterByPlot[ci]}%`;
+  if(state.checkpoint === 1){
+    const okCount = (state.plantWater[ci] || []).filter(w => w >= 100).length;
+    return `給水完了: ${okCount}/${crop.visible}株 (${state.waterByPlot[ci]}%)`;
+  }
   if(state.checkpoint === 2) return `追肥 ${state.fertilizer[ci]}/3回 (${state.fertCoverSum[ci]}株カバー)`;
   if(state.checkpoint === 3) return state.phrases.length ? `声かけ完了 (${state.phrases.length}/3)` : 'タイピング待機中';
-  if(state.checkpoint === 4) return state.observed.has(ci) ? '観察完了' : '葉の重なりを観察';
+  if(state.checkpoint === 4){
+    const positions = getFieldPlantPositions(ci);
+    let count = 0, penalized = 0;
+    for(let i=0; i<positions.length; i++){
+      for(let j=i+1; j<positions.length; j++){
+        if(Math.hypot(positions[i].x - positions[j].x, (positions[i].y - positions[j].y) * 0.55) < 18){
+          count++;
+          if(state.observedOverlaps.has(`${ci}_${i}_${j}`)) penalized++;
+        }
+      }
+    }
+    return count === 0 ? '葉の重なりなし（良好）' : `重なり: ${penalized}/${count}箇所確認`;
+  }
   if(state.checkpoint === 5) return state.bugs.size >= 4 ? '防除完了' : '害虫駆除中';
   if(state.checkpoint === 6) return state.harvested.size >= 4 ? '全収穫完了' : `WAVE ${state.harvest.wave}/3 収穫中`;
   return '';
@@ -573,8 +619,20 @@ function renderFields(){
             useSprite = 6;
           }
         }
+        let waterHud = '';
+        if(state.checkpoint === 1){
+          const pWater = (state.plantWater[ci] && state.plantWater[ci][i]) || 0;
+          waterHud = `
+            <div class="plant-water-hud" id="pHud_${ci}_${i}">
+              <div class="plant-water-bar">
+                <div class="plant-water-fill" id="pBar_${ci}_${i}" style="width:${pWater}%"></div>
+              </div>
+              <span class="plant-ok-badge ${pWater>=100?'visible':''}" id="pOk_${ci}_${i}">💧OK!</span>
+            </div>
+          `;
+        }
         const waterRings = `<div class="plant-water-ring" id="pRing_${ci}_${i}"></div>`;
-        return `<span class="plant" id="plant_${ci}_${i}" style="${plantStyle(useSprite, size, p.x, p.y, ((i%5)-2)*(ci+1))}">${waterRings}</span>`;
+        return `<span class="plant" id="plant_${ci}_${i}" style="${plantStyle(useSprite, size, p.x, p.y, ((i%5)-2)*(ci+1))}">${waterRings}${waterHud}</span>`;
       }).join('');
     }
 
@@ -606,7 +664,9 @@ function renderFields(){
   $$('.soil').forEach(el => {
     el.addEventListener('pointerdown', onSoilPointerDown);
   });
-  $$('.leaf-clue').forEach(el => el.addEventListener('click', observeLeaf));
+  $$('.leaf-overlap-badge').forEach(el => {
+    bindFastTap(el, () => handleLeafOverlapClick(el));
+  });
   renderGameOverlay();
 }
 
@@ -667,12 +727,37 @@ function calcSowScore(){
   soundBingo();
 }
 
-function observeLeaf(e){
-  e.stopPropagation();
-  state.observed.add(Number(e.currentTarget.dataset.target));
-  soundBingo();
-  renderFields();
+function handleLeafOverlapClick(el){
+  const pairKey = el.dataset.pair;
+  if(state.observedOverlaps.has(pairKey)) return;
+
+  state.observedOverlaps.add(pairKey);
+  el.classList.add('penalized');
+  el.textContent = '薄';
+
+  // 肥料分をマイナスにする程度の大幅減点（-80点）
+  const penalty = 80;
+  state.overlapPenalty += penalty;
+  state.fertScore = Math.max(0, state.fertScore - penalty);
+
+  soundBuzzer();
+  showOverlapToast(`⚠️ 葉が重なり日光不足！（光競合） 減点 -${penalty}点`);
+
+  const ci = Number(el.dataset.plot);
+  state.observed.add(ci);
+
+  updateField(ci);
   updateCareStatus();
+}
+
+function showOverlapToast(msg){
+  const existing = $('.overlap-penalty-toast');
+  if(existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.className = 'overlap-penalty-toast';
+  toast.textContent = msg;
+  $('#farmStage')?.appendChild(toast);
+  setTimeout(() => { if(toast && toast.parentNode) toast.remove(); }, 2400);
 }
 
 function updateField(ci){
@@ -742,33 +827,59 @@ function bindWateringCan(){
       const relCanX = e.clientX - soilR.left;
       const relCanY = e.clientY - soilR.top;
 
-      if(e.clientX >= soilR.left && e.clientX <= soilR.right && e.clientY >= soilR.top && e.clientY <= soilR.bottom){
+      if(e.clientX >= soilR.left - 25 && e.clientX <= soilR.right + 25 && e.clientY >= soilR.top - 25 && e.clientY <= soilR.bottom + 25){
         const positions = getFieldPlantPositions(ci);
         let hitPlant = false;
 
         positions.forEach((p, pi) => {
-          const plantPxX = (p.x / 100) * soilR.width;
-          const plantPxY = soilR.height - p.y;
-          const dist = Math.hypot(relCanX - plantPxX, relCanY - plantPxY);
+          const plantEl = $(`#plant_${ci}_${pi}`);
+          let dist = 999;
+          if(plantEl){
+            const pr = plantEl.getBoundingClientRect();
+            dist = Math.hypot(e.clientX - (pr.left + pr.width / 2), e.clientY - (pr.top + pr.height / 2));
+          } else {
+            const plantPxX = (p.x / 100) * soilR.width;
+            const plantPxY = soilR.height - p.y;
+            dist = Math.hypot(relCanX - plantPxX, relCanY - plantPxY);
+          }
 
-          if(dist <= 52){
+          if(dist <= 75){
             hitPlant = true;
             const ring = $(`#pRing_${ci}_${pi}`);
             if(ring){
               ring.classList.add('active');
-              setTimeout(() => ring.classList.remove('active'), 250);
+              setTimeout(() => { if(ring) ring.classList.remove('active'); }, 250);
+            }
+
+            // 個体別水分ゲージを増加 (0〜100%)
+            if(!state.plantWater[ci]) state.plantWater[ci] = Array(positions.length).fill(0);
+            const prevWater = state.plantWater[ci][pi] || 0;
+            if(prevWater < 100){
+              const newWater = Math.min(100, prevWater + 25);
+              state.plantWater[ci][pi] = newWater;
+              const bar = $(`#pBar_${ci}_${pi}`);
+              if(bar) bar.style.width = newWater + '%';
+
+              if(newWater >= 100 && prevWater < 100){
+                const okBadge = $(`#pOk_${ci}_${pi}`);
+                if(okBadge) okBadge.classList.add('visible');
+                playTone(880, 'sine', 0.08, 0.18);
+                state.waterScore += 30;
+              }
             }
           }
         });
 
         if(hitPlant){
-          state.waterScore += 12;
+          state.waterScore += 10;
           state.waterHitCount[ci]++;
-          playTone(650, 'sine', 0.05, 0.12);
+          playTone(650, 'sine', 0.04, 0.1);
         }
 
-        if(state.waterByPlot[ci] < 100){
-          state.waterByPlot[ci] = Math.min(100, state.waterByPlot[ci] + (hitPlant ? 10 : 4));
+        // 区画内の全個体の水分平均で進捗更新
+        const avgWater = Math.round((state.plantWater[ci] || []).reduce((a,b)=>a+b,0) / Math.max(1, positions.length));
+        if(state.waterByPlot[ci] !== avgWater){
+          state.waterByPlot[ci] = avgWater;
           updateField(ci);
           updateCareStatus();
         }
@@ -776,31 +887,37 @@ function bindWateringCan(){
     });
   };
 
-  can.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    dragging = true;
-    const r = can.getBoundingClientRect();
-    offsetX = e.clientX - r.left;
-    offsetY = e.clientY - r.top;
-    try { can.setPointerCapture?.(e.pointerId); } catch(_){};
-    can.classList.add('dragging');
-    waterAt(e);
-  });
-
-  can.addEventListener('pointermove', e => {
+  const onPointerMove = e => {
     if(!dragging) return;
-    e.preventDefault();
+    if(e.cancelable) e.preventDefault();
     const sr = stage.getBoundingClientRect();
     const x = Math.max(0, Math.min(sr.width - can.offsetWidth, e.clientX - sr.left - offsetX));
     const y = Math.max(0, Math.min(sr.height - can.offsetHeight, e.clientY - sr.top - offsetY));
     can.style.left = `${x}px`;
     can.style.top = `${y}px`;
     waterAt(e);
-  });
+  };
 
-  const stop = () => { dragging = false; can.classList.remove('dragging'); };
-  can.addEventListener('pointerup', stop);
-  can.addEventListener('pointercancel', stop);
+  const stop = () => {
+    dragging = false;
+    can.classList.remove('dragging');
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', stop);
+    window.removeEventListener('pointercancel', stop);
+  };
+
+  can.addEventListener('pointerdown', e => {
+    if(e.cancelable) e.preventDefault();
+    dragging = true;
+    const r = can.getBoundingClientRect();
+    offsetX = e.clientX - r.left;
+    offsetY = e.clientY - r.top;
+    can.classList.add('dragging');
+    waterAt(e);
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+  });
 }
 
 function spawnDrop(clientX, clientY){
@@ -881,31 +998,22 @@ function fertilizeSoilCircle(e){
 const TYPING_QUESTIONS = [
   {
     word: '成長曲線',
-    ruby: 'せいちょうきょくせん',
-    romaji: 'SEICHO U KYOKUSEN',
-    romajiRaw: 'seichoukyokusen',
-    romajiAlt: 'seityoukyokusen'
+    ruby: 'せいちょうきょくせん'
   },
   {
     word: '環境収容力',
-    ruby: 'かんきょうしゅうようりょく',
-    romaji: 'KANKYOU SHUUYOU RYOKU',
-    romajiRaw: 'kankyoushuuyouryoku',
-    romajiAlt: 'kankyousyuuyouryoku'
+    ruby: 'かんきょうしゅうようりょく'
   },
   {
     word: '最終収量一定の法則',
-    ruby: 'さいしゅうしゅうりょういっていのほうそく',
-    romaji: 'SAISHUU SHUURYOU ITTEI NO HOUSOKU',
-    romajiRaw: 'saishuushuuryouitteinohousoku',
-    romajiAlt: 'saisyuusyuuryouitteinohousoku'
+    ruby: 'さいしゅうしゅうりょういっていのほうそく'
   }
 ];
 
 function initTypingGame(){
   state.typing = {
     qIndex: 0,
-    matchedRomajiLen: 0,
+    matchedKanaLen: 0,
     missCount: 0,
     startTime: performance.now(),
     elapsed: 0,
@@ -944,14 +1052,16 @@ function setupTypingDOM(){
   overlay.innerHTML = `
     <div class="typing-box" id="typingBox">
       <div class="typing-header">
-        <span id="typingQProgress">⌨️ 生物用語タイピング (1/3問)</span>
+        <span id="typingQProgress">⌨️ 生物用語チャレンジ (1/3問)</span>
         <span>ミス: <b id="typeMiss">0</b> 回</span>
       </div>
       <div class="typing-target-word" id="typingTargetWord">成長曲線</div>
-      <div class="typing-ruby-guide" id="typingRubyGuide"></div>
-      <div class="typing-romaji-display" id="typingRomajiDisplay"></div>
+      <div class="typing-ruby-guide" id="typingRubyGuide" style="font-size:1.35rem;margin:8px 0;letter-spacing:0.12em"></div>
+      <div style="font-size:0.88rem;color:#7dd3fc;text-align:center;margin-bottom:8px">
+        👇 次の文字（光るボタン）をタップして言葉を完成させよう！
+      </div>
       <div class="typing-input-bar">
-        <input type="text" id="typingInput" class="typing-input-field" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="キーボード打鍵 または タッチ入力">
+        <input type="text" id="typingInput" class="typing-input-field" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="ひらがなボタンをタップ または キー入力">
         <button type="button" class="typing-assist-btn" id="typingAssistBtn">💡 1文字進む</button>
       </div>
       <div class="typing-soft-keys" id="typingSoftKeys"></div>
@@ -959,7 +1069,7 @@ function setupTypingDOM(){
         <button type="button" class="typing-skip-btn" id="typingSkipBtn" style="display:none">⏩ この単語を完成させる</button>
       </div>
       <div class="typing-stats">
-        <span>💡 iPadでは下の文字ボタンをポンポンとタップするだけで進めます！</span>
+        <span>💡 iPadでは下のひらがなボタンをポンポンとタップするだけで進めます！</span>
       </div>
     </div>
   `;
@@ -973,12 +1083,10 @@ function setupTypingDOM(){
     inputEl.addEventListener('keydown', e => {
       if(e.key === 'Enter'){ e.preventDefault(); inputEl.value = ''; }
     });
-    // 自動フォーカス（PC用）
-    setTimeout(() => { try{ inputEl.focus(); }catch(_){} }, 100);
   }
 
   bindFastTap($('#typingAssistBtn'), () => {
-    advanceTypingChar(true);
+    advanceKanaChar(true);
   });
 
   bindFastTap($('#typingSkipBtn'), () => {
@@ -995,31 +1103,22 @@ function updateTypingDisplay(){
     return;
   }
 
-  const raw = q.romajiRaw;
-  const curLen = state.typing.matchedRomajiLen;
-  const matchedRomaji = raw.slice(0, curLen).toUpperCase();
-  const nextRomajiChar = (raw[curLen] || '').toUpperCase();
-  const remainingRomaji = raw.slice(curLen + 1).toUpperCase();
-
-  const ratio = Math.min(1, curLen / Math.max(1, raw.length));
-  const kanaLen = Math.floor(ratio * q.ruby.length);
-  const matchedKana = q.ruby.slice(0, kanaLen);
-  const remainingKana = q.ruby.slice(kanaLen);
+  const curLen = state.typing.matchedKanaLen;
+  const matchedKana = q.ruby.slice(0, curLen);
+  const nextKana = q.ruby[curLen] || '';
+  const remainingKana = q.ruby.slice(curLen + 1);
 
   const progEl = $('#typingQProgress');
-  if(progEl) progEl.textContent = `⌨️ 生物用語タイピング (${state.typing.qIndex + 1}/3問)`;
+  if(progEl) progEl.textContent = `⌨️ 生物用語チャレンジ (${state.typing.qIndex + 1}/3問)`;
 
   const wordEl = $('#typingTargetWord');
   if(wordEl) wordEl.textContent = q.word;
 
   const rubyEl = $('#typingRubyGuide');
   if(rubyEl){
-    rubyEl.innerHTML = `<span class="matched-kana">${matchedKana}</span><span class="remaining-kana">${remainingKana}</span>`;
-  }
-
-  const romajiEl = $('#typingRomajiDisplay');
-  if(romajiEl){
-    romajiEl.innerHTML = `<span class="matched-romaji">${matchedRomaji}</span><span class="next-romaji">${nextRomajiChar}</span><span class="remaining-romaji">${remainingRomaji}</span>`;
+    rubyEl.innerHTML = `
+      <span class="matched-kana">${matchedKana}</span><span class="next-romaji" style="font-size:1.45rem;padding:2px 8px;margin:0 2px">${nextKana}</span><span class="remaining-kana">${remainingKana}</span>
+    `;
   }
 
   const missEl = $('#typeMiss');
@@ -1031,18 +1130,18 @@ function updateTypingDisplay(){
     skipBtn.style.display = state.typing.missCount >= 2 ? 'inline-block' : 'none';
   }
 
-  // ソフトキー更新
+  // ひらがなソフトキー更新（アルファベットを全廃し、出題のひらがなを選択）
   const softKeysContainer = $('#typingSoftKeys');
   if(softKeysContainer){
-    const softKeys = generateSmartSoftKeys(q, curLen);
-    softKeysContainer.innerHTML = softKeys.map((k, idx) => {
-      const isNext = idx === 0 || (idx === 1 && /[A-Z]/.test(k));
-      return `<button type="button" class="typing-key-btn ${isNext ? 'next-key' : ''}" data-key="${k}">${k}</button>`;
+    const softKeys = generateKanaSoftKeys(q, curLen);
+    softKeysContainer.innerHTML = softKeys.map((k) => {
+      const isNext = k === nextKana;
+      return `<button type="button" class="typing-key-btn ${isNext ? 'next-key' : ''}" data-key="${k}" style="min-width:48px;height:46px;font-size:1.2rem">${k}</button>`;
     }).join('');
 
     softKeysContainer.querySelectorAll('.typing-key-btn').forEach(btn => {
       bindFastTap(btn, () => {
-        processInputKey(btn.dataset.key);
+        processKanaInput(btn.dataset.key);
       });
     });
   }
@@ -1053,25 +1152,19 @@ function updateTypingDisplay(){
   }
 }
 
-function generateSmartSoftKeys(q, curLen){
-  const nextChar = (q.romajiRaw[curLen] || '').toUpperCase();
-  const nextAlt = (q.romajiAlt[curLen] || '').toUpperCase();
-  const ratio = curLen / Math.max(1, q.romajiRaw.length);
-  const nextKana = q.ruby[Math.floor(ratio * q.ruby.length)] || '';
-
-  const pool = ['A','E','I','O','U','K','S','T','N','H','M','Y','R','W','C'];
+function generateKanaSoftKeys(q, curLen){
+  const nextKana = q.ruby[curLen] || '';
+  const pool = ['あ','か','さ','た','な','は','ま','や','ら','わ','い','き','し','ち','に','ひ','み','り','う','く','す','つ','ぬ','ふ','む','ゆ','る','え','け','せ','て','ね','へ','め','れ','お','こ','そ','と','の','ほ','も','よ','ろ','ん','っ','ゃ','ゅ','ょ'];
   const res = [];
-  if(nextChar) res.push(nextChar);
-  if(nextAlt && !res.includes(nextAlt)) res.push(nextAlt);
-  if(nextKana && !res.includes(nextKana)) res.push(nextKana);
+  if(nextKana) res.push(nextKana);
 
-  // 単語に含まれるかな
+  // 出題単語に含まれるひらがな
   for(let ch of q.ruby){
     if(!res.includes(ch) && res.length < 8) res.push(ch);
   }
-  // アルファベットプール
+  // 適度なダミーひらがなを追加
   for(let ch of pool){
-    if(!res.includes(ch) && res.length < 11) res.push(ch);
+    if(!res.includes(ch) && res.length < 12) res.push(ch);
   }
   return res;
 }
@@ -1079,11 +1172,8 @@ function generateSmartSoftKeys(q, curLen){
 function handleTypingKey(e){
   if(state.checkpoint !== 3 || state.typing.completed) return;
   if(e.ctrlKey || e.altKey || e.metaKey) return;
-
-  // 単一の英数字キー
-  if(e.key.length === 1 && /^[a-zA-Z0-9]$/.test(e.key)){
-    e.preventDefault();
-    processInputKey(e.key);
+  if(e.key.length === 1){
+    processKanaInput(e.key);
   }
 }
 
@@ -1094,106 +1184,45 @@ function handleTypingInputField(e){
   const q = TYPING_QUESTIONS[state.typing.qIndex];
   if(!q) return;
 
-  // 1. 漢字完全一致またはプレフィックス（例: 成長曲線、環境収容力）
+  // 漢字完全一致またはプレフィックス
   if(q.word.startsWith(val) || val.includes(q.word)){
     completeCurrentWord(q);
     e.target.value = '';
     return;
   }
 
-  // 2. ひらがな一致（例: せいちょう）
-  const curRuby = q.ruby;
-  if(curRuby.includes(val)){
-    soundKeyClick();
-    const matchedEndIdx = curRuby.indexOf(val) + val.length;
-    const newRomajiLen = Math.min(q.romajiRaw.length, Math.round((matchedEndIdx / curRuby.length) * q.romajiRaw.length));
-    state.typing.matchedRomajiLen = Math.max(state.typing.matchedRomajiLen + 1, newRomajiLen);
-    e.target.value = '';
-
-    if(state.typing.matchedRomajiLen >= q.romajiRaw.length){
-      completeCurrentWord(q);
-    } else {
-      updateTypingDisplay();
-    }
-    return;
-  }
-
-  // 3. 英字打鍵の連打（ローマ字）
+  // ひらがな一致
   for(let ch of val){
-    processInputKey(ch);
+    processKanaInput(ch);
   }
   e.target.value = '';
 }
 
-function processInputKey(inputChar){
+function processKanaInput(inputChar){
   if(state.checkpoint !== 3 || state.typing.completed) return;
   const q = TYPING_QUESTIONS[state.typing.qIndex];
   if(!q) return;
 
-  const raw = q.romajiRaw;
-  const alt = q.romajiAlt;
-  const curLen = state.typing.matchedRomajiLen;
-  const targetChar = raw[curLen] ? raw[curLen].toLowerCase() : '';
-  const altTargetChar = alt[curLen] ? alt[curLen].toLowerCase() : '';
-  const inChar = inputChar.toLowerCase();
+  const curLen = state.typing.matchedKanaLen;
+  const targetKana = q.ruby[curLen] || '';
 
-  // 1. ローマ字完全一致判定（通常またはAlt）
-  if(inChar === targetChar || inChar === altTargetChar){
-    advanceTypingChar(false);
-    return;
-  }
-
-  // 2. 一般的なローマ字の同音異字ペア許容
-  const interchangeable = [
-    ['c','t'], ['c','s'], ['y','h'], ['j','z'], ['f','h'], ['w','u']
-  ];
-  const isMatchInterchangeable = interchangeable.some(
-    ([a,b]) => (targetChar === a && inChar === b) || (targetChar === b && inChar === a) ||
-               (altTargetChar === a && inChar === b) || (altTargetChar === b && inChar === a)
-  );
-  if(isMatchInterchangeable){
-    advanceTypingChar(false);
-    return;
-  }
-
-  // 3. かな直接入力判定
-  const ratio = curLen / Math.max(1, raw.length);
-  const curKanaIdx = Math.floor(ratio * q.ruby.length);
-  const targetKana = q.ruby[curKanaIdx];
   if(inputChar === targetKana){
-    advanceKanaChar();
-    return;
-  }
-
-  // ミス判定
-  soundBuzzer();
-  state.typing.missCount++;
-  updateTypingDisplay();
-}
-
-function advanceTypingChar(isAssist=false){
-  const q = TYPING_QUESTIONS[state.typing.qIndex];
-  if(!q) return;
-
-  soundKeyClick();
-  state.typing.matchedRomajiLen++;
-
-  if(state.typing.matchedRomajiLen >= q.romajiRaw.length){
-    completeCurrentWord(q);
+    advanceKanaChar(false);
   } else {
+    soundBuzzer();
+    state.typing.missCount++;
     updateTypingDisplay();
   }
 }
 
-function advanceKanaChar(){
+function advanceKanaChar(isAssist=false){
   const q = TYPING_QUESTIONS[state.typing.qIndex];
   if(!q) return;
 
   soundKeyClick();
-  const step = Math.max(1, Math.round(q.romajiRaw.length / q.ruby.length));
-  state.typing.matchedRomajiLen = Math.min(q.romajiRaw.length, state.typing.matchedRomajiLen + step);
+  state.typing.matchedKanaLen++;
 
-  if(state.typing.matchedRomajiLen >= q.romajiRaw.length){
+  if(state.typing.matchedKanaLen >= q.ruby.length){
     completeCurrentWord(q);
   } else {
     updateTypingDisplay();
@@ -1211,7 +1240,7 @@ function completeCurrentWord(q){
   });
 
   state.typing.qIndex++;
-  state.typing.matchedRomajiLen = 0;
+  state.typing.matchedKanaLen = 0;
   updateField(state.typing.qIndex - 1);
   updateCareStatus();
 
@@ -1952,20 +1981,20 @@ function renderCare(){
   $('#careTitle').textContent = cp.title;
   const instructions = [
     '4つの畑を直接タップし、好きな位置に種をまきます（その位置から育ちます！）。',
-    'ジョーロをつかみ、植物の株を狙って水をあげよう！光ると給水成功！',
+    'ジョーロをつかみ、各株に水を届けよう！ゲージが満タンになると「OK」が出ます！',
     '畑をタップ！広がるサークル内に全ダイズ株を入れるように施肥しよう！',
-    '重要生物用語のタイピングゲーム！キーボードまたは文字ボタンで入力！',
-    '畑の「葉」マークをタップし、葉の重なりを観察します。',
+    '重要生物用語のひらがな選択チャレンジ！光るひらがなボタンをポンポンとタップ！',
+    '密に育った株の間にある【重】マークをタップして光不足（光競合）を発見しよう！',
     '中央の農薬パチンコを引いて発射！コンボを繋ぎ、30匹目のボスを倒そう！',
     '畑の上を指でサーッとなぞって、ダイズを中央のカゴに収穫しよう！（全3ウェーブ）'
   ];
   const tips = [
     '🖐️ まいた位置からリアルに芽が出て育ちます',
-    '🚿 植物を狙うと「給水成功」でスコア獲得',
-    '🚜 1回の施肥でより多くの株をサークルに入れると高得点',
-    '💬 タイムが早いほど高得点！ミスタイプは減点',
-    '👀 密度が高いほど下の葉へ光が届きにくい',
-    '⏱️ タイムが早いほど高得点！3・5・8コンボでショットが強化！',
+    '🚿 各個体が水を得るとゲージが溜まり「💧OK!」と出ます',
+    '🚜 近い方が肥料カバーできて高得点！…でも近すぎると後で光不足に？',
+    '💬 ひらがなを順番に選んで言葉を完成させよう！',
+    '⚠️ 近い株同士は葉が重なり日光不足！タップすると肥料分が大幅減点されます',
+    '⏱️ タイムが早いほど高得点！3・5・8・12コンボでショットが超パワーアップ！',
     '🧺 3ウェーブを素早く回収してタイムアタック高得点を狙おう'
   ];
   $('#careInstruction').textContent = instructions[state.checkpoint];
@@ -1973,25 +2002,42 @@ function renderCare(){
   updateCareStatus();
 }
 
+function getTotalOverlapsCount(){
+  let total = 0;
+  CROPS.forEach((crop, ci) => {
+    const positions = getFieldPlantPositions(ci);
+    for(let i=0; i<positions.length; i++){
+      for(let j=i+1; j<positions.length; j++){
+        if(Math.hypot(positions[i].x - positions[j].x, (positions[i].y - positions[j].y) * 0.55) < 18){
+          total++;
+        }
+      }
+    }
+  });
+  return total;
+}
+
 function careComplete(){
+  const totalOverlaps = getTotalOverlapsCount();
   return [
     state.seeds.every((a,i) => a.length >= CROPS[i].visible),
     state.waterByPlot.every(v => v >= 100),
     state.fertilizer.every(v => v >= 3),
     state.phrases.length >= 3,
-    state.observed.size === 3,
+    totalOverlaps === 0 || state.observedOverlaps.size >= Math.min(3, totalOverlaps),
     state.bugs.size >= 4,
     state.harvested.size >= 4
   ][state.checkpoint];
 }
 
 function updateCareStatus(){
-  const complete = careComplete(), status = $('#careStatus'), progress = [
+  const complete = careComplete(), status = $('#careStatus'), totalOverlaps = getTotalOverlapsCount();
+  const progress = [
     `${state.seeds.reduce((n,a)=>n+a.length,0)}/${CROPS.reduce((n,c)=>n+c.visible,0)}粒`,
-    `${state.waterByPlot.filter(v=>v>=100).length}/4区画`,
+    `${state.waterByPlot.filter(v=>v>=100).length}/4区画完了`,
     `${state.fertilizer.reduce((n,v)=>n+v,0)}/12回`,
     `${state.phrases.length}/3問クリア`,
-    `${state.observed.size}/3か所`,
+    totalOverlaps === 0 ? '葉の重なりなし（良好）' : `${state.observedOverlaps.size}/${Math.min(3, totalOverlaps)}か所確認`,
     `${bugGame.killed || (state.bugs.size>=4?30:0)}/30匹`,
     state.harvest.completed ? '3/3ウェーブ完了' : `WAVE ${state.harvest.wave}/3`
   ][state.checkpoint];
@@ -2022,27 +2068,66 @@ $('#nextDay').addEventListener('click', () => {
 });
 
 /* ========================================================
-   Screen 3：グラフ作成ゲーム（スピード＆正確さタイムアタック、連打誤打減点）
+   Screen 3：動的収量モデル＆グラフ作成ゲーム
    ======================================================== */
+function getDynamicYields(){
+  // お世話総合スコア（種まき、水やり、追肥、タイピング、害虫、収穫）
+  const careScore = (
+    state.sowScore +
+    state.waterScore +
+    state.fertScore +
+    state.typingScore +
+    state.bugScore +
+    state.harvestScore
+  );
+
+  // お世話係数 (0.75 〜 1.40倍)
+  // 基準スコア約6000〜8000点。スコアが高いほど絶対的な収量が底上げされる！
+  const careFactor = Math.max(0.72, Math.min(1.42, 0.72 + (careScore / 11000) * 0.65));
+  state.fluctuationFactor = careFactor;
+
+  return CROPS.map((crop, i) => {
+    // わずかな区画別揺らぎ（±1.5%）
+    const plotJitter = 1.0 + ((i % 2 === 0 ? 1 : -1) * 0.015);
+    const dynTotal = Math.round(crop.baseTotal * careFactor * plotJitter);
+    const dynMean = crop.density === 10 ? Number((dynTotal / 10).toFixed(1))
+                  : crop.density === 50 ? Number((dynTotal / 50).toFixed(1))
+                  : crop.density === 100 ? Number((dynTotal / 100).toFixed(2))
+                  : Number((dynTotal / 500).toFixed(2));
+    return {
+      density: crop.density,
+      total: dynTotal,
+      mean: dynMean,
+      scale: crop.scale,
+      visible: crop.visible
+    };
+  });
+}
+
 function logMap(v, min, max, a, b){
   return a + (Math.log10(v) - Math.log10(min)) / (Math.log10(max) - Math.log10(min)) * (b - a);
 }
+
 function graphCoords(index, type){
+  const yields = getDynamicYields();
+  const yData = yields[index];
   const c = CROPS[index];
   return {
     x: logMap(c.density, 10, 500, 62, 392),
-    y: type === 'total' ? logMap(c.total, 1, 1000, 252, 38) : logMap(c.mean, 0.1, 100, 252, 38)
+    // y軸範囲: total は 1〜1500 g/m²、mean は 0.1〜150 g
+    y: type === 'total' ? logMap(yData.total, 1, 1500, 252, 38) : logMap(yData.mean, 0.1, 150, 252, 38)
   };
 }
 
 function graphMarkup(type){
-  const xTicks = [10, 50, 100, 500], yTicks = type === 'total' ? [1, 10, 100, 500, 1000] : [0.1, 1, 10, 100];
+  const xTicks = [10, 50, 100, 500];
+  const yTicks = type === 'total' ? [1, 10, 100, 500, 1000] : [0.1, 1, 10, 100];
   const xs = xTicks.map(v => {
     const x = logMap(v, 10, 500, 62, 392);
     return `<line class="grid-line" x1="${x}" x2="${x}" y1="38" y2="252"/><text class="tick" x="${x}" y="270" text-anchor="middle">${v}</text>`;
   }).join('');
   const ys = yTicks.map(v => {
-    const y = type === 'total' ? logMap(v, 1, 1000, 252, 38) : logMap(v, 0.1, 100, 252, 38);
+    const y = type === 'total' ? logMap(v, 1, 1500, 252, 38) : logMap(v, 0.1, 150, 252, 38);
     return `<line class="grid-line" x1="62" x2="392" y1="${y}" y2="${y}"/><text class="tick" x="54" y="${y+4}" text-anchor="end">${v}</text>`;
   }).join('');
   return `${xs}${ys}<line class="axis" x1="62" x2="392" y1="252" y2="252"/><line class="axis" x1="62" x2="62" y1="38" y2="252"/><text class="axis-label" x="227" y="300" text-anchor="middle">個体群密度（本/m²）</text><g class="line-layer"></g><rect class="graph-tap" x="62" y="38" width="330" height="214" tabindex="0" role="button" aria-label="点を記入する領域"></rect><g class="point-layer"></g>`;
@@ -2150,24 +2235,28 @@ function drawGraph(type){
   }
 }
 
-function specimenMarkup(crop, classes=''){
-  return `<div class="mini-specimen ${classes}"><div class="mini-plant" style="--scale:${crop.scale}" aria-hidden="true"></div><div><strong>${crop.density}本/m²</strong><span>平均 ${crop.mean}g/個体</span></div></div>`;
+function specimenMarkup(crop, classes='', yData=null){
+  const meanVal = yData ? yData.mean : crop.baseMean;
+  return `<div class="mini-specimen ${classes}"><div class="mini-plant" style="--scale:${crop.scale}" aria-hidden="true"></div><div><strong>${crop.density}本/m²</strong><span>平均 ${meanVal}g/個体</span></div></div>`;
 }
 
 function updateGraphTask(){
   const finished = state.plotTask >= 8, task = finished ? { index: 3, type: 'mean' } : currentPlotTask(), crop = CROPS[task.index];
+  const yields = getDynamicYields();
+  const yData = yields[task.index];
+
   $('#currentSpecimen').innerHTML = Array.from({length:Math.min(crop.visible, 5)}, (_,i) =>
     `<span class="plant" style="${plantStyle(i===0&&task.index===3?11:6, Math.round(105*crop.scale), 35+i*9, 5, i*2-4)}"></span>`
   ).join('');
-  $('#currentData').innerHTML = `<strong>${crop.density}本/m²区</strong><p>畑全体 ${crop.total} g/m²<br>1個体平均 ${crop.mean} g</p>`;
+  $('#currentData').innerHTML = `<strong>${crop.density}本/m²区</strong><p>畑全体 <b>${yData.total} g/m²</b><br>1個体平均 <b>${yData.mean} g</b></p>`;
   $('#totalCard').classList.toggle('active', !finished && task.type === 'total');
   $('#meanCard').classList.toggle('active', !finished && task.type === 'mean');
-  $('#specimenStrip').innerHTML = CROPS.map((c,i) => specimenMarkup(c, i < Math.floor(state.plotTask/2) ? 'done' : i === Math.floor(state.plotTask/2) && !finished ? 'current' : '')).join('');
+  $('#specimenStrip').innerHTML = CROPS.map((c,i) => specimenMarkup(c, i < Math.floor(state.plotTask/2) ? 'done' : i === Math.floor(state.plotTask/2) && !finished ? 'current' : '', yields[i])).join('');
   if(finished){
     $('#plotInstruction').textContent = '8個の点を記録できました。植物の姿と2本の線を比べよう。';
     $('#toDiscover').disabled = false;
   } else {
-    $('#plotInstruction').textContent = `${crop.density}本/m²区の「${task.type==='total'?'畑全体 '+crop.total+' g/m²':'1個体平均 '+crop.mean+' g'}」を記入`;
+    $('#plotInstruction').textContent = `${crop.density}本/m²区の「${task.type==='total'?'畑全体 '+yData.total+' g/m²':'1個体平均 '+yData.mean+' g'}」を記入`;
   }
 }
 
@@ -2184,19 +2273,13 @@ function syncDiscoverGraphs(){
    Screen 4：総合リザルト＆トータルスコアカード
    ======================================================== */
 function renderFinalTotalResults(){
-  const sowFactor = 0.98 + (state.sowScore / 500) * 0.04;
-  const waterFactor = 0.98 + (Math.min(800, state.waterScore) / 800) * 0.04;
-  const fertFactor = 0.98 + (Math.min(1000, state.fertScore) / 1000) * 0.04;
-  state.fluctuationFactor = sowFactor * waterFactor * fertFactor;
-
-  const actualLowTotal = Math.round(520 * state.fluctuationFactor);
-  const actualLowMean = (actualLowTotal / 10).toFixed(1);
-  const actualHighTotal = Math.round(610 * state.fluctuationFactor);
-  const actualHighMean = (actualHighTotal / 500).toFixed(2);
+  const yields = getDynamicYields();
+  const yLow = yields[0];
+  const yHigh = yields[3];
 
   const dLow = $('#discDataLow'), dHigh = $('#discDataHigh');
-  if(dLow) dLow.innerHTML = `10本/m²<br><strong>${actualLowTotal} g/m²</strong><br><span style="font-size:0.75rem;color:var(--muted)">1個体 ${actualLowMean}g</span>`;
-  if(dHigh) dHigh.innerHTML = `500本/m²<br><strong>${actualHighTotal} g/m²</strong><br><span style="font-size:0.75rem;color:var(--muted)">1個体 ${actualHighMean}g</span>`;
+  if(dLow) dLow.innerHTML = `10本/m²<br><strong>${yLow.total} g/m²</strong><br><span style="font-size:0.75rem;color:var(--muted)">1個体 ${yLow.mean}g</span>`;
+  if(dHigh) dHigh.innerHTML = `500本/m²<br><strong>${yHigh.total} g/m²</strong><br><span style="font-size:0.75rem;color:var(--muted)">1個体 ${yHigh.mean}g</span>`;
 
   const totalScore = (
     state.sowScore +
@@ -2238,7 +2321,7 @@ function renderFinalTotalResults(){
             <strong>+${state.fertScore} 点</strong>
           </div>
           <div class="score-item">
-            <span>⌨️ 用語タイピング</span>
+            <span>⌨️ 用語ひらがな</span>
             <strong>+${state.typingScore} 点</strong>
           </div>
           <div class="score-item">
@@ -2264,9 +2347,9 @@ function renderFinalTotalResults(){
         </div>
 
         <div class="fluctuation-note">
-          🔬 <strong>栽培結果のリアルな揺らぎ（個体差・環境影響）：</strong><br>
-          あなたのお世話精度により、畑全体の総収量は <strong>${actualLowTotal}g 〜 ${actualHighTotal}g/m²</strong> （基準比 ${(state.fluctuationFactor * 100 - 100 >= 0 ? '+' : '')}${(state.fluctuationFactor * 100 - 100).toFixed(1)}%）となりました。<br>
-          密度が50倍（10本→500本）になっても、総収量は驚くほど「一定」に収束しています！
+          🔬 <strong>あなたのお世話で実った収穫結果（個人固有グラフ）：</strong><br>
+          丁寧なお世話（お世話ポテンシャル: ${(state.fluctuationFactor * 100).toFixed(0)}%）により、畑全体の総収量は <strong>${yLow.total}g 〜 ${yHigh.total}g/m²</strong> となりました！<br>
+          個体群密度が50倍（10本→500本）に増えても、総収量は驚くほど「一定」に収束しています！
         </div>
       </div>
     `;
@@ -2289,13 +2372,15 @@ function initGeminiConsult(){
   copyBtn.addEventListener('click', () => {
     const inputVal = $('#studentAnswerInput').value.trim();
     const studentAnswerText = inputVal ? inputVal : '【ここに手元の紙に書いた考察、またはあなたの回答を入力】';
+    const yields = getDynamicYields();
+    const yLow = yields[0], yHigh = yields[3];
 
     const promptText = `あなたは高校生物の国公立大学二次試験の記述・論述指導を行う専門教員です。
 以下の実験データと生徒の回答を読み、採点基準に基づいて厳格かつ丁寧に添削・講評してください。
 
 【実験内容】
 ・対象：ダイズの個体群密度と収量の関係（119日間の栽培実験）
-・結果：個体群密度が10本/m²から500本/m²（50倍）になっても、畑全体の総乾物収量は約520g〜610g/m²とほぼ一定（最終収量一定の法則）。一方、1個体の平均乾物重は52.0gから1.22gへと著しく低下し、密度に反比例した。
+・結果：個体群密度が10本/m²から500本/m²（50倍）になっても、畑全体の総乾物収量は約${yLow.total}g〜${yHigh.total}g/m²とほぼ一定（最終収量一定の法則）。一方、1個体の平均乾物重は${yLow.mean}gから${yHigh.mean}gへと著しく低下し、密度に反比例した。
 
 【問い】
 密度が50倍になっても畑全体の乾物収量がほぼ一定となる理由と、そのとき1個体の姿がどうなるかを、「光合成」「葉の重なり」「種内競争」に着目して説明しなさい。
