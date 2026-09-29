@@ -974,5 +974,119 @@
     document.getElementById('startBtn').addEventListener('click', startGame);
     document.getElementById('retryBtn').addEventListener('click', startGame);
   </script>
+
+  <!-- Gameplay V2: local-density survivor loop (2026-09-29) -->
+  <script>
+  (() => {
+    'use strict';
+    const style = document.createElement('style');
+    style.textContent = `
+      .v2-panel{position:absolute;z-index:12;top:108px;padding:8px 10px;border:2px solid rgba(255,255,255,.24);border-radius:14px;background:rgba(15,23,42,.84);pointer-events:none;box-shadow:0 5px 14px rgba(0,0,0,.3)}
+      #v2Cores{left:10px;width:145px}#v2Gear{right:10px;width:166px;text-align:right}.v2-panel b{display:block;color:#fef08a;font-size:11px;margin-bottom:5px}.v2-panel span{font-size:12px;font-weight:900;line-height:1.45}.v2-pips{display:flex;gap:5px}.v2-pip{width:25px;height:14px;border:2px solid #facc15;border-radius:4px;background:#422006}.v2-pip.on{background:#fde047;box-shadow:0 0 9px #fde047}
+      #v2Toast{position:absolute;z-index:70;left:50%;top:24%;transform:translate(-50%,-50%) scale(.88);max-width:86%;padding:12px 18px;border:3px solid #facc15;border-radius:16px;background:rgba(15,23,42,.96);font-weight:1000;text-align:center;opacity:0;pointer-events:none;transition:.2s;box-shadow:0 10px 32px #000}#v2Toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}#v2Toast strong{display:block;color:#fde047;font-size:clamp(18px,4vw,28px)}#v2Toast small{display:block;color:#e2e8f0;font-size:12px;margin-top:3px}
+      .v2-upgrade{min-height:68px;width:100%;display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:center;padding:10px;border:2px solid #38bdf8;border-radius:15px;background:#173241;color:#fff;text-align:left;cursor:pointer}.v2-upgrade:active{background:#155e75;transform:scale(.99)}.v2-upgrade i{font-style:normal;font-size:34px;text-align:center}.v2-upgrade h4{color:#fde047;font-size:16px}.v2-upgrade p{margin:2px 0 0;font-size:12px;line-height:1.35}.v2-upgrade em{font-style:normal;color:#7dd3fc;font-size:11px}
+      #v2Lesson{padding:12px;border-radius:14px;background:#173241;border-left:6px solid #38bdf8;text-align:left;margin-top:10px}#v2Lesson h3{color:#7dd3fc;margin-bottom:5px}#v2Lesson p{font-size:13px;line-height:1.55;margin:0}
+      @media(max-width:600px){.v2-panel{top:106px;padding:6px 8px}#v2Cores{width:130px}#v2Gear{width:145px}.v2-panel span{font-size:10px}}
+      @media(orientation:landscape) and (max-height:600px){.v2-panel{top:86px}}
+    `;
+    document.head.appendChild(style);
+
+    const canvas2 = document.getElementById('gameCanvas');
+    const c = canvas2.getContext('2d');
+    const touch = document.getElementById('touchZone');
+    const base = document.getElementById('joyBase');
+    const knob = document.getElementById('joyKnob');
+    const q = id => document.getElementById(id);
+    const clamp2 = (v,a,b) => Math.max(a,Math.min(b,v));
+    const range2 = (a,b) => a + Math.random()*(b-a);
+    const distance2 = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
+    let w2=innerWidth,h2=innerHeight,frame2=0,last2=performance.now(),serial2=0,toast2=0;
+
+    const cores = document.createElement('aside'); cores.id='v2Cores'; cores.className='v2-panel';
+    cores.innerHTML='<b>⭐ 強化コアを回収</b><div class="v2-pips" id="v2Pips"></div>';
+    const gear = document.createElement('aside'); gear.id='v2Gear'; gear.className='v2-panel';
+    gear.innerHTML='<b>現在の装備</b><span id="v2GearText">💦 防除スプレー</span>';
+    const toastEl = document.createElement('div'); toastEl.id='v2Toast'; toastEl.innerHTML='<strong></strong><small></small>';
+    document.getElementById('gameContainer').append(cores,gear,toastEl);
+
+    q('startModal').querySelector('h2').textContent='〜5匹を同じ場所に集めるな！〜';
+    q('startModal').querySelector('p').innerHTML='クボカワ隊員を動かし、バッタを自動攻撃します。倒した後の<strong>強化コアや武器を拾いに動く</strong>ほど戦力が上がります。<br><br><strong style="color:#fde047">最重要ルール：</strong>半径約90px以内に孤独相が5匹集まると、その場所だけで相変異し、群生相が一気に15匹生まれます。他の位置のバッタは孤独相のままです。';
+    const oldStart=q('startBtn'), newStart=oldStart.cloneNode(true); newStart.textContent='クボカワ農園を90秒守る！'; oldStart.replaceWith(newStart);
+    const oldRetry=q('retryBtn'), newRetry=oldRetry.cloneNode(true); oldRetry.replaceWith(newRetry);
+    q('phaseText').textContent='最大局所密度 0/5'; q('phaseIcon').textContent='🟢';
+    q('farmHpBar').parentElement.previousElementSibling.textContent='🌿 クボカワ農園 防衛ライン';
+    q('resultModal').querySelector('.tabs-nav').style.display='none';
+    q('resultModal').querySelectorAll('.tab-content').forEach(el=>el.style.display='none');
+    const lesson=document.createElement('div');lesson.id='v2Lesson';lesson.innerHTML='<h3>🧠 今回の観察ポイント</h3><p id="v2LessonText"></p>';q('resultModal').querySelector('.modal-card').insertBefore(lesson,newRetry);
+
+    const weapons2={
+      spray:{icon:'💦',name:'防除スプレー',color:'#38bdf8',cool:310,range:210,damage:1,kind:'bullet'},
+      gatling:{icon:'🔫',name:'ガトリング種子砲',color:'#fde047',cool:105,range:285,damage:1,kind:'bullet'},
+      flame:{icon:'🔥',name:'火炎放射器',color:'#fb923c',cool:170,range:150,damage:.72,kind:'flame'},
+      mortar:{icon:'💣',name:'石灰迫撃砲',color:'#e879f9',cool:820,range:430,damage:3.2,kind:'mortar'},
+      spear:{icon:'🎋',name:'竹槍スピナー',color:'#86efac',cool:230,range:145,damage:1.4,kind:'spear'},
+      net:{icon:'🥅',name:'巨大虫網',color:'#fff',cool:620,range:315,damage:1,kind:'net'}
+    };
+    const upgrade2=[
+      {id:'range',icon:'🎯',name:'ロングノズル',desc:'すべての武器の射程 +55',max:4},
+      {id:'speed',icon:'👟',name:'爆速フィールドブーツ',desc:'移動速度 +18%',max:4},
+      {id:'rapid',icon:'⚙️',name:'高速給弾ユニット',desc:'連射間隔 -15%',max:5},
+      {id:'drone',icon:'🚁',name:'防除ドローン',desc:'自動攻撃ドローンを追加',max:3},
+      {id:'wall',icon:'🧱',name:'農園防壁',desc:'農場の周囲に耐久壁 +45',max:3},
+      {id:'farm',icon:'🌾',name:'農場拡大',desc:'農場を豪華にして最大耐久 +30',max:3}
+    ];
+    const G={run:false,pause:false,start:0,pauseSum:0,pauseAt:0,time:0,kills:0,bursts:0,maxLocal:0,farm:100,farmMax:100,wall:0,farmLv:0,core:0,spawn:0,cluster:0,mid:false,boss:false,enemies:[],shots:[],drops:[],bits:[],fx:[],weapon:'spray',up:{range:0,speed:0,rapid:0,drone:0,wall:0,farm:0},keys:{},joy:{on:false,sx:0,sy:0,dx:0,dy:0},hero:{x:w2/2,y:h2*.72,last:0,r:25}};
+
+    function resize2(){w2=innerWidth;h2=innerHeight;canvas2.width=w2;canvas2.height=h2}
+    addEventListener('resize',resize2);resize2();
+    function beep2(f=500,d=.06,type='triangle'){try{const A=window.__locustAudio||(window.__locustAudio=new(AudioContext||webkitAudioContext)());if(A.state==='suspended')A.resume();const o=A.createOscillator(),g=A.createGain();o.type=type;o.frequency.setValueAtTime(f,A.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(70,f*.55),A.currentTime+d);g.gain.setValueAtTime(.08,A.currentTime);g.gain.exponentialRampToValueAtTime(.001,A.currentTime+d);o.connect(g);g.connect(A.destination);o.start();o.stop(A.currentTime+d)}catch(e){}}
+    function notice2(a,b=''){toastEl.querySelector('strong').textContent=a;toastEl.querySelector('small').textContent=b;toastEl.classList.add('show');clearTimeout(toast2);toast2=setTimeout(()=>toastEl.classList.remove('show'),1800)}
+    function randomWeapon2(){const a=['gatling','flame','mortar','spear','net'];return a[Math.floor(Math.random()*a.length)]}
+    function spawn2(type='solo',weapon=null,x=null,y=null){
+      if(x===null){const e=Math.floor(Math.random()*4);if(e===0){x=range2(20,w2-20);y=-35}else if(e===1){x=w2+35;y=range2(65,h2-20)}else if(e===2){x=range2(20,w2-20);y=h2+35}else{x=-35;y=range2(65,h2-20)}}
+      const big=type==='mid'||type==='boss',greg=type==='greg'||big,hp=type==='solo'?2:type==='greg'?4:type==='mid'?28:72;
+      G.enemies.push({id:++serial2,x,y,type,greg,weapon,hp,max:hp,r:type==='solo'?16:type==='greg'?18:type==='mid'?38:58,speed:type==='solo'?range2(.28,.5):type==='greg'?range2(1.32,1.82):type==='mid'?.82:.67,a:0,wing:range2(0,7),wander:range2(0,7),slow:0});
+    }
+    function localBurst2(members){const ids=new Set(members.map(v=>v.id)),x=members.reduce((n,v)=>n+v.x,0)/5,y=members.reduce((n,v)=>n+v.y,0)/5;G.enemies=G.enemies.filter(v=>!ids.has(v.id));G.bursts++;for(let i=0;i<15;i++)spawn2('greg',Math.random()<.1?randomWeapon2():null,x+range2(-35,35),y+range2(-35,35));G.fx.push({kind:'phase',x,y,life:90,max:90});notice2('🚨 局所相変異！','5匹密集 → この地点から群生相15匹');beep2(150,.35,'sawtooth')}
+    function checkClusters2(){let max=0,best=[];const solo=G.enemies.filter(v=>v.type==='solo');for(const a of solo){const near=solo.filter(b=>distance2(a,b)<90);if(near.length>max){max=near.length;best=near}}G.maxLocal=Math.max(G.maxLocal,max);q('phaseText').textContent=`最大局所密度 ${Math.min(5,max)}/5`;q('phaseIcon').textContent=max>=4?'🚨':max>=3?'🟡':'🟢';q('phaseChip').className=max>=4?'hud-chip gregarious':'hud-chip';if(max>=5)localBurst2(best.slice(0,5))}
+    function target2(max){let hit=null,d=max;for(const e of G.enemies){const n=distance2(G.hero,e);if(n<d){d=n;hit=e}}return hit}
+    function shoot2(now){const Wp=weapons2[G.weapon],cool=Wp.cool*Math.pow(.85,G.up.rapid);if(now-G.hero.last<cool)return;const t=target2(Wp.range+G.up.range*55);if(!t)return;G.hero.last=now;const a=Math.atan2(t.y-G.hero.y,t.x-G.hero.x);beep2(G.weapon==='mortar'?150:620,.04,G.weapon==='gatling'?'square':'triangle');
+      const add=(ang,speed,life,damage,r,kind,pierce=1)=>G.shots.push({x:G.hero.x,y:G.hero.y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,life,damage,r,kind,pierce,color:Wp.color,target:t});
+      if(Wp.kind==='flame')for(let i=-2;i<=2;i++)add(a+i*.13,7.2,18,Wp.damage,7,'flame');else if(Wp.kind==='mortar')add(a,5.5,78,Wp.damage,9,'mortar');else if(Wp.kind==='net')add(a,7.2,48,Wp.damage,12,'net',2);else if(Wp.kind==='spear')for(let k=0;k<4;k++)add(a+k*Math.PI/2,3.8,34,Wp.damage,8,'spear',2);else add(a,10.5,Math.ceil((Wp.range+G.up.range*55)/10),Wp.damage,G.weapon==='gatling'?4:6,'bullet')
+    }
+    function drone2(now){for(let d=0;d<G.up.drone;d++){const a=now*.0025+d*Math.PI*2/Math.max(1,G.up.drone),x=G.hero.x+Math.cos(a)*67,y=G.hero.y+Math.sin(a)*67,t=target2(300);if(t&&Math.random()<.055){const z=Math.atan2(t.y-y,t.x-x);G.shots.push({x,y,vx:Math.cos(z)*8,vy:Math.sin(z)*8,life:42,damage:1,r:4,kind:'drone',pierce:1,color:'#fde047'})}}}
+    function particles2(x,y,color,n=7){for(let i=0;i<n;i++)G.bits.push({x,y,vx:range2(-4,4),vy:range2(-4,4),r:range2(2,5),life:range2(13,26),max:26,color})}
+    function drop2(e){if(e.weapon){G.drops.push({x:e.x,y:e.y,kind:'weapon',value:e.weapon,life:900,bob:0,r:18});return}if(Math.random()<.62||e.type==='mid'||e.type==='boss')G.drops.push({x:e.x,y:e.y,kind:'core',life:650,bob:0,r:13});if(e.type==='mid'||e.type==='boss')for(let i=0;i<(e.type==='boss'?4:2);i++)G.drops.push({x:e.x+range2(-40,40),y:e.y+range2(-40,40),kind:'core',life:650,bob:0,r:13})}
+    function explode2(x,y,dmg=3,r=75){for(const e of G.enemies)if(Math.hypot(e.x-x,e.y-y)<r)e.hp-=dmg;G.fx.push({kind:'boom',x,y,r,life:25,max:25});particles2(x,y,'#e879f9',15)}
+    function update2(dt,now){
+      G.time=(now-G.start-G.pauseSum)/1000;q('timerDisplay').textContent=`${G.time.toFixed(1)}s`;
+      let mx=G.joy.dx,my=G.joy.dy;if(G.keys.a||G.keys.arrowleft)mx--;if(G.keys.d||G.keys.arrowright)mx++;if(G.keys.w||G.keys.arrowup)my--;if(G.keys.s||G.keys.arrowdown)my++;const len=Math.hypot(mx,my);if(len){const sp=3.25*Math.pow(1.18,G.up.speed);G.hero.x+=mx/len*sp*dt*60;G.hero.y+=my/len*sp*dt*60}G.hero.x=clamp2(G.hero.x,28,w2-28);G.hero.y=clamp2(G.hero.y,80,h2-28);shoot2(now);drone2(now);
+      G.spawn-=dt;if(G.spawn<=0&&G.enemies.length<120){spawn2('solo',Math.random()<.12?randomWeapon2():null);G.spawn=Math.max(.42,1.46-G.time*.009)}
+      if(G.time>=30&&!G.mid){G.mid=true;spawn2('mid','gatling');notice2('⚠️ 中ボス接近！','巨大武器持ちバッタ：残り28発')}
+      if(G.time>=65&&!G.boss){G.boss=true;spawn2('boss','mortar');notice2('👑 大ボス襲来！','超巨大バッタ：残り72発')}
+      G.cluster-=dt;if(G.cluster<=0){checkClusters2();G.cluster=.42}
+      for(let i=G.shots.length-1;i>=0;i--){const p=G.shots[i];p.x+=p.vx*dt*60;p.y+=p.vy*dt*60;p.life-=dt*60;if(p.kind==='mortar'&&p.target&&distance2(p,p.target)<24){explode2(p.x,p.y,p.damage);G.shots.splice(i,1);continue}if(p.life<=0||p.x<-35||p.x>w2+35||p.y<-35||p.y>h2+35){if(p.kind==='mortar')explode2(p.x,p.y,p.damage);G.shots.splice(i,1);continue}for(const e of G.enemies){if(distance2(p,e)<p.r+e.r){e.hp-=p.damage;if(p.kind==='net'){e.slow=155;G.fx.push({kind:'net',x:e.x,y:e.y,life:38,max:38})}p.pierce--;particles2(p.x,p.y,p.color,3);if(p.pierce<=0){G.shots.splice(i,1);break}}}}
+      const farm={x:w2/2,y:h2/2},farmR=75+G.farmLv*12;
+      for(let i=G.enemies.length-1;i>=0;i--){const e=G.enemies[i];e.wing+=dt*12;e.slow=Math.max(0,e.slow-dt*60);const t=e.greg?farm:{x:farm.x+Math.sin(e.wander)*88,y:farm.y+Math.cos(e.wander)*72},a=Math.atan2(t.y-e.y,t.x-e.x)+Math.sin(G.time*.8+e.wander)*.16;e.a=a;const sp=e.speed*(e.slow>0?.42:1);e.x+=Math.cos(a)*sp*dt*60;e.y+=Math.sin(a)*sp*dt*60;if(e.hp<=0){G.enemies.splice(i,1);G.kills++;drop2(e);particles2(e.x,e.y,e.greg?'#fb923c':'#4ade80',e.r>25?18:7);beep2(e.r>25?110:270,.08,'square');hud2();continue}if(distance2(e,farm)<farmR){const dmg=e.type==='solo'?2:e.type==='greg'?5:e.type==='mid'?11:18;if(G.wall>0)G.wall=Math.max(0,G.wall-dmg);else G.farm=Math.max(0,G.farm-dmg);G.enemies.splice(i,1);G.fx.push({kind:'hit',x:e.x,y:e.y,life:35,max:35});beep2(90,.15,'sawtooth');hud2();if(G.farm<=0){finish2(false);return}}}
+      for(let i=G.drops.length-1;i>=0;i--){const d=G.drops[i];d.life-=dt*60;d.bob+=dt*5;if(distance2(d,G.hero)<G.hero.r+d.r+10){if(d.kind==='core'){G.core++;beep2(900,.12);G.drops.splice(i,1);hud2();if(G.core>=4){G.core=0;hud2();upgradeModal2();return}}else{G.weapon=d.value;G.drops.splice(i,1);notice2(`${weapons2[d.value].icon} ${weapons2[d.value].name} GET!`,'武器持ちバッタから装備を奪取');beep2(1050,.16,'square');hud2()}continue}if(d.life<=0)G.drops.splice(i,1)}
+      for(let i=G.bits.length-1;i>=0;i--){const p=G.bits[i];p.x+=p.vx*dt*60;p.y+=p.vy*dt*60;p.life-=dt*60;if(p.life<=0)G.bits.splice(i,1)}for(let i=G.fx.length-1;i>=0;i--){G.fx[i].life-=dt*60;if(G.fx[i].life<=0)G.fx.splice(i,1)}if(G.time>=90)finish2(true)
+    }
+    function farm2(){const x=w2/2,y=h2/2,r=75+G.farmLv*12,gl=c.createRadialGradient(x,y,8,x,y,r+38);gl.addColorStop(0,'#bbf7d0');gl.addColorStop(.62,'#16a34a');gl.addColorStop(1,'rgba(22,163,74,0)');c.fillStyle=gl;c.beginPath();c.arc(x,y,r+38,0,7);c.fill();c.save();c.translate(x,y);c.fillStyle='#7c2d12';c.strokeStyle='#fbbf24';c.lineWidth=5;c.beginPath();c.roundRect(-r*.76,-r*.52,r*1.52,r*1.04,18);c.fill();c.stroke();c.strokeStyle='#a16207';c.lineWidth=3;for(let z=-.4;z<=.4;z+=.27){c.beginPath();c.moveTo(-r*.62,z*r);c.lineTo(r*.62,z*r);c.stroke()}c.font=`${Math.round(r*.3)}px sans-serif`;c.textAlign='center';c.textBaseline='middle';['🌽','🌾','🥬','🥕','🌻','🍅'].forEach((v,i)=>c.fillText(v,(i%3-1)*r*.38,(i<3?-.18:.24)*r));c.font=`${Math.round(r*.24)}px sans-serif`;c.fillText('🏡',0,-r*.72);c.restore();if(G.wall>0){c.strokeStyle='#e2e8f0';c.lineWidth=9;c.setLineDash([20,7]);c.beginPath();c.arc(x,y,r+18,0,7);c.stroke();c.setLineDash([]);c.font='900 12px sans-serif';c.fillStyle='#fff';c.fillText(`防壁 ${Math.ceil(G.wall)}`,x,y-r-27)}}
+    function kubokawa2(x,y){c.save();c.translate(x,y);c.shadowColor='#0008';c.shadowBlur=8;c.fillStyle='#fde047';c.strokeStyle='#164eeb';c.lineWidth=5;c.beginPath();c.roundRect(-23,-19,46,47,17);c.fill();c.stroke();c.fillStyle='#fff';c.beginPath();c.ellipse(0,-6,18,16,0,0,7);c.fill();c.stroke();c.fillStyle='#2563eb';c.beginPath();c.arc(-9,-21,9,2.7,6.2);c.arc(0,-23,11,2.8,6.2);c.arc(10,-21,9,2.9,6.2);c.fill();c.strokeStyle='#164eeb';c.lineWidth=3;c.beginPath();c.roundRect(-17,-12,14,10,5);c.roundRect(3,-12,14,10,5);c.stroke();c.beginPath();c.moveTo(-3,-7);c.lineTo(3,-7);c.stroke();c.fillStyle='#f9a8d4';c.beginPath();c.arc(-13,2,4,0,7);c.arc(13,2,4,0,7);c.fill();c.strokeStyle='#164eeb';c.lineWidth=2;c.beginPath();c.arc(0,4,8,.15,2.95);c.stroke();c.fillStyle='#1e40af';c.font='900 8px sans-serif';c.textAlign='center';c.fillText('K',0,22);c.restore()}
+    function enemy2(e){c.save();c.translate(e.x,e.y);c.rotate(e.a+Math.PI/2);const s=e.r/16;c.scale(s,s);c.shadowColor=e.r>25?'#facc15':'transparent';c.shadowBlur=e.r>25?18:0;c.globalAlpha=.82;c.fillStyle=e.greg?'#fef3c7':'#d9f99d';c.beginPath();c.ellipse(-9,-2,10,5,-.5,0,7);c.ellipse(9,-2,10,5,.5,0,7);c.fill();c.globalAlpha=1;c.fillStyle=e.type==='boss'?'#450a0a':e.type==='mid'?'#9a3412':e.greg?'#111827':'#65a30d';c.strokeStyle=e.greg?'#fb923c':'#14532d';c.lineWidth=2.2;c.beginPath();c.ellipse(0,1,7,13,0,0,7);c.fill();c.stroke();c.beginPath();c.arc(0,-11,6,0,7);c.fill();c.stroke();c.strokeStyle=e.greg?'#fb923c':'#166534';c.beginPath();c.moveTo(-5,7);c.lineTo(-13,15);c.lineTo(-10,4);c.moveTo(5,7);c.lineTo(13,15);c.lineTo(10,4);c.stroke();c.fillStyle=e.greg?'#ef4444':'#fff';c.fillRect(-3,-13,2,2);c.fillRect(1,-13,2,2);if(e.type==='mid'||e.type==='boss'){c.font='11px sans-serif';c.textAlign='center';c.fillText(e.type==='boss'?'👑':'⚠️',0,-20)}if(e.weapon){c.font='12px sans-serif';c.textAlign='center';c.fillText(weapons2[e.weapon].icon,12,-14)}c.restore();c.font=`900 ${e.r>25?15:11}px sans-serif`;c.textAlign='center';c.fillStyle='#fff';c.strokeStyle='#111827';c.lineWidth=4;c.strokeText(String(Math.max(0,Math.ceil(e.hp))),e.x,e.y-e.r-9);c.fillText(String(Math.max(0,Math.ceil(e.hp))),e.x,e.y-e.r-9)}
+    function draw2(){c.clearRect(0,0,w2,h2);const bg=c.createLinearGradient(0,0,0,h2);bg.addColorStop(0,'#c77924');bg.addColorStop(1,'#70451f');c.fillStyle=bg;c.fillRect(0,0,w2,h2);c.strokeStyle='rgba(253,230,138,.13)';for(let y=100;y<h2;y+=42){c.beginPath();c.moveTo(0,y);c.quadraticCurveTo(w2/2,y-13,w2,y+5);c.stroke()}farm2();for(const f of G.fx){const a=f.life/f.max;if(f.kind==='phase'){c.strokeStyle=`rgba(239,68,68,${a})`;c.lineWidth=6;c.beginPath();c.arc(f.x,f.y,(1-a)*115+18,0,7);c.stroke();c.fillStyle='#fff';c.font='900 16px sans-serif';c.textAlign='center';c.fillText('5匹密集 → 15匹！',f.x,f.y-34)}else if(f.kind==='boom'){c.fillStyle=`rgba(232,121,249,${a*.42})`;c.beginPath();c.arc(f.x,f.y,f.r*(1-a*.35),0,7);c.fill()}}for(const d of G.drops){const y=d.y+Math.sin(d.bob)*5;c.save();c.shadowColor=d.kind==='core'?'#fde047':'#38bdf8';c.shadowBlur=14;c.fillStyle=d.kind==='core'?'#facc15':'#075985';c.strokeStyle='#fff';c.lineWidth=2;c.beginPath();c.roundRect(d.x-d.r,y-d.r,d.r*2,d.r*2,7);c.fill();c.stroke();c.font=`${d.r+7}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(d.kind==='core'?'⭐':weapons2[d.value].icon,d.x,y);c.restore()}for(const p of G.shots){c.fillStyle=p.color;c.shadowColor=p.color;c.shadowBlur=8;c.beginPath();c.arc(p.x,p.y,p.r,0,7);c.fill();c.shadowBlur=0}for(const e of G.enemies)enemy2(e);for(let d=0;d<G.up.drone;d++){const a=performance.now()*.0025+d*Math.PI*2/G.up.drone;c.font='22px sans-serif';c.fillText('🚁',G.hero.x+Math.cos(a)*67,G.hero.y+Math.sin(a)*67)}kubokawa2(G.hero.x,G.hero.y);for(const p of G.bits){c.globalAlpha=Math.max(0,p.life/p.max);c.fillStyle=p.color;c.beginPath();c.arc(p.x,p.y,p.r,0,7);c.fill()}c.globalAlpha=1}
+    function hud2(){q('killCount').textContent=`${G.kills} 匹駆除`;q('farmHpBar').style.width=`${G.farm/G.farmMax*100}%`;q('farmHpBar').parentElement.previousElementSibling.textContent=`🌿 クボカワ農園 ${Math.ceil(G.farm)}/${G.farmMax}${G.wall>0?` ＋ 防壁${Math.ceil(G.wall)}`:''}`;q('v2Pips').innerHTML='';for(let i=0;i<4;i++){const p=document.createElement('i');p.className='v2-pip'+(i<G.core?' on':'');q('v2Pips').appendChild(p)}const wp=weapons2[G.weapon];q('v2GearText').innerHTML=`${wp.icon} ${wp.name}<br><small>射程${wp.range+G.up.range*55}｜連射Lv.${G.up.rapid+1}<br>速度×${Math.pow(1.18,G.up.speed).toFixed(1)}｜🚁${G.up.drone}</small>`}
+    function upgradeModal2(){G.pause=true;G.pauseAt=performance.now();cancelAnimationFrame(frame2);const list=q('upgradeList');list.innerHTML='';upgrade2.filter(u=>G.up[u.id]<u.max).sort(()=>Math.random()-.5).slice(0,3).forEach(u=>{const b=document.createElement('button');b.className='v2-upgrade';b.innerHTML=`<i>${u.icon}</i><span><h4>${u.name}</h4><p>${u.desc}</p><em>Lv.${G.up[u.id]} → Lv.${G.up[u.id]+1}</em></span>`;b.onclick=()=>choose2(u.id);list.appendChild(b)});q('upgradeModal').style.display='flex'}
+    function choose2(id){G.up[id]++;if(id==='wall')G.wall+=45;if(id==='farm'){G.farmLv++;G.farmMax+=30;G.farm=Math.min(G.farmMax,G.farm+30)}q('upgradeModal').style.display='none';G.pauseSum+=performance.now()-G.pauseAt;G.pause=false;last2=performance.now();hud2();notice2('✅ 強化完了！',upgrade2.find(v=>v.id===id).name);frame2=requestAnimationFrame(loop2)}
+    function loop2(now){if(!G.run||G.pause)return;const dt=Math.min(.034,(now-last2)/1000);last2=now;update2(dt,now);draw2();if(G.run&&!G.pause)frame2=requestAnimationFrame(loop2)}
+    function start2(){Object.assign(G,{run:true,pause:false,start:performance.now(),pauseSum:0,time:0,kills:0,bursts:0,maxLocal:0,farm:100,farmMax:100,wall:0,farmLv:0,core:0,spawn:.15,cluster:.2,mid:false,boss:false,enemies:[],shots:[],drops:[],bits:[],fx:[],weapon:'spray',up:{range:0,speed:0,rapid:0,drone:0,wall:0,farm:0}});G.hero.x=w2/2;G.hero.y=h2*.72;G.hero.last=0;q('startModal').style.display='none';q('resultModal').style.display='none';q('upgradeModal').style.display='none';q('phaseChip').className='hud-chip';q('phaseIcon').textContent='🟢';q('phaseText').textContent='最大局所密度 0/5';hud2();last2=performance.now();cancelAnimationFrame(frame2);frame2=requestAnimationFrame(loop2)}
+    function finish2(win){G.run=false;cancelAnimationFrame(frame2);q('resultTitle').textContent=win?'🎉 90秒防衛成功！':'💥 クボカワ農園 陥落';q('resultTitle').style.color=win?'#4ade80':'#ef4444';q('resultSubtitle').textContent=win?'立ち回りと装備回収で、局所的な相変異を抑えました！':'密集地点への対応が遅れ、群生相が農場へ到達しました…';q('resTime').textContent=`${Math.min(90,G.time).toFixed(1)}s`;q('resKills').textContent=`${G.kills}匹`;q('resDensity').textContent=`相変異 ${G.bursts}回`;q('v2LessonText').innerHTML=G.bursts===0?'孤独相を<strong>5匹集めない予防的防除</strong>に成功しました。密度効果は画面全体ではなく、個体が接触する局所的な集まりで起こります。':`局所相変異が<strong>${G.bursts}回</strong>起きました。孤独相は遅くても、同じ場所に5匹集まると15匹の群生相へ急増します。武器を拾いながら、4/5の密集地点を優先して崩すことが重要です。`;q('resultModal').style.display='flex'}
+    addEventListener('keydown',e=>G.keys[e.key.toLowerCase()]=true);addEventListener('keyup',e=>G.keys[e.key.toLowerCase()]=false);
+    touch.addEventListener('pointerdown',e=>{if(!G.run||G.pause)return;G.joy.on=true;G.joy.sx=e.clientX;G.joy.sy=e.clientY;base.style.left=`${e.clientX}px`;base.style.top=`${e.clientY}px`;knob.style.left=`${e.clientX}px`;knob.style.top=`${e.clientY}px`;base.style.display=knob.style.display='block'});
+    touch.addEventListener('pointermove',e=>{if(!G.joy.on)return;const dx=e.clientX-G.joy.sx,dy=e.clientY-G.joy.sy,d=Math.hypot(dx,dy),r=Math.min(45,d),a=Math.atan2(dy,dx);G.joy.dx=Math.cos(a)*Math.min(1,d/45);G.joy.dy=Math.sin(a)*Math.min(1,d/45);knob.style.left=`${G.joy.sx+Math.cos(a)*r}px`;knob.style.top=`${G.joy.sy+Math.sin(a)*r}px`});
+    const stopJoy2=()=>{G.joy.on=false;G.joy.dx=G.joy.dy=0;base.style.display=knob.style.display='none'};touch.addEventListener('pointerup',stopJoy2);touch.addEventListener('pointercancel',stopJoy2);
+    newStart.addEventListener('click',start2);newRetry.addEventListener('click',start2);hud2();draw2();
+  })();
+  </script>
 </body>
 </html>
