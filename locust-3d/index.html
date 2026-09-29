@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>トノサマバッタ 3D 形態計測 | 孤独相 vs 群生相</title>
+  
+  <!-- Apple iPad & Mobile Web App Meta -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="バッタ3D計測">
+  <meta name="theme-color" content="#0a0f1d">
+  
+  <!-- Inline SVG Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦗</text></svg>">
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Three.js Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas Viewport -->
+  <div id="canvas-container"></div>
+
+  <!-- Header Navigation -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-icon">🦗</div>
+      <div class="brand-title">
+        <h1>トノサマバッタ 3D 形態計測</h1>
+        <span class="subtitle">Locusta migratoria : Morphometric 3D Explorer</span>
+      </div>
+    </div>
+
+    <!-- Mode Switcher Tabs -->
+    <div class="mode-tabs">
+      <button class="tab-btn active" data-mode="comparison">
+        <span>⚖️ 2頭並列</span>
+      </button>
+      <button class="tab-btn" data-mode="solitary">
+        <span>🌱 孤独相</span>
+      </button>
+      <button class="tab-btn" data-mode="gregarious">
+        <span>🔥 群生相</span>
+      </button>
+      <button class="tab-btn" data-mode="overlay">
+        <span>🧬 重ね合わせ</span>
+      </button>
+    </div>
+
+    <!-- Action Tools -->
+    <div class="header-actions">
+      <button id="btn-toggle-measure" class="action-btn btn-measure-toggle" title="生徒が3D空間上で各部の長さを測るツールを開きます">
+        <span>📐 長さを測る (ノギス/メジャー)</span>
+      </button>
+      <button id="btn-launch-ar" class="action-btn btn-ar" title="iPadのカメラで現実の机上にバッタを投影します">
+        <span>👓 AR表示 (Quick Look)</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Left HUD: Morphometric Data Only (No Answer Texts) -->
+  <aside class="hud-panel" id="hud-panel">
+    <div class="hud-header">
+      <h2>📊 形態計測データ</h2>
+      <button id="btn-toggle-hud" class="btn-hud-toggle" title="HUDを折りたたむ/展開">◀</button>
+    </div>
+
+    <div class="hud-body">
+      <div class="phase-legend">
+        <div class="legend-box solitary">
+          <div class="legend-title">🌱 孤独相</div>
+          <div class="legend-tag">Solitary phase</div>
+        </div>
+        <div class="legend-box gregarious">
+          <div class="legend-title">🔥 群生相</div>
+          <div class="legend-tag">Gregarious phase</div>
+        </div>
+      </div>
+
+      <!-- E/F Ratio Metric -->
+      <div class="ef-highlight-box">
+        <div class="ef-title-row">
+          <span>翅長 / 後脚腿節長 比率 (E/F比)</span>
+        </div>
+        <div class="ef-values-grid">
+          <div class="ef-val-col sol">
+            <div class="ef-val-num" id="hud-sol-ef">1.08</div>
+            <div class="ef-val-sub">孤独相 E/F</div>
+          </div>
+          <div class="ef-val-col greg">
+            <div class="ef-val-num" id="hud-greg-ef">2.00</div>
+            <div class="ef-val-sub">群生相 E/F</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparative Measurement Values -->
+      <div class="metric-row">
+        <div class="metric-label-row">
+          <span>前翅長 (E: Elytron)</span>
+          <span>計測値</span>
+        </div>
+        <div class="metric-bars">
+          <div class="bar-wrapper">
+            <div class="bar-track">
+              <div class="bar-fill sol" style="width: 70%;"></div>
+            </div>
+            <span class="bar-val" id="hud-sol-wing">39.0 mm</span>
+          </div>
+          <div class="bar-wrapper">
+            <div class="bar-track">
+              <div class="bar-fill greg" style="width: 98%;"></div>
+            </div>
+            <span class="bar-val" id="hud-greg-wing">54.0 mm</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric-label-row">
+          <span>後脚腿節長 (F: Femur)</span>
+          <span>計測値</span>
+        </div>
+        <div class="metric-bars">
+          <div class="bar-wrapper">
+            <div class="bar-track">
+              <div class="bar-fill sol" style="width: 98%;"></div>
+            </div>
+            <span class="bar-val" id="hud-sol-femur">36.0 mm</span>
+          </div>
+          <div class="bar-wrapper">
+            <div class="bar-track">
+              <div class="bar-fill greg" style="width: 72%;"></div>
+            </div>
+            <span class="bar-val" id="hud-greg-femur">27.0 mm</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="metric-summary-note">
+        ※ 画面ドラッグで360°回転、ピンチイン/アウトでズーム
+      </div>
+    </div>
+  </aside>
+
+  <!-- Interactive Measurement Drawer / Deck (Pupil Measuring Tool) -->
+  <div class="measure-deck" id="measure-deck">
+    <div class="measure-deck-header">
+      <div class="measure-deck-title">
+        <span>📐 3Dバーチャル計測ツール</span>
+        <span class="measure-hint">モデルにノギスを当てて実際の長さを測定できます</span>
+      </div>
+      <div class="target-radio-group">
+        <label><input type="radio" name="caliper-target" value="solitary" checked> 🌱 孤独相を測る</label>
+        <label><input type="radio" name="caliper-target" value="gregarious"> 🔥 群生相を測る</label>
+      </div>
+    </div>
+
+    <div class="measure-buttons-row">
+      <button class="caliper-part-btn" data-caliper-part="wing">
+        <span>🪽 前翅 (E) を測る</span>
+      </button>
+      <button class="caliper-part-btn" data-caliper-part="femur">
+        <span>🦵 後脚腿節 (F) を測る</span>
+      </button>
+      <button class="caliper-part-btn" data-caliper-part="pronotum">
+        <span>🛡️ 前胸背板 を測る</span>
+      </button>
+      <button class="caliper-part-btn" data-caliper-part="body">
+        <span>📏 体長 (頭〜腹端) を測る</span>
+      </button>
+      <button id="btn-laser-measure" class="caliper-part-btn btn-laser">
+        <span>📍 自由2点タップ測定</span>
+      </button>
+      <button id="btn-clear-measure" class="caliper-clear-btn" title="ノギス・メジャーを解除">
+        <span>✕ 解除</span>
+      </button>
+    </div>
+
+    <div class="measure-readout-bar" id="measure-readout">
+      ボタンを押すと3Dモデル上にノギスが装着されます
+    </div>
+  </div>
+
+  <!-- Bottom Control Deck: Focus Presets & Toolbars -->
+  <footer class="bottom-deck">
+    <nav class="focus-toolbar">
+      <button class="focus-btn active" data-focus="overall">🔭 全体</button>
+      <button class="focus-btn" data-focus="wings">🪽 翅 (E)</button>
+      <button class="focus-btn" data-focus="hindlegs">🦵 後脚 (F)</button>
+      <button class="focus-btn" data-focus="pronotum">🛡️ 前胸背板</button>
+      <button class="focus-btn" data-focus="head">👀 頭部・複眼</button>
+    </nav>
+
+    <div class="tools-toolbar">
+      <button id="btn-toggle-guides" class="tool-toggle-btn">
+        <span>📏</span>
+        <span class="label">寸法線: 非表示</span>
+      </button>
+
+      <button id="btn-toggle-rotate" class="tool-toggle-btn">
+        <span>🔄</span>
+        <span class="label">自動回転</span>
+      </button>
+
+      <div class="select-wrapper">
+        <span>⏱️ 生体動作:</span>
+        <select id="anim-speed">
+          <option value="1.0" selected>標準 (生体リアル)</option>
+          <option value="0.35">スロー (観察用)</option>
+          <option value="0.0">静止 (一時停止)</option>
+        </select>
+      </div>
+
+      <button id="btn-reset-cam" class="tool-toggle-btn" title="視点を初期位置に戻す">
+        <span>🎯 リセット</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- AR Toast Message -->
+  <div id="ar-status-toast" class="toast-msg">ARモデルを生成中...</div>
+
+  <!-- Main Application Script -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
