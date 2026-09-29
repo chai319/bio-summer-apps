@@ -102,8 +102,18 @@
     .slingshot-ball.p3{background:radial-gradient(circle at 35% 35%,#60a5fa,#1d4ed8);border-color:#93c5fd;box-shadow:0 0 16px #3b82f6}
     .slingshot-ball.p5{background:radial-gradient(circle at 35% 35%,#fde047,#ca8a04);border-color:#fef08a;box-shadow:0 0 20px #eab308;animation:pulseGold .55s infinite alternate}
     .slingshot-ball.p8{background:linear-gradient(45deg,#f43f5e,#eab308,#3b82f6,#10b981);border-color:#fff;box-shadow:0 0 26px rgba(234,179,8,1);animation:rainbowRotate .8s linear infinite}
+    .slingshot-ball.p12{width:56px;height:56px;font-size:28px;background:radial-gradient(circle at 35% 35%,#ff007a,#7928ca,#00dfd8);border:4px solid #fff;box-shadow:0 0 32px #ff007a,0 0 48px #00dfd8;animation:pulseMax .45s infinite alternate}
+    @keyframes pulseMax{from{transform:translate(-50%,50%) scale(1)}to{transform:translate(-50%,50%) scale(1.25)}}
     @keyframes pulseGold{from{transform:translate(-50%,50%) scale(1)}to{transform:translate(-50%,50%) scale(1.22)}}
     @keyframes rainbowRotate{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+
+    /* Giant 2x Bullet for 12+ Combo */
+    .flying-bullet.giant{width:48px;height:48px;background:radial-gradient(circle at 35% 35%,#ff007a,#e11d48,#fbbf24);border:3px solid #fff;box-shadow:0 0 24px #ff007a,0 0 36px #fde047;animation:giantBulletGlow .3s infinite alternate}
+    @keyframes giantBulletGlow{from{filter:brightness(1)}to{filter:brightness(1.4)}}
+
+    /* POWER MAX Banner */
+    .power-max-banner{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);padding:18px 40px;background:linear-gradient(135deg,#ff007a 0%,#7928ca 50%,#00dfd8 100%);color:#fff;font-size:2.4rem;font-weight:900;border-radius:28px;border:4px solid #fff;box-shadow:0 0 40px rgba(255,0,122,.85),0 12px 48px rgba(0,0,0,.7);z-index:45;text-shadow:0 3px 10px rgba(0,0,0,.8),0 0 20px #fff;animation:powerMaxAnim 1.1s cubic-bezier(.16,1,.3,1) forwards;white-space:nowrap;pointer-events:none;letter-spacing:0.08em}
+    @keyframes powerMaxAnim{0%{transform:translate(-50%,-50%) scale(0.2) rotate(-12deg);opacity:0}30%{transform:translate(-50%,-50%) scale(1.4) rotate(4deg);opacity:1}55%{transform:translate(-50%,-50%) scale(1.08) rotate(-2deg);opacity:1}75%{transform:translate(-50%,-50%) scale(1.15) rotate(0deg);opacity:1}100%{transform:translate(-50%,-68%) scale(1.2);opacity:0}}
 
     /* Boss Bug */
     .boss-bug{position:absolute;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;z-index:24;pointer-events:none;user-select:none;transform:translate(-50%,-50%);filter:drop-shadow(0 6px 14px rgba(220,38,38,.45));transition:filter .1s linear}
@@ -134,18 +144,29 @@
     .plant-water-ring.active{opacity:1;animation:waterPulse .6s infinite alternate}
     @keyframes waterPulse{from{transform:translateX(-50%) scale(0.85)}to{transform:translateX(-50%) scale(1.15)}}
 
-    /* Typing Game */
-    .typing-box{position:absolute;left:4%;right:4%;bottom:8px;padding:12px 14px;background:rgba(15,23,42,.95);border:3px solid #38bdf8;border-radius:18px;color:#fff;z-index:30;backdrop-filter:blur(8px);box-shadow:0 6px 20px rgba(0,0,0,.35)}
-    .typing-header{display:flex;justify-content:space-between;align-items:center;font-size:0.86rem;font-weight:900;color:#94a3b8;margin-bottom:6px}
-    .typing-target-word{font-size:1.45rem;font-weight:900;color:#fde047;letter-spacing:0.06em;text-align:center;margin:4px 0}
-    .typing-ruby{font-size:0.88rem;color:#7dd3fc;letter-spacing:0.08em;margin-bottom:8px;text-align:center}
-    .typing-input-display{background:rgba(255,255,255,.12);border:2px solid #0284c7;border-radius:12px;padding:7px 12px;font-size:1.15rem;font-weight:900;text-align:center;letter-spacing:0.08em;min-height:24px}
-    .typing-input-display .matched{color:#4ade80}
-    .typing-input-display .remaining{color:#94a3b8}
-    .typing-soft-keys{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}
-    .typing-key-btn{min-width:38px;height:38px;padding:0 10px;border-radius:8px;border:1px solid #38bdf8;background:#1e293b;color:#fff;font-size:1.05rem;font-weight:900;cursor:pointer}
-    .typing-key-btn:active{background:#0284c7;transform:scale(.95)}
-    .typing-stats{display:flex;justify-content:space-around;font-size:0.8rem;color:#cbd5e1;margin-top:6px}
+    /* Typing Game Enhanced (Centered Modal, High Visibility, Full iPad Touch Support) */
+    .typing-box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:94%;max-width:540px;padding:16px 18px;background:rgba(15,23,42,.96);border:3px solid #38bdf8;border-radius:20px;color:#fff;z-index:30;backdrop-filter:blur(14px);box-shadow:0 12px 36px rgba(0,0,0,.6);box-sizing:border-box;pointer-events:auto !important;touch-action:manipulation}
+    .typing-header{display:flex;justify-content:space-between;align-items:center;font-size:0.88rem;font-weight:900;color:#94a3b8;margin-bottom:6px}
+    .typing-target-word{font-size:1.5rem;font-weight:900;color:#fde047;letter-spacing:0.06em;text-align:center;margin:3px 0;text-shadow:0 2px 8px rgba(253,224,71,.3)}
+    .typing-ruby-guide{font-size:0.95rem;color:#7dd3fc;letter-spacing:0.08em;margin-bottom:6px;text-align:center}
+    .typing-ruby-guide .matched-kana{color:#4ade80;font-weight:900;text-shadow:0 0 6px rgba(74,222,128,.4)}
+    .typing-ruby-guide .remaining-kana{color:#cbd5e1}
+    .typing-romaji-display{background:rgba(255,255,255,.08);border:2px solid #0284c7;border-radius:12px;padding:8px 12px;font-size:1.18rem;font-weight:900;text-align:center;letter-spacing:0.12em;min-height:28px;margin-bottom:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .typing-romaji-display .matched-romaji{color:#4ade80;text-shadow:0 0 6px rgba(74,222,128,.5)}
+    .typing-romaji-display .next-romaji{color:#fde047;text-decoration:underline;background:rgba(250,204,21,.3);border-radius:4px;padding:1px 5px;box-shadow:0 0 8px rgba(250,204,21,.4)}
+    .typing-romaji-display .remaining-romaji{color:#64748b}
+    .typing-input-bar{display:flex;gap:8px;margin-bottom:8px;pointer-events:auto}
+    .typing-input-field{flex:1;height:44px;border-radius:12px;border:2px solid #38bdf8;background:#0f172a;color:#fff;font-size:1.05rem;font-weight:800;padding:0 14px;outline:none;text-align:center;pointer-events:auto !important;touch-action:manipulation;-webkit-user-select:text;user-select:text}
+    .typing-input-field:focus{border-color:#fde047;box-shadow:0 0 12px rgba(253,224,71,.45)}
+    .typing-assist-btn{min-width:105px;height:44px;border-radius:12px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:900;font-size:0.88rem;cursor:pointer;touch-action:manipulation;box-shadow:0 3px 8px rgba(245,158,11,.3);pointer-events:auto !important}
+    .typing-assist-btn:active{transform:scale(0.96);background:#d97706}
+    .typing-skip-btn{height:36px;padding:0 14px;border-radius:10px;border:1px solid #f87171;background:rgba(239,68,68,.18);color:#fca5a5;font-weight:800;font-size:0.8rem;cursor:pointer;margin-top:4px;pointer-events:auto !important;touch-action:manipulation}
+    .typing-soft-keys{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0;pointer-events:auto}
+    .typing-key-btn{min-width:44px;height:42px;padding:0 10px;border-radius:10px;border:1.5px solid #38bdf8;background:#1e293b;color:#fff;font-size:1.1rem;font-weight:900;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .08s,background .08s;pointer-events:auto !important}
+    .typing-key-btn.next-key{border-color:#fde047;background:#0369a1;color:#fde047;box-shadow:0 0 12px rgba(253,224,71,.45);animation:keyPulse 1s infinite alternate}
+    @keyframes keyPulse{from{transform:scale(1)}to{transform:scale(1.06)}}
+    .typing-key-btn:active{background:#0284c7;transform:scale(.92)}
+    .typing-stats{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;font-size:0.8rem;color:#94a3b8;margin-top:6px}
 
     /* Wave Harvest HUD */
     .harvest-wave-badge{position:absolute;left:50%;top:10px;transform:translateX(-50%);padding:6px 18px;border-radius:99px;background:rgba(15,23,42,.9);border:2px solid #facc15;color:#fde047;font-weight:900;font-size:0.95rem;z-index:25;box-shadow:0 4px 12px rgba(0,0,0,.3)}
@@ -539,9 +560,19 @@ function renderFields(){
       contents = positions.map((p, i) => {
         const base = [34, 54, 68, 80, 108, 104, 102][state.checkpoint];
         const size = Math.round(base * crop.scale * (0.96 + (i % 3) * 0.03));
-        const useSprite = (state.checkpoint === 3 && state.phrases.length)
-          ? ([3, 9, 10, 3][state.phrases.length] || 3)
-          : (state.checkpoint === 6 && ci === 3 && i % 3 === 0 ? 11 : sprite);
+        let useSprite = sprite;
+        if(state.checkpoint === 3 && state.phrases.length){
+          useSprite = ([3, 9, 10, 3][state.phrases.length] || 3);
+        } else if(state.checkpoint === 6){
+          if(state.harvest?.completed || state.harvested.size >= 4){
+            // 3回終わったら実がならない（収穫後の葉のみの姿）
+            useSprite = (ci === 3 && i % 3 === 0 ? 11 : 4);
+          } else if(ci === 3 && i % 3 === 0){
+            useSprite = 11;
+          } else {
+            useSprite = 6;
+          }
+        }
         const waterRings = `<div class="plant-water-ring" id="pRing_${ci}_${i}"></div>`;
         return `<span class="plant" id="plant_${ci}_${i}" style="${plantStyle(useSprite, size, p.x, p.y, ((i%5)-2)*(ci+1))}">${waterRings}</span>`;
       }).join('');
@@ -676,7 +707,14 @@ function renderGameOverlay(){
   } else if(state.checkpoint === 5){
     initBugGame();
   } else if(state.checkpoint === 6){
-    initHarvestGame();
+    if(state.harvest?.completed || state.harvested.size >= 4){
+      overlay.innerHTML = `
+        <div class="harvest-basket" id="harvestBasket" style="filter:drop-shadow(0 0 25px #fde047)">🧺</div>
+        <div class="harvest-guide-hint">🎉 3ウェーブ完熟収穫達成！すべての実を収穫しました！</div>
+      `;
+    } else {
+      initHarvestGame();
+    }
   }
 }
 
@@ -838,134 +876,349 @@ function fertilizeSoilCircle(e){
 }
 
 /* ========================================================
-   31日目：生物用語タイピングチャレンジ（iPad＆PC両対応）
+   31日目：生物用語タイピングチャレンジ（ローマ字・かな・IME・iPad・ソフトキー全対応）
    ======================================================== */
 const TYPING_QUESTIONS = [
-  { word: '成長曲線', ruby: 'せいちょうきょくせん', romaji: 'seityoukyokusen' },
-  { word: '環境収容力', ruby: 'かんきょうしゅうようりょく', romaji: 'kankyousyuuyouryoku' },
-  { word: '最終収量一定の法則', ruby: 'さいしゅうしゅうりょういっていのほうそく', romaji: 'saisyuusyuuryouitteinohousoku' }
+  {
+    word: '成長曲線',
+    ruby: 'せいちょうきょくせん',
+    romaji: 'SEICHO U KYOKUSEN',
+    romajiRaw: 'seichoukyokusen',
+    romajiAlt: 'seityoukyokusen'
+  },
+  {
+    word: '環境収容力',
+    ruby: 'かんきょうしゅうようりょく',
+    romaji: 'KANKYOU SHUUYOU RYOKU',
+    romajiRaw: 'kankyoushuuyouryoku',
+    romajiAlt: 'kankyousyuuyouryoku'
+  },
+  {
+    word: '最終収量一定の法則',
+    ruby: 'さいしゅうしゅうりょういっていのほうそく',
+    romaji: 'SAISHUU SHUURYOU ITTEI NO HOUSOKU',
+    romajiRaw: 'saishuushuuryouitteinohousoku',
+    romajiAlt: 'saisyuusyuuryouitteinohousoku'
+  }
 ];
 
 function initTypingGame(){
   state.typing = {
     qIndex: 0,
-    charIndex: 0,
+    matchedRomajiLen: 0,
     missCount: 0,
     startTime: performance.now(),
     elapsed: 0,
     completed: false
   };
 
-  renderTypingUI();
+  const overlay = $('#gameOverlay');
+  if(overlay) overlay.style.pointerEvents = 'auto';
+
+  setupTypingDOM();
+  updateTypingDisplay();
+
+  window.removeEventListener('keydown', handleTypingKey);
   window.addEventListener('keydown', handleTypingKey);
 }
 
-function renderTypingUI(){
+function bindFastTap(el, callback){
+  if(!el) return;
+  let lastTime = 0;
+  const trigger = e => {
+    const now = performance.now();
+    if(now - lastTime < 130) return;
+    lastTime = now;
+    if(e.cancelable) e.preventDefault();
+    e.stopPropagation();
+    callback();
+  };
+  el.addEventListener('pointerdown', trigger, { passive: false });
+  el.addEventListener('click', trigger, { passive: false });
+  el.addEventListener('touchend', trigger, { passive: false });
+}
+
+function setupTypingDOM(){
   const overlay = $('#gameOverlay');
+  overlay.style.pointerEvents = 'auto';
+  overlay.innerHTML = `
+    <div class="typing-box" id="typingBox">
+      <div class="typing-header">
+        <span id="typingQProgress">⌨️ 生物用語タイピング (1/3問)</span>
+        <span>ミス: <b id="typeMiss">0</b> 回</span>
+      </div>
+      <div class="typing-target-word" id="typingTargetWord">成長曲線</div>
+      <div class="typing-ruby-guide" id="typingRubyGuide"></div>
+      <div class="typing-romaji-display" id="typingRomajiDisplay"></div>
+      <div class="typing-input-bar">
+        <input type="text" id="typingInput" class="typing-input-field" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="キーボード打鍵 または タッチ入力">
+        <button type="button" class="typing-assist-btn" id="typingAssistBtn">💡 1文字進む</button>
+      </div>
+      <div class="typing-soft-keys" id="typingSoftKeys"></div>
+      <div style="display:flex;justify-content:center">
+        <button type="button" class="typing-skip-btn" id="typingSkipBtn" style="display:none">⏩ この単語を完成させる</button>
+      </div>
+      <div class="typing-stats">
+        <span>💡 iPadでは下の文字ボタンをポンポンとタップするだけで進めます！</span>
+      </div>
+    </div>
+  `;
+
+  const inputEl = $('#typingInput');
+  if(inputEl){
+    inputEl.addEventListener('input', handleTypingInputField);
+    inputEl.addEventListener('compositionend', e => {
+      if(e.data) handleTypingInputField({ target: { value: e.data } });
+    });
+    inputEl.addEventListener('keydown', e => {
+      if(e.key === 'Enter'){ e.preventDefault(); inputEl.value = ''; }
+    });
+    // 自動フォーカス（PC用）
+    setTimeout(() => { try{ inputEl.focus(); }catch(_){} }, 100);
+  }
+
+  bindFastTap($('#typingAssistBtn'), () => {
+    advanceTypingChar(true);
+  });
+
+  bindFastTap($('#typingSkipBtn'), () => {
+    const q = TYPING_QUESTIONS[state.typing.qIndex];
+    if(q) completeCurrentWord(q);
+  });
+}
+
+function updateTypingDisplay(){
+  if(state.typing.completed) return;
   const q = TYPING_QUESTIONS[state.typing.qIndex];
   if(!q){
     finishTypingGame();
     return;
   }
 
-  const currentRuby = q.ruby;
-  const matchedPart = currentRuby.slice(0, state.typing.charIndex);
-  const remainingPart = currentRuby.slice(state.typing.charIndex);
+  const raw = q.romajiRaw;
+  const curLen = state.typing.matchedRomajiLen;
+  const matchedRomaji = raw.slice(0, curLen).toUpperCase();
+  const nextRomajiChar = (raw[curLen] || '').toUpperCase();
+  const remainingRomaji = raw.slice(curLen + 1).toUpperCase();
 
-  const nextChar = currentRuby[state.typing.charIndex] || '';
-  const candidateChars = generateSoftKeys(nextChar);
+  const ratio = Math.min(1, curLen / Math.max(1, raw.length));
+  const kanaLen = Math.floor(ratio * q.ruby.length);
+  const matchedKana = q.ruby.slice(0, kanaLen);
+  const remainingKana = q.ruby.slice(kanaLen);
 
-  overlay.innerHTML = `
-    <div class="typing-box" id="typingBox">
-      <div class="typing-header">
-        <span>⌨️ 生物用語タイピング (${state.typing.qIndex + 1}/3問)</span>
-        <span>ミス: <b id="typeMiss">${state.typing.missCount}</b> 回</span>
-      </div>
-      <div class="typing-target-word">${q.word}</div>
-      <div class="typing-ruby">${q.ruby}</div>
-      <div class="typing-input-display">
-        <span class="matched">${matchedPart}</span><span class="remaining">${remainingPart}</span>
-      </div>
-      <div class="typing-soft-keys">
-        ${candidateChars.map(ch => `<button type="button" class="typing-key-btn" data-char="${ch}">${ch}</button>`).join('')}
-      </div>
-      <div class="typing-stats">
-        <span>💡 キーボード入力 または 上の文字ボタンをタップ！</span>
-      </div>
-    </div>
-  `;
+  const progEl = $('#typingQProgress');
+  if(progEl) progEl.textContent = `⌨️ 生物用語タイピング (${state.typing.qIndex + 1}/3問)`;
 
-  $$('.typing-key-btn').forEach(btn => {
-    btn.addEventListener('click', () => processTypingChar(btn.dataset.char));
-  });
+  const wordEl = $('#typingTargetWord');
+  if(wordEl) wordEl.textContent = q.word;
+
+  const rubyEl = $('#typingRubyGuide');
+  if(rubyEl){
+    rubyEl.innerHTML = `<span class="matched-kana">${matchedKana}</span><span class="remaining-kana">${remainingKana}</span>`;
+  }
+
+  const romajiEl = $('#typingRomajiDisplay');
+  if(romajiEl){
+    romajiEl.innerHTML = `<span class="matched-romaji">${matchedRomaji}</span><span class="next-romaji">${nextRomajiChar}</span><span class="remaining-romaji">${remainingRomaji}</span>`;
+  }
+
+  const missEl = $('#typeMiss');
+  if(missEl) missEl.textContent = state.typing.missCount;
+
+  // ミスが2回以上のときはスキップボタン表示
+  const skipBtn = $('#typingSkipBtn');
+  if(skipBtn){
+    skipBtn.style.display = state.typing.missCount >= 2 ? 'inline-block' : 'none';
+  }
+
+  // ソフトキー更新
+  const softKeysContainer = $('#typingSoftKeys');
+  if(softKeysContainer){
+    const softKeys = generateSmartSoftKeys(q, curLen);
+    softKeysContainer.innerHTML = softKeys.map((k, idx) => {
+      const isNext = idx === 0 || (idx === 1 && /[A-Z]/.test(k));
+      return `<button type="button" class="typing-key-btn ${isNext ? 'next-key' : ''}" data-key="${k}">${k}</button>`;
+    }).join('');
+
+    softKeysContainer.querySelectorAll('.typing-key-btn').forEach(btn => {
+      bindFastTap(btn, () => {
+        processInputKey(btn.dataset.key);
+      });
+    });
+  }
+
+  const inputEl = $('#typingInput');
+  if(inputEl && document.activeElement !== inputEl){
+    inputEl.value = '';
+  }
 }
 
-function generateSoftKeys(targetChar){
-  const pool = ['せ','い','ち','ょ','う','き','ょ','く','せ','ん','か','ん','し','ゅ','う','よ','う','り','ょ','く','さ','い','て','の','ほ','う','そ','く','ぐ','び','つ','る'];
-  const res = [targetChar];
-  while(res.length < 8){
-    const rnd = pool[Math.floor(Math.random() * pool.length)];
-    if(!res.includes(rnd)) res.push(rnd);
+function generateSmartSoftKeys(q, curLen){
+  const nextChar = (q.romajiRaw[curLen] || '').toUpperCase();
+  const nextAlt = (q.romajiAlt[curLen] || '').toUpperCase();
+  const ratio = curLen / Math.max(1, q.romajiRaw.length);
+  const nextKana = q.ruby[Math.floor(ratio * q.ruby.length)] || '';
+
+  const pool = ['A','E','I','O','U','K','S','T','N','H','M','Y','R','W','C'];
+  const res = [];
+  if(nextChar) res.push(nextChar);
+  if(nextAlt && !res.includes(nextAlt)) res.push(nextAlt);
+  if(nextKana && !res.includes(nextKana)) res.push(nextKana);
+
+  // 単語に含まれるかな
+  for(let ch of q.ruby){
+    if(!res.includes(ch) && res.length < 8) res.push(ch);
   }
-  return res.sort(() => Math.random() - 0.5);
+  // アルファベットプール
+  for(let ch of pool){
+    if(!res.includes(ch) && res.length < 11) res.push(ch);
+  }
+  return res;
 }
 
 function handleTypingKey(e){
   if(state.checkpoint !== 3 || state.typing.completed) return;
-  const q = TYPING_QUESTIONS[state.typing.qIndex];
-  if(!q) return;
+  if(e.ctrlKey || e.altKey || e.metaKey) return;
 
-  const targetChar = q.ruby[state.typing.charIndex];
-  const key = e.key;
-
-  if(key.length === 1){
-    if(key === targetChar){
-      processTypingChar(key);
-    } else {
-      soundBuzzer();
-      state.typing.missCount++;
-      const missEl = $('#typeMiss');
-      if(missEl) missEl.textContent = state.typing.missCount;
-    }
+  // 単一の英数字キー
+  if(e.key.length === 1 && /^[a-zA-Z0-9]$/.test(e.key)){
+    e.preventDefault();
+    processInputKey(e.key);
   }
 }
 
-function processTypingChar(char){
+function handleTypingInputField(e){
+  const val = (e.target.value || '').trim();
+  if(!val) return;
+
   const q = TYPING_QUESTIONS[state.typing.qIndex];
   if(!q) return;
-  const targetChar = q.ruby[state.typing.charIndex];
 
-  if(char === targetChar){
+  // 1. 漢字完全一致またはプレフィックス（例: 成長曲線、環境収容力）
+  if(q.word.startsWith(val) || val.includes(q.word)){
+    completeCurrentWord(q);
+    e.target.value = '';
+    return;
+  }
+
+  // 2. ひらがな一致（例: せいちょう）
+  const curRuby = q.ruby;
+  if(curRuby.includes(val)){
     soundKeyClick();
-    state.typing.charIndex++;
-    if(state.typing.charIndex >= q.ruby.length){
-      soundBingo();
-      state.phrases.push(q.word);
-      spawnDanmaku(`✨ ${q.word} ✨`, state.typing.qIndex + 1);
+    const matchedEndIdx = curRuby.indexOf(val) + val.length;
+    const newRomajiLen = Math.min(q.romajiRaw.length, Math.round((matchedEndIdx / curRuby.length) * q.romajiRaw.length));
+    state.typing.matchedRomajiLen = Math.max(state.typing.matchedRomajiLen + 1, newRomajiLen);
+    e.target.value = '';
 
-      $$('.plant').forEach(p => {
-        p.style.transform = 'translateX(-50%) translateY(-18px) scale(1.15) rotate(var(--tilt,0deg))';
-        setTimeout(() => { if(p) p.style.transform = ''; }, 450);
-      });
-
-      state.typing.qIndex++;
-      state.typing.charIndex = 0;
-      updateField(state.typing.qIndex - 1);
-      updateCareStatus();
-
-      if(state.typing.qIndex >= TYPING_QUESTIONS.length){
-        finishTypingGame();
-      } else {
-        setTimeout(renderTypingUI, 400);
-      }
-      return;
+    if(state.typing.matchedRomajiLen >= q.romajiRaw.length){
+      completeCurrentWord(q);
+    } else {
+      updateTypingDisplay();
     }
-    renderTypingUI();
+    return;
+  }
+
+  // 3. 英字打鍵の連打（ローマ字）
+  for(let ch of val){
+    processInputKey(ch);
+  }
+  e.target.value = '';
+}
+
+function processInputKey(inputChar){
+  if(state.checkpoint !== 3 || state.typing.completed) return;
+  const q = TYPING_QUESTIONS[state.typing.qIndex];
+  if(!q) return;
+
+  const raw = q.romajiRaw;
+  const alt = q.romajiAlt;
+  const curLen = state.typing.matchedRomajiLen;
+  const targetChar = raw[curLen] ? raw[curLen].toLowerCase() : '';
+  const altTargetChar = alt[curLen] ? alt[curLen].toLowerCase() : '';
+  const inChar = inputChar.toLowerCase();
+
+  // 1. ローマ字完全一致判定（通常またはAlt）
+  if(inChar === targetChar || inChar === altTargetChar){
+    advanceTypingChar(false);
+    return;
+  }
+
+  // 2. 一般的なローマ字の同音異字ペア許容
+  const interchangeable = [
+    ['c','t'], ['c','s'], ['y','h'], ['j','z'], ['f','h'], ['w','u']
+  ];
+  const isMatchInterchangeable = interchangeable.some(
+    ([a,b]) => (targetChar === a && inChar === b) || (targetChar === b && inChar === a) ||
+               (altTargetChar === a && inChar === b) || (altTargetChar === b && inChar === a)
+  );
+  if(isMatchInterchangeable){
+    advanceTypingChar(false);
+    return;
+  }
+
+  // 3. かな直接入力判定
+  const ratio = curLen / Math.max(1, raw.length);
+  const curKanaIdx = Math.floor(ratio * q.ruby.length);
+  const targetKana = q.ruby[curKanaIdx];
+  if(inputChar === targetKana){
+    advanceKanaChar();
+    return;
+  }
+
+  // ミス判定
+  soundBuzzer();
+  state.typing.missCount++;
+  updateTypingDisplay();
+}
+
+function advanceTypingChar(isAssist=false){
+  const q = TYPING_QUESTIONS[state.typing.qIndex];
+  if(!q) return;
+
+  soundKeyClick();
+  state.typing.matchedRomajiLen++;
+
+  if(state.typing.matchedRomajiLen >= q.romajiRaw.length){
+    completeCurrentWord(q);
   } else {
-    soundBuzzer();
-    state.typing.missCount++;
-    const missEl = $('#typeMiss');
-    if(missEl) missEl.textContent = state.typing.missCount;
+    updateTypingDisplay();
+  }
+}
+
+function advanceKanaChar(){
+  const q = TYPING_QUESTIONS[state.typing.qIndex];
+  if(!q) return;
+
+  soundKeyClick();
+  const step = Math.max(1, Math.round(q.romajiRaw.length / q.ruby.length));
+  state.typing.matchedRomajiLen = Math.min(q.romajiRaw.length, state.typing.matchedRomajiLen + step);
+
+  if(state.typing.matchedRomajiLen >= q.romajiRaw.length){
+    completeCurrentWord(q);
+  } else {
+    updateTypingDisplay();
+  }
+}
+
+function completeCurrentWord(q){
+  soundBingo();
+  state.phrases.push(q.word);
+  spawnDanmaku(`✨ ${q.word} ✨`, state.typing.qIndex + 1);
+
+  $$('.plant').forEach(p => {
+    p.style.transform = 'translateX(-50%) translateY(-22px) scale(1.18) rotate(var(--tilt,0deg))';
+    setTimeout(() => { if(p) p.style.transform = ''; }, 450);
+  });
+
+  state.typing.qIndex++;
+  state.typing.matchedRomajiLen = 0;
+  updateField(state.typing.qIndex - 1);
+  updateCareStatus();
+
+  if(state.typing.qIndex >= TYPING_QUESTIONS.length){
+    finishTypingGame();
+  } else {
+    setTimeout(updateTypingDisplay, 300);
   }
 }
 
@@ -975,18 +1228,23 @@ function finishTypingGame(){
   const elapsed = (performance.now() - state.typing.startTime) / 1000;
   state.typing.elapsed = elapsed;
 
-  let timeBonus = Math.max(0, Math.round((40 - elapsed) * 25));
-  state.typingScore = Math.max(300, 1000 - state.typing.missCount * 40 + timeBonus);
+  let timeBonus = Math.max(0, Math.round((45 - elapsed) * 25));
+  state.typingScore = Math.max(350, 1000 - state.typing.missCount * 30 + timeBonus);
 
   const box = $('#typingBox');
   if(box){
     box.innerHTML = `
-      <div style="text-align:center;padding:10px">
-        <h4 style="margin:0 0 6px;color:#86efac;font-size:1.3rem">🎉 タイピング全問クリア！</h4>
-        <div style="font-size:0.95rem;color:#fde047">タイム: ${elapsed.toFixed(1)}秒 ｜ ミス: ${state.typing.missCount}回</div>
-        <div style="font-size:1.25rem;font-weight:900;color:#fff;margin-top:6px">スコア: +${state.typingScore} 点</div>
+      <div style="text-align:center;padding:14px">
+        <h4 style="margin:0 0 8px;color:#86efac;font-size:1.4rem">🎉 生物用語タイピング 全問クリア！</h4>
+        <div style="font-size:1rem;color:#fde047;font-weight:900">タイム: ${elapsed.toFixed(1)}秒 ｜ ミス: ${state.typing.missCount}回</div>
+        <div style="font-size:1.4rem;font-weight:900;color:#fff;margin:8px 0">獲得スコア: +${state.typingScore} 点</div>
+        <div style="font-size:0.88rem;color:#94a3b8;margin-bottom:12px">ダイズたちに重要用語のパワーが届きました！</div>
+        <button type="button" class="btn primary" id="typingDoneBtn" style="padding:10px 24px;font-size:1rem;font-weight:900;border-radius:12px;cursor:pointer">次の日へ進む ➔</button>
       </div>
     `;
+    $('#typingDoneBtn')?.addEventListener('click', () => {
+      $('#nextDay')?.click();
+    });
   }
   updateCareStatus();
 }
@@ -1072,8 +1330,9 @@ function initBugGame(){
 function updateSlingshotBallVisual(){
   const ball = $('#slingBall');
   if(!ball) return;
-  ball.classList.remove('p3', 'p5', 'p8');
-  if(bugGame.combo >= 8) ball.classList.add('p8');
+  ball.classList.remove('p3', 'p5', 'p8', 'p12');
+  if(bugGame.combo >= 12) ball.classList.add('p12');
+  else if(bugGame.combo >= 8) ball.classList.add('p8');
   else if(bugGame.combo >= 5) ball.classList.add('p5');
   else if(bugGame.combo >= 3) ball.classList.add('p3');
 }
@@ -1082,7 +1341,8 @@ function updateComboHud(hit=false){
   const el = $('#bugCombo');
   if(!el) return;
   let label = `🔥 ${bugGame.combo} COMBO`;
-  if(bugGame.combo >= 8) label += ' ⚡5-WAY!';
+  if(bugGame.combo >= 12) label += ' ⚡🔥POWER MAX!!';
+  else if(bugGame.combo >= 8) label += ' ⚡5-WAY!';
   else if(bugGame.combo >= 5) label += ' 🚀SPEED!';
   else if(bugGame.combo >= 3) label += ' 💥3-WAY!';
   el.textContent = label;
@@ -1091,6 +1351,15 @@ function updateComboHud(hit=false){
     setTimeout(() => el.classList.remove('active'), 200);
   }
   updateSlingshotBallVisual();
+}
+
+function triggerPowerMaxBanner(){
+  soundBingo();
+  const banner = document.createElement('div');
+  banner.className = 'power-max-banner';
+  banner.innerHTML = '⚡ POWER MAX！！ ⚡<div style="font-size:1.1rem;font-weight:800;color:#fde047;margin-top:6px;text-align:center">弾のサイズが2倍＆超巨大化！</div>';
+  $('#gameOverlay').appendChild(banner);
+  setTimeout(() => banner.remove(), 1200);
 }
 
 function spawnBug(){
@@ -1271,13 +1540,14 @@ function bindSlingshot(){
 }
 
 function spawnBullet(x, y, vx, vy){
+  const isGiant = bugGame.combo >= 12;
   const el = document.createElement('div');
-  el.className = 'flying-bullet';
-  el.textContent = '💊';
+  el.className = `flying-bullet ${isGiant ? 'giant' : ''}`;
+  el.textContent = isGiant ? '💣' : '💊';
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
   $('#gameOverlay').appendChild(el);
-  bugGame.bullets.push({ el, x, y, vx, vy, alive: true });
+  bugGame.bullets.push({ el, x, y, vx, vy, isGiant, hitBug: false, alive: true });
 }
 
 function runBugGameLoop(){
@@ -1329,24 +1599,37 @@ function runBugGameLoop(){
     blt.el.style.left = `${blt.x}px`;
     blt.el.style.top = `${blt.y}px`;
 
-    if(blt.x < -20 || blt.x > stage.width + 20 || blt.y < -20 || blt.y > stage.height + 20){
+    // 画面外判定（外れた弾はコンボリセット！）
+    if(blt.x < -30 || blt.x > stage.width + 30 || blt.y < -30 || blt.y > stage.height + 30){
       blt.alive = false;
       blt.el.remove();
       bugGame.bullets.splice(i, 1);
+
+      // 何にも当たらずに外れた場合、コンボをゼロにリセット！
+      if(!blt.hitBug && bugGame.combo > 0){
+        soundBuzzer();
+        bugGame.combo = 0;
+        updateComboHud(false);
+        showHitPopup(stage.width / 2, stage.height - 110, 'MISS! COMBO RESET', 'good');
+      }
       continue;
     }
 
-    // A. ボスとの衝突判定
+    // A. ボスとの衝突判定（巨大弾は判定半径100px）
     if(bugGame.boss && bugGame.boss.alive){
       const bs = bugGame.boss;
       const dist = Math.hypot(blt.x - bs.x, blt.y - bs.y);
-      if(dist <= 52){
+      const hitRadius = blt.isGiant ? 100 : 52;
+      if(dist <= hitRadius){
+        blt.hitBug = true;
         blt.alive = false;
         blt.el.remove();
         bugGame.bullets.splice(i, 1);
 
-        bs.hp--;
+        const damage = blt.isGiant ? 2 : 1;
+        bs.hp = Math.max(0, bs.hp - damage);
         bugGame.combo++;
+        if(bugGame.combo === 12) triggerPowerMaxBanner();
         bugGame.maxCombo = Math.max(bugGame.maxCombo, bugGame.combo);
         bugGame.lastHitTime = performance.now();
         updateComboHud(true);
@@ -1382,23 +1665,29 @@ function runBugGameLoop(){
       }
     }
 
-    // B. 雑魚害虫との衝突判定
+    // B. 雑魚害虫との衝突判定（巨大弾は判定半径80px）
+    const bugHitRadius = blt.isGiant ? 80 : 40;
     for(let j = 0; j < bugGame.activeBugs.length; j++){
       const bug = bugGame.activeBugs[j];
       if(!bug.alive) continue;
       const dist = Math.hypot(blt.x - bug.x, blt.y - bug.y);
-      if(dist <= 40){
-        blt.alive = false;
-        blt.el.remove();
-        bugGame.bullets.splice(i, 1);
+      if(dist <= bugHitRadius){
+        blt.hitBug = true;
+        // 通常弾は消滅、巨大弾（POWER MAX）は貫通して複数撃破！
+        if(!blt.isGiant){
+          blt.alive = false;
+          blt.el.remove();
+          bugGame.bullets.splice(i, 1);
+        }
 
         bug.alive = false;
-        const isBingo = dist <= 18;
-        const addScore = isBingo ? 100 : 30;
+        const isBingo = dist <= (blt.isGiant ? 36 : 18);
+        const addScore = (isBingo ? 100 : 30) * (blt.isGiant ? 2 : 1);
         bugGame.score += addScore;
         bugGame.killed++;
 
         bugGame.combo++;
+        if(bugGame.combo === 12) triggerPowerMaxBanner();
         bugGame.maxCombo = Math.max(bugGame.maxCombo, bugGame.combo);
         bugGame.lastHitTime = performance.now();
         updateComboHud(true);
@@ -1425,7 +1714,7 @@ function runBugGameLoop(){
         } else {
           setTimeout(() => spawnBug(), 350);
         }
-        break;
+        if(!blt.isGiant) break;
       }
     }
   }
@@ -1623,6 +1912,11 @@ function finishHarvestGame(){
   const elapsed = (performance.now() - state.harvest.startTime) / 1000;
   state.harvest.elapsed = elapsed;
 
+  // 3回終わったら実がならないように、豆コンテナを完全消去＆追加生成停止
+  harvestGame.beans = [];
+  const container = $('#beansContainer');
+  if(container) container.innerHTML = '';
+
   let timeBonus = 500;
   if(elapsed < 15) timeBonus = 1500;
   else if(elapsed < 25) timeBonus = 1100;
@@ -1631,7 +1925,7 @@ function finishHarvestGame(){
   state.harvestScore = 600 + timeBonus;
 
   const hint = $('#harvestHint');
-  if(hint) hint.textContent = `🎉 3ウェーブ完熟収穫達成！ (${elapsed.toFixed(1)}秒 / +${state.harvestScore}点)`;
+  if(hint) hint.textContent = `🎉 3ウェーブ完熟収穫達成！すべての実を収穫しました！ (${elapsed.toFixed(1)}秒 / +${state.harvestScore}点)`;
 
   const bk = $('#harvestBasket');
   if(bk) bk.style.filter = 'drop-shadow(0 0 25px #fde047)';
