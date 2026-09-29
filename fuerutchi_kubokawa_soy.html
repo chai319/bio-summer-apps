@@ -127,6 +127,43 @@
     .rank-a{background:#3b82f6;color:#fff}
     .rank-b{background:#64748b;color:#fff}
 
+    /* Fertilizer Circle & Machine */
+    .fertilizer-scope{position:absolute;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(250,204,21,0.35) 0%,rgba(132,204,22,0.2) 70%,rgba(234,179,8,0.7) 100%);border:2px dashed #ca8a04;pointer-events:none;transform:translate(-50%,-50%);z-index:23;animation:pulseScope 1.2s infinite alternate}
+    @keyframes pulseScope{from{transform:translate(-50%,-50%) scale(0.95);opacity:0.8}to{transform:translate(-50%,-50%) scale(1.05);opacity:1}}
+    .plant-water-ring{position:absolute;left:50%;bottom:0;width:38px;height:14px;border-radius:50%;background:rgba(56,189,248,0.35);border:1.5px solid #38bdf8;transform:translateX(-50%);pointer-events:none;opacity:0;transition:opacity .2s}
+    .plant-water-ring.active{opacity:1;animation:waterPulse .6s infinite alternate}
+    @keyframes waterPulse{from{transform:translateX(-50%) scale(0.85)}to{transform:translateX(-50%) scale(1.15)}}
+
+    /* Typing Game */
+    .typing-box{position:absolute;left:4%;right:4%;bottom:8px;padding:12px 14px;background:rgba(15,23,42,.95);border:3px solid #38bdf8;border-radius:18px;color:#fff;z-index:30;backdrop-filter:blur(8px);box-shadow:0 6px 20px rgba(0,0,0,.35)}
+    .typing-header{display:flex;justify-content:space-between;align-items:center;font-size:0.86rem;font-weight:900;color:#94a3b8;margin-bottom:6px}
+    .typing-target-word{font-size:1.45rem;font-weight:900;color:#fde047;letter-spacing:0.06em;text-align:center;margin:4px 0}
+    .typing-ruby{font-size:0.88rem;color:#7dd3fc;letter-spacing:0.08em;margin-bottom:8px;text-align:center}
+    .typing-input-display{background:rgba(255,255,255,.12);border:2px solid #0284c7;border-radius:12px;padding:7px 12px;font-size:1.15rem;font-weight:900;text-align:center;letter-spacing:0.08em;min-height:24px}
+    .typing-input-display .matched{color:#4ade80}
+    .typing-input-display .remaining{color:#94a3b8}
+    .typing-soft-keys{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}
+    .typing-key-btn{min-width:38px;height:38px;padding:0 10px;border-radius:8px;border:1px solid #38bdf8;background:#1e293b;color:#fff;font-size:1.05rem;font-weight:900;cursor:pointer}
+    .typing-key-btn:active{background:#0284c7;transform:scale(.95)}
+    .typing-stats{display:flex;justify-content:space-around;font-size:0.8rem;color:#cbd5e1;margin-top:6px}
+
+    /* Wave Harvest HUD */
+    .harvest-wave-badge{position:absolute;left:50%;top:10px;transform:translateX(-50%);padding:6px 18px;border-radius:99px;background:rgba(15,23,42,.9);border:2px solid #facc15;color:#fde047;font-weight:900;font-size:0.95rem;z-index:25;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+
+    /* Overall Result Card on Screen 4 */
+    .total-score-card{margin-bottom:20px;padding:22px;border-radius:22px;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff;border:3px solid #facc15;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .total-score-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-bottom:1px solid rgba(255,255,255,.15);padding-bottom:12px}
+    .total-score-head h3{margin:0;font-size:1.35rem;color:#fde047;display:flex;align-items:center;gap:8px}
+    .total-badge-rank{padding:5px 18px;border-radius:99px;font-size:1.3rem;font-weight:900}
+    .score-breakdown-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
+    .score-item{background:rgba(255,255,255,.07);padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.1)}
+    .score-item span{display:block;font-size:0.75rem;color:#94a3b8;font-weight:700}
+    .score-item strong{display:block;font-size:1.15rem;color:#facc15;margin-top:2px}
+    .total-sum-bar{display:flex;justify-content:space-between;align-items:baseline;background:rgba(250,204,21,.15);border:2px solid #facc15;border-radius:14px;padding:10px 16px;margin-top:10px}
+    .total-sum-bar .total-title{font-size:1.1rem;font-weight:900;color:#fde047}
+    .total-sum-bar .total-val{font-size:2rem;font-weight:900;color:#86efac}
+    .fluctuation-note{margin-top:10px;padding:10px 14px;background:rgba(59,130,246,.15);border-radius:10px;border-left:4px solid #3b82f6;font-size:0.84rem;line-height:1.5;color:#cbd5e1}
+
   </style>
 </head>
 <body>
@@ -142,17 +179,20 @@
     <div class="farm-layout"><div class="farm-stage" id="farmStage"><div class="fields" id="fields" aria-live="polite"></div><div class="game-overlay" id="gameOverlay"></div></div><aside class="care-panel"><span class="care-tag" id="careDay">0日目</span><h3 id="careTitle">種をまこう</h3><p class="instruction" id="careInstruction"></p><div class="care-work" id="careWork"></div><p class="care-status" id="careStatus" aria-live="polite"></p><div class="next-row"><button class="primary" id="nextDay" type="button" disabled>12日目へ</button></div></aside></div>
   </section>
   <section class="panel screen" id="screenGraph" hidden>
-    <div class="screen-head"><div><p class="eyebrow">119日目の収穫記録</p><h2>植物の姿と数値を結びつけて点を打とう</h2><p class="lead">教科書と同じ対数目盛です。黄色で光るグラフをタップします。</p></div><span class="time-badge">約7分</span></div>
+    <div class="screen-head"><div><p class="eyebrow">119日目の収穫記録</p><h2>植物の姿と数値を結びつけて点を打とう</h2><p class="lead">教科書と同じ対数目盛です。光るグラフを正確＆素早くタップしよう（誤打は減点！）</p></div><span class="time-badge" id="graphGameBadge">🎯 スコア: 0点</span></div>
     <div class="graph-layout"><aside class="harvest-card"><h3>いま記録する区画</h3><div class="specimen" id="currentSpecimen"></div><div class="current-data" id="currentData"></div><div class="plot-task" id="plotTask"><div id="plotInstruction"></div><div class="plot-hint" id="plotHint" aria-live="polite"></div></div></aside><div class="graphs"><article class="graph-card" id="totalCard"><h3>単位面積当たりの個体群の質量</h3><p>g乾量／m²</p><svg class="graph" id="totalGraph" viewBox="0 0 420 310" role="img" aria-label="個体群密度と単位面積当たりの個体群の質量"></svg></article><article class="graph-card" id="meanCard"><h3>個体の平均質量</h3><p>g乾量／個体</p><svg class="graph" id="meanGraph" viewBox="0 0 420 310" role="img" aria-label="個体群密度と個体の平均質量"></svg></article><div class="specimen-strip" id="specimenStrip" aria-label="密度別の収穫時の姿"></div></div></div>
     <div class="action-row"><button class="primary" id="toDiscover" type="button" disabled>2つのグラフから法則を考える</button></div>
   </section>
   <section class="panel screen" id="screenDiscover" hidden>
     <div class="screen-head"><div><p class="eyebrow">119日間育てて発見・考察</p><h2>密度が50倍でも、畑全体の収量はなぜ一定か？</h2><p class="lead">グラフと個体の姿を観察し、手元の紙（ワークシート）に論述してみよう。</p></div><span class="time-badge">約7分</span></div>
     <div class="discover">
+      <!-- 総合リザルト＆トータルスコアカード -->
+      <div id="totalScoreContainer"></div>
+
       <div class="compare-box">
-        <div class="compare-crop"><div class="mini-plant" style="--scale:1.18" aria-hidden="true"></div><div>10本/m²<br><strong>520 g/m²</strong><br><span style="font-size:0.75rem;color:var(--muted)">1個体 52.0g</span></div></div>
+        <div class="compare-crop"><div class="mini-plant" id="discPlantLow" style="--scale:1.18" aria-hidden="true"></div><div id="discDataLow">10本/m²<br><strong>520 g/m²</strong><br><span style="font-size:0.75rem;color:var(--muted)">1個体 52.0g</span></div></div>
         <div class="almost">≒</div>
-        <div class="compare-crop"><div class="mini-plant" style="--scale:.56" aria-hidden="true"></div><div>500本/m²<br><strong>610 g/m²</strong><br><span style="font-size:0.75rem;color:var(--muted)">1個体 1.22g</span></div></div>
+        <div class="compare-crop"><div class="mini-plant" id="discPlantHigh" style="--scale:.56" aria-hidden="true"></div><div id="discDataHigh">500本/m²<br><strong>610 g/m²</strong><br><span style="font-size:0.75rem;color:var(--muted)">1個体 1.22g</span></div></div>
       </div>
 
       <!-- 再掲グラフ -->
@@ -279,11 +319,83 @@
   </section>
 </main>
 <script>
-const CROPS=[{density:10,total:520,mean:52,visible:2,scale:1.18,name:'ゆったり区'},{density:50,total:575,mean:11.5,visible:4,scale:.91,name:'ほどほど区'},{density:100,total:595,mean:5.95,visible:7,scale:.74,name:'こんでいる区'},{density:500,total:610,mean:1.22,visible:12,scale:.52,name:'ぎっしり区'}];
-const CHECKPOINTS=[{day:0,label:'種うえ',title:'好きな位置に種をまこう'},{day:12,label:'水やり',title:'水をしっかり届けよう'},{day:21,label:'追肥',title:'必要な場所へ追肥しよう'},{day:31,label:'声かけ',title:'ダイズに声をかけよう'},{day:45,label:'見守る',title:'葉の重なりを観察しよう'},{day:84,label:'農薬',title:'農薬パチンコで害虫退治！'},{day:119,label:'収穫',title:'指でなぞってダイズを収穫！'}];
+const CROPS=[
+  {density:10,total:520,mean:52,visible:2,scale:1.18,name:'ゆったり区'},
+  {density:50,total:575,mean:11.5,visible:4,scale:.91,name:'ほどほど区'},
+  {density:100,total:595,mean:5.95,visible:7,scale:.74,name:'こんでいる区'},
+  {density:500,total:610,mean:1.22,visible:12,scale:.52,name:'ぎっしり区'}
+];
+const CHECKPOINTS=[
+  {day:0,label:'種うえ',title:'好きな位置に種をまこう'},
+  {day:12,label:'水やり',title:'植物を狙って水を届けよう！'},
+  {day:21,label:'追肥',title:'肥料サークルで全株をカバー！'},
+  {day:31,label:'声かけ',title:'生物用語タイピングチャレンジ！'},
+  {day:45,label:'見守る',title:'葉の重なりを観察しよう'},
+  {day:84,label:'農薬',title:'農薬パチンコで害虫退治！'},
+  {day:119,label:'収穫',title:'3ウェーブ収穫タイムアタック！'}
+];
 const POS=Array.from({length:12},(_,i)=>`${i%4*33.333}% ${Math.floor(i/4)*50}%`);
-const state={prediction:'',checkpoint:0,seeds:CROPS.map(()=>[]),waterByPlot:[0,0,0,0],fertilizer:[0,0,0,0],phrases:[],observed:new Set(),bugs:new Set(),harvested:new Set(),plotTask:0,plotted:{total:[],mean:[]}};
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],screenNames=['Predict','Farm','Graph','Discover'];
+
+// Global State
+const state = {
+  prediction: '',
+  checkpoint: 0,
+  seeds: CROPS.map(() => []),
+  plantPositions: CROPS.map(() => []), // 生徒が蒔いた位置（その後の全成長ステージで完全反映）
+  waterByPlot: [0, 0, 0, 0],
+  waterHitCount: [0, 0, 0, 0],
+  fertilizer: [0, 0, 0, 0],
+  fertCoverSum: [0, 0, 0, 0],
+  phrases: [],
+  observed: new Set(),
+  bugs: new Set(),
+  harvested: new Set(),
+  plotTask: 0,
+  plotted: { total: [], mean: [] },
+
+  // スコア記録（最大10,000点）
+  sowScore: 0,
+  waterScore: 0,
+  fertScore: 0,
+  typingScore: 0,
+  bugScore: 0,
+  harvestScore: 0,
+  graphScore: 0,
+
+  // 揺らぎ係数 (基準値に対する倍率 0.95〜1.05)
+  fluctuationFactor: 1.0,
+
+  // タイピングゲーム状態
+  typing: {
+    qIndex: 0,
+    charIndex: 0,
+    missCount: 0,
+    startTime: 0,
+    elapsed: 0,
+    completed: false
+  },
+
+  // 収穫ウェーブ状態
+  harvest: {
+    wave: 1,
+    maxWaves: 3,
+    collectedInWave: 0,
+    totalInWave: 24,
+    startTime: 0,
+    elapsed: 0,
+    completed: false
+  },
+
+  // グラフゲーム状態
+  graphGame: {
+    score: 0,
+    startTime: 0,
+    missCount: 0,
+    completed: false
+  }
+};
+
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)], screenNames = ['Predict', 'Farm', 'Graph', 'Discover'];
 
 // Web Audio API for interactive feedback
 let audioCtx = null;
@@ -316,82 +428,212 @@ function soundBingo(){
 function soundGood(){ playTone(440, 'sine', 0.1, 0.2); setTimeout(()=>playTone(554, 'sine', 0.12, 0.2), 60); }
 function soundBerry(){ playTone(600 + Math.random()*220, 'sine', 0.09, 0.22); }
 function soundBasket(){ playTone(330, 'triangle', 0.12, 0.25); setTimeout(()=>playTone(440, 'triangle', 0.12, 0.25), 70); }
+function soundBuzzer(){
+  // 連打・誤打・ミス時のブー音
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(110, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.22);
+    g.gain.setValueAtTime(0.25, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.22);
+  } catch(e){}
+}
+function soundKeyClick(){ playTone(700, 'sine', 0.04, 0.12); }
+function soundCoverEffect(){
+  playTone(587, 'sine', 0.08, 0.2);
+  setTimeout(()=>playTone(740, 'sine', 0.08, 0.2), 60);
+  setTimeout(()=>playTone(880, 'triangle', 0.15, 0.25), 120);
+}
 
 function showScreen(name){
   screenNames.forEach((n,i)=>{
-    $(`#screen${n}`).hidden=n!==name;
-    const step=document.querySelector(`[data-step="${i+1}"]`);
-    step.classList.toggle('active',n===name);
-    step.classList.toggle('done',i<screenNames.indexOf(name));
+    $(`#screen${n}`).hidden = n !== name;
+    const step = document.querySelector(`[data-step="${i+1}"]`);
+    step.classList.toggle('active', n === name);
+    step.classList.toggle('done', i < screenNames.indexOf(name));
   });
-  window.scrollTo({top:0,behavior:'smooth'});
-  if(name==='Discover'){ syncDiscoverGraphs(); }
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(name === 'Discover'){
+    renderFinalTotalResults();
+    syncDiscoverGraphs();
+  }
 }
 
-function plantStyle(sprite,size,x,y,tilt=0){return`--pos:${POS[sprite]};--size:${size}px;--x:${x}%;--y:${y}px;--tilt:${tilt}deg`}
-function stageSprite(){return state.checkpoint===0?0:Math.min(state.checkpoint,6)}
+function plantStyle(sprite, size, x, y, tilt=0){
+  return `--pos:${POS[sprite]};--size:${size}px;--x:${x}%;--y:${y}px;--tilt:${tilt}deg`;
+}
+function stageSprite(){
+  return state.checkpoint === 0 ? 0 : Math.min(state.checkpoint, 6);
+}
+
+// デフォルト自動配置（種まき前の予備または基準配置）
 function autoPositions(count){
-  const cols=Math.ceil(Math.sqrt(count*1.7));
-  return Array.from({length:count},(_,i)=>({x:10+(i%cols+.5)*(80/cols),y:6+Math.floor(i/cols)*27}));
+  const cols = Math.ceil(Math.sqrt(count * 1.7));
+  return Array.from({length:count}, (_,i) => ({
+    x: 10 + (i % cols + 0.5) * (80 / cols),
+    y: 6 + Math.floor(i / cols) * 27
+  }));
+}
+
+// 確定した植物位置（生徒が種をまいた位置があればそれを使い、なければ自動配置）
+function getFieldPlantPositions(ci){
+  const crop = CROPS[ci];
+  if(state.plantPositions[ci] && state.plantPositions[ci].length >= crop.visible){
+    return state.plantPositions[ci].slice(0, crop.visible).map((p, idx) => ({
+      x: (typeof p?.x === 'number' && Number.isFinite(p.x)) ? p.x : (10 + (idx % 4) * 25),
+      y: (typeof p?.y === 'number' && Number.isFinite(p.y)) ? p.y : (10 + Math.floor(idx / 4) * 22)
+    }));
+  }
+  if(state.seeds[ci] && state.seeds[ci].length >= crop.visible){
+    state.plantPositions[ci] = state.seeds[ci].map((p, idx) => ({
+      x: (typeof p?.x === 'number' && Number.isFinite(p.x)) ? p.x : (10 + (idx % 4) * 25),
+      y: (typeof p?.y === 'number' && Number.isFinite(p.y)) ? Math.max(6, Math.min(85, (p.y - 45) * 1.6)) : (10 + Math.floor(idx / 4) * 22)
+    }));
+    return state.plantPositions[ci].slice(0, crop.visible);
+  }
+  return autoPositions(crop.visible);
 }
 
 function renderTimeline(){
-  $('#timeline').innerHTML=CHECKPOINTS.map((c,i)=>`<button class="day-chip ${i===state.checkpoint?'current':''} ${i<state.checkpoint?'complete':''}" type="button" disabled><strong>${c.day}日目</strong><span>${c.label}</span></button>`).join('');
+  $('#timeline').innerHTML = CHECKPOINTS.map((c,i) => `
+    <button class="day-chip ${i===state.checkpoint?'current':''} ${i<state.checkpoint?'complete':''}" type="button" disabled>
+      <strong>${c.day}日目</strong><span>${c.label}</span>
+    </button>
+  `).join('');
 }
 
 function renderFieldTargets(ci){
-  if(state.checkpoint===4&&ci<3&&!state.observed.has(ci)){
-    const s=[[24,38],[62,31],[72,47]];
-    return`<button type="button" class="leaf-clue" data-target="${ci}" style="left:${s[ci][0]}%;top:${s[ci][1]}%" aria-label="葉の重なりを観察">葉</button>`;
+  if(state.checkpoint === 4 && ci < 3 && !state.observed.has(ci)){
+    const s = [[24,38],[62,31],[72,47]];
+    return `<button type="button" class="leaf-clue" data-target="${ci}" style="left:${s[ci][0]}%;top:${s[ci][1]}%" aria-label="葉の重なりを観察">葉</button>`;
   }
   return '';
 }
 
-function fieldFoot(ci,crop){
-  if(state.checkpoint===0)return`表示用の種 ${state.seeds[ci].length}/${crop.visible}`;
-  if(state.checkpoint===1)return`水 ${state.waterByPlot[ci]}%`;
-  if(state.checkpoint===2)return`肥料 ${state.fertilizer[ci]}/3発`;
-  if(state.checkpoint===3)return state.phrases.length?`声かけ ${Math.min(state.phrases.length,3)}/3`:'言葉を待っています';
-  if(state.checkpoint===4)return state.observed.has(ci)?'観察完了':'葉の重なりを観察';
-  if(state.checkpoint===5)return state.bugs.size>=4?'農薬散布完了':'害虫駆除中';
-  if(state.checkpoint===6)return state.harvested.size>=4?'収穫完了':'豆をなぞって収穫';
+function fieldFoot(ci, crop){
+  if(state.checkpoint === 0) return `まいた種 ${state.seeds[ci].length}/${crop.visible}粒`;
+  if(state.checkpoint === 1) return `水やり ${state.waterByPlot[ci]}%`;
+  if(state.checkpoint === 2) return `追肥 ${state.fertilizer[ci]}/3回 (${state.fertCoverSum[ci]}株カバー)`;
+  if(state.checkpoint === 3) return state.phrases.length ? `声かけ完了 (${state.phrases.length}/3)` : 'タイピング待機中';
+  if(state.checkpoint === 4) return state.observed.has(ci) ? '観察完了' : '葉の重なりを観察';
+  if(state.checkpoint === 5) return state.bugs.size >= 4 ? '防除完了' : '害虫駆除中';
+  if(state.checkpoint === 6) return state.harvested.size >= 4 ? '全収穫完了' : `WAVE ${state.harvest.wave}/3 収穫中`;
   return '';
 }
 
 function renderFields(){
-  const sprite=stageSprite();
-  $('#fields').innerHTML=CROPS.map((crop,ci)=>{
-    let contents='';
-    if(state.checkpoint===0)contents=state.seeds[ci].map(p=>`<span class="seed-dot" style="left:${p.x}%;top:${p.y}%"></span>`).join('');
-    else contents=autoPositions(crop.visible).map((p,i)=>{
-      // 45日目(checkpoint 4)は葉が大きく茂り重なり合う
-      const base=[34,54,68,80,108,104,102][state.checkpoint];
-      const size=Math.round(base*crop.scale*(.96+(i%3)*.03));
-      // checkpoint 3(声かけ)は吹き出し付き(9)
-      // checkpoint 6(収穫)のぎっしり区(ci===3)は小型化(11)
-      const useSprite=state.checkpoint===3&&state.phrases.length?([3,9,10,3][state.phrases.length]||3):state.checkpoint===6&&ci===3&&i%3===0?11:sprite;
-      return`<span class="plant" style="${plantStyle(useSprite,size,p.x,p.y,((i%5)-2)*(ci+1))}"></span>`;
-    }).join('');
-    const done=[state.seeds[ci].length>=crop.visible,state.waterByPlot[ci]>=100,state.fertilizer[ci]>=3,state.phrases.length>=3,state.observed.has(ci),state.bugs.size>=4,state.harvested.size>=4][state.checkpoint];
-    const watering=state.checkpoint===1&&state.waterByPlot[ci]>0&&state.waterByPlot[ci]<100?'watering':'';
-    return`<article class="field ${done?'done':''} ${watering} ${state.harvested.size>=4?'harvested':''}" data-plot="${ci}"><div class="field-head"><strong>${crop.name}</strong><span class="density">${crop.density}本/m²</span></div><div class="soil" data-field="${ci}" aria-label="${crop.density}本毎平方メートルの畑">${contents}${renderFieldTargets(ci)}</div><div class="field-foot">${fieldFoot(ci,crop)}</div></article>`;
+  const sprite = stageSprite();
+  $('#fields').innerHTML = CROPS.map((crop, ci) => {
+    let contents = '';
+    if(state.checkpoint === 0){
+      contents = state.seeds[ci].map(p => `<span class="seed-dot" style="left:${p.x}%;top:${p.y}%"></span>`).join('');
+    } else {
+      const positions = getFieldPlantPositions(ci);
+      contents = positions.map((p, i) => {
+        const base = [34, 54, 68, 80, 108, 104, 102][state.checkpoint];
+        const size = Math.round(base * crop.scale * (0.96 + (i % 3) * 0.03));
+        const useSprite = (state.checkpoint === 3 && state.phrases.length)
+          ? ([3, 9, 10, 3][state.phrases.length] || 3)
+          : (state.checkpoint === 6 && ci === 3 && i % 3 === 0 ? 11 : sprite);
+        const waterRings = `<div class="plant-water-ring" id="pRing_${ci}_${i}"></div>`;
+        return `<span class="plant" id="plant_${ci}_${i}" style="${plantStyle(useSprite, size, p.x, p.y, ((i%5)-2)*(ci+1))}">${waterRings}</span>`;
+      }).join('');
+    }
+
+    const done = [
+      state.seeds[ci].length >= crop.visible,
+      state.waterByPlot[ci] >= 100,
+      state.fertilizer[ci] >= 3,
+      state.phrases.length >= 3,
+      state.observed.has(ci),
+      state.bugs.size >= 4,
+      state.harvested.size >= 4
+    ][state.checkpoint];
+
+    const watering = state.checkpoint === 1 && state.waterByPlot[ci] > 0 && state.waterByPlot[ci] < 100 ? 'watering' : '';
+    return `
+      <article class="field ${done?'done':''} ${watering} ${state.harvested.size>=4?'harvested':''}" data-plot="${ci}">
+        <div class="field-head">
+          <strong>${crop.name}</strong>
+          <span class="density">${crop.density}本/m²</span>
+        </div>
+        <div class="soil" data-field="${ci}" aria-label="${crop.density}本毎平方メートルの畑">
+          ${contents}${renderFieldTargets(ci)}
+        </div>
+        <div class="field-foot">${fieldFoot(ci, crop)}</div>
+      </article>
+    `;
   }).join('');
-  $$('.soil').forEach(el=>{
-    el.addEventListener('pointerdown',sowSeed);
-    if(state.checkpoint===2)el.addEventListener('pointerdown',fertilizeSoil);
+
+  $$('.soil').forEach(el => {
+    el.addEventListener('pointerdown', onSoilPointerDown);
   });
-  $$('.leaf-clue').forEach(el=>el.addEventListener('click',observeLeaf));
+  $$('.leaf-clue').forEach(el => el.addEventListener('click', observeLeaf));
   renderGameOverlay();
 }
 
+function onSoilPointerDown(e){
+  if(state.checkpoint === 0) sowSeed(e);
+  else if(state.checkpoint === 2) fertilizeSoilCircle(e);
+}
+
+/* ========================================================
+   0日目：種まき（位置記憶＆均等度スコア算出）
+   ======================================================== */
 function sowSeed(e){
-  if(state.checkpoint!==0)return;
-  const ci=Number(e.currentTarget.dataset.field),crop=CROPS[ci];
-  if(state.seeds[ci].length>=crop.visible)return;
-  const r=e.currentTarget.getBoundingClientRect();
-  state.seeds[ci].push({x:Math.max(7,Math.min(93,(e.clientX-r.left)/r.width*100)),y:Math.max(50,Math.min(88,(e.clientY-r.top)/r.height*100))});
+  if(state.checkpoint !== 0) return;
+  const ci = Number(e.currentTarget.dataset.field), crop = CROPS[ci];
+  if(state.seeds[ci].length >= crop.visible) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  const rawX = (e.clientX - r.left) / (r.width || 1) * 100;
+  const rawY = (e.clientY - r.top) / (r.height || 1) * 100;
+  const seedX = (typeof rawX === 'number' && Number.isFinite(rawX)) ? Math.max(8, Math.min(92, rawX)) : (15 + state.seeds[ci].length * 12);
+  const seedY = (typeof rawY === 'number' && Number.isFinite(rawY)) ? Math.max(48, Math.min(88, rawY)) : 68;
+
+  state.seeds[ci].push({ x: seedX, y: seedY });
+  playTone(400 + state.seeds[ci].length * 60, 'sine', 0.08, 0.18);
+
+  // 全区画の種が揃ったら成長用の座標確定＆均等スコア算出
+  if(state.seeds[ci].length >= crop.visible){
+    state.plantPositions[ci] = state.seeds[ci].map(p => ({
+      x: p.x,
+      y: Math.max(6, Math.min(84, (p.y - 46) * 1.8))
+    }));
+  }
+
+  // 全区画完了判定
+  if(state.seeds.every((arr, idx) => arr.length >= CROPS[idx].visible)){
+    calcSowScore();
+  }
+
   renderFields();
   updateCareStatus();
+}
+
+function calcSowScore(){
+  let totalSpread = 0;
+  CROPS.forEach((crop, ci) => {
+    const seeds = state.seeds[ci];
+    if(seeds.length <= 1){ totalSpread += 1; return; }
+    let minD = 999;
+    for(let i=0; i<seeds.length; i++){
+      for(let j=i+1; j<seeds.length; j++){
+        const d = Math.hypot(seeds[i].x - seeds[j].x, seeds[i].y - seeds[j].y);
+        if(d < minD) minD = d;
+      }
+    }
+    totalSpread += Math.min(1.2, Math.max(0.7, minD / (80 / Math.sqrt(crop.visible))));
+  });
+  const avgSpread = totalSpread / 4;
+  state.sowScore = Math.round(avgSpread * 450);
+  soundBingo();
 }
 
 function observeLeaf(e){
@@ -403,117 +645,362 @@ function observeLeaf(e){
 }
 
 function updateField(ci){
-  const field=document.querySelector(`[data-plot="${ci}"]`);
-  if(!field)return;
-  field.querySelector('.field-foot').textContent=fieldFoot(ci,CROPS[ci]);
-  const done=state.checkpoint===1?state.waterByPlot[ci]>=100:state.checkpoint===2?state.fertilizer[ci]>=3:state.checkpoint===3?state.phrases.length>=3:false;
-  field.classList.toggle('done',done);
-  field.classList.toggle('watering',state.checkpoint===1&&state.waterByPlot[ci]>0&&state.waterByPlot[ci]<100);
+  const field = document.querySelector(`[data-plot="${ci}"]`);
+  if(!field) return;
+  field.querySelector('.field-foot').textContent = fieldFoot(ci, CROPS[ci]);
+  const done = state.checkpoint === 1 ? state.waterByPlot[ci] >= 100
+             : state.checkpoint === 2 ? state.fertilizer[ci] >= 3
+             : state.checkpoint === 3 ? state.phrases.length >= 3 : false;
+  field.classList.toggle('done', done);
+  field.classList.toggle('watering', state.checkpoint === 1 && state.waterByPlot[ci] > 0 && state.waterByPlot[ci] < 100);
 }
 
 function renderGameOverlay(){
-  const overlay=$('#gameOverlay');
-  overlay.innerHTML='';
+  const overlay = $('#gameOverlay');
+  overlay.innerHTML = '';
   if(bugGame.animId){ cancelAnimationFrame(bugGame.animId); bugGame.running = false; }
-  
-  if(state.checkpoint===1){
-    overlay.innerHTML='<button type="button" class="watering-can" aria-label="ジョーロ。つかんで畑の上をなぞる">🚿</button>';
+
+  if(state.checkpoint === 1){
+    overlay.innerHTML = `
+      <button type="button" class="watering-can" aria-label="ジョーロ。植物を狙って動かす">🚿</button>
+      <div class="harvest-guide-hint">💧 ダイズの株を狙ってジョーロを動かそう！光ると給水成功！</div>
+    `;
     bindWateringCan();
-  } else if(state.checkpoint===2){
-    overlay.innerHTML='<div class="fertilizer-machine" aria-hidden="true"><div><b>🚜</b>肥料マシーン<br>畑を連打！</div></div>';
-  } else if(state.checkpoint===3){
-    overlay.innerHTML='<form class="voice-composer" id="voiceComposer"><label class="sr-only" for="voiceInput">ダイズへかける言葉</label><input id="voiceInput" maxlength="40" autocomplete="off" placeholder="ダイズに言葉をかけよう"><button type="submit">送る</button></form>';
-    $('#voiceComposer').addEventListener('submit',sendVoice);
-  } else if(state.checkpoint===5){
+  } else if(state.checkpoint === 2){
+    overlay.innerHTML = `
+      <div class="harvest-guide-hint">🚜 畑をタップ！広がるサークル内にできるだけ多くのダイズを入れよう！</div>
+      <div class="fertilizer-scope" id="fertScope" style="display:none"></div>
+    `;
+  } else if(state.checkpoint === 3){
+    initTypingGame();
+  } else if(state.checkpoint === 5){
     initBugGame();
-  } else if(state.checkpoint===6){
+  } else if(state.checkpoint === 6){
     initHarvestGame();
   }
 }
 
+/* ========================================================
+   12日目：水やり（植物の周りを狙って給水＆スコア）
+   ======================================================== */
 function bindWateringCan(){
-  const can=$('.watering-can'),stage=$('#farmStage');let dragging=false,offsetX=0,offsetY=0,lastAt=0;
-  const waterAt=e=>{
-    const now=performance.now();if(now-lastAt<45)return;lastAt=now;
-    const soils=$$('.soil');
-    const ci=soils.findIndex(soil=>{const r=soil.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom});
-    if(ci<0||state.waterByPlot[ci]>=100)return;
-    state.waterByPlot[ci]=Math.min(100,state.waterByPlot[ci]+5);
-    updateField(ci);
-    spawnDrop(e.clientX,e.clientY);
-    updateCareStatus();
+  const can = $('.watering-can'), stage = $('#farmStage');
+  let dragging = false, offsetX = 0, offsetY = 0, lastAt = 0;
+
+  const waterAt = e => {
+    const now = performance.now();
+    if(now - lastAt < 25) return;
+    lastAt = now;
+
+    const sr = stage.getBoundingClientRect();
+    const canX = e.clientX - sr.left;
+    const canY = e.clientY - sr.top;
+
+    spawnDrop(e.clientX, e.clientY);
+
+    const soils = $$('.soil');
+    soils.forEach((soil, ci) => {
+      const soilR = soil.getBoundingClientRect();
+      const relCanX = e.clientX - soilR.left;
+      const relCanY = e.clientY - soilR.top;
+
+      if(e.clientX >= soilR.left && e.clientX <= soilR.right && e.clientY >= soilR.top && e.clientY <= soilR.bottom){
+        const positions = getFieldPlantPositions(ci);
+        let hitPlant = false;
+
+        positions.forEach((p, pi) => {
+          const plantPxX = (p.x / 100) * soilR.width;
+          const plantPxY = soilR.height - p.y;
+          const dist = Math.hypot(relCanX - plantPxX, relCanY - plantPxY);
+
+          if(dist <= 52){
+            hitPlant = true;
+            const ring = $(`#pRing_${ci}_${pi}`);
+            if(ring){
+              ring.classList.add('active');
+              setTimeout(() => ring.classList.remove('active'), 250);
+            }
+          }
+        });
+
+        if(hitPlant){
+          state.waterScore += 12;
+          state.waterHitCount[ci]++;
+          playTone(650, 'sine', 0.05, 0.12);
+        }
+
+        if(state.waterByPlot[ci] < 100){
+          state.waterByPlot[ci] = Math.min(100, state.waterByPlot[ci] + (hitPlant ? 10 : 4));
+          updateField(ci);
+          updateCareStatus();
+        }
+      }
+    });
   };
-  can.addEventListener('pointerdown',e=>{e.preventDefault();dragging=true;const r=can.getBoundingClientRect();offsetX=e.clientX-r.left;offsetY=e.clientY-r.top;try{can.setPointerCapture?.(e.pointerId)}catch(_){};can.classList.add('dragging');waterAt(e)});
-  can.addEventListener('pointermove',e=>{if(!dragging)return;e.preventDefault();const sr=stage.getBoundingClientRect();const x=Math.max(0,Math.min(sr.width-can.offsetWidth,e.clientX-sr.left-offsetX)),y=Math.max(0,Math.min(sr.height-can.offsetHeight,e.clientY-sr.top-offsetY));can.style.left=`${x}px`;can.style.top=`${y}px`;waterAt(e)});
-  const stop=()=>{dragging=false;can.classList.remove('dragging')};
-  can.addEventListener('pointerup',stop);can.addEventListener('pointercancel',stop);
+
+  can.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    dragging = true;
+    const r = can.getBoundingClientRect();
+    offsetX = e.clientX - r.left;
+    offsetY = e.clientY - r.top;
+    try { can.setPointerCapture?.(e.pointerId); } catch(_){};
+    can.classList.add('dragging');
+    waterAt(e);
+  });
+
+  can.addEventListener('pointermove', e => {
+    if(!dragging) return;
+    e.preventDefault();
+    const sr = stage.getBoundingClientRect();
+    const x = Math.max(0, Math.min(sr.width - can.offsetWidth, e.clientX - sr.left - offsetX));
+    const y = Math.max(0, Math.min(sr.height - can.offsetHeight, e.clientY - sr.top - offsetY));
+    can.style.left = `${x}px`;
+    can.style.top = `${y}px`;
+    waterAt(e);
+  });
+
+  const stop = () => { dragging = false; can.classList.remove('dragging'); };
+  can.addEventListener('pointerup', stop);
+  can.addEventListener('pointercancel', stop);
 }
 
-function spawnDrop(clientX,clientY){
-  const stage=$('#farmStage').getBoundingClientRect(),drop=document.createElement('span');
-  drop.className='water-drop';drop.textContent='💧';
-  drop.style.left=`${clientX-stage.left}px`;drop.style.top=`${clientY-stage.top}px`;
+function spawnDrop(clientX, clientY){
+  const stage = $('#farmStage').getBoundingClientRect(), drop = document.createElement('span');
+  drop.className = 'water-drop'; drop.textContent = '💧';
+  drop.style.left = `${clientX - stage.left}px`;
+  drop.style.top = `${clientY - stage.top}px`;
   $('#gameOverlay').appendChild(drop);
-  drop.addEventListener('animationend',()=>drop.remove());
+  drop.addEventListener('animationend', () => drop.remove());
 }
 
-function fertilizeSoil(e){
-  if(state.checkpoint!==2)return;
+/* ========================================================
+   21日目：肥料サークル判定ミニゲーム
+   ======================================================== */
+function fertilizeSoilCircle(e){
+  if(state.checkpoint !== 2) return;
   e.preventDefault();
-  const ci=Number(e.currentTarget.dataset.field);
-  if(state.fertilizer[ci]>=3)return;
+  const ci = Number(e.currentTarget.dataset.field), crop = CROPS[ci];
+  if(state.fertilizer[ci] >= 3) return;
+
   state.fertilizer[ci]++;
-  playTone(300 + state.fertilizer[ci]*80, 'sine', 0.1, 0.2);
-  spawnPellet(e.clientX,e.clientY);
+  const soilR = e.currentTarget.getBoundingClientRect();
+  const tapX = e.clientX - soilR.left;
+  const tapY = e.clientY - soilR.top;
+  const stageR = $('#farmStage').getBoundingClientRect();
+
+  const scope = $('#fertScope');
+  if(scope){
+    scope.style.display = 'block';
+    scope.style.left = `${e.clientX - stageR.left}px`;
+    scope.style.top = `${e.clientY - stageR.top}px`;
+    setTimeout(() => { if(scope) scope.style.display = 'none'; }, 600);
+  }
+
+  const radius = 75;
+  const positions = getFieldPlantPositions(ci);
+  let coveredCount = 0;
+
+  positions.forEach((p, pi) => {
+    const plantPxX = (p.x / 100) * soilR.width;
+    const plantPxY = soilR.height - p.y;
+    const dist = Math.hypot(tapX - plantPxX, tapY - plantPxY);
+    if(dist <= radius){
+      coveredCount++;
+      const pEl = $(`#plant_${ci}_${pi}`);
+      if(pEl){
+        pEl.style.filter = 'drop-shadow(0 0 10px #fde047) brightness(1.3)';
+        setTimeout(() => { if(pEl) pEl.style.filter = ''; }, 500);
+      }
+    }
+  });
+
+  state.fertCoverSum[ci] += coveredCount;
+  const coverRatio = coveredCount / crop.visible;
+  const isPerfect = coveredCount >= crop.visible;
+
+  if(isPerfect){
+    soundCoverEffect();
+    showHitPopup(e.clientX - stageR.left, e.clientY - stageR.top, `PERFECT! 全${coveredCount}株カバー!! +150`, 'bingo');
+    state.fertScore += 150;
+  } else if(coverRatio >= 0.5){
+    soundGood();
+    showHitPopup(e.clientX - stageR.left, e.clientY - stageR.top, `GOOD! ${coveredCount}/${crop.visible}株カバー! +80`, 'good');
+    state.fertScore += 80;
+  } else {
+    playTone(350, 'sine', 0.1, 0.15);
+    showHitPopup(e.clientX - stageR.left, e.clientY - stageR.top, `${coveredCount}/${crop.visible}株カバー +40`, 'good');
+    state.fertScore += 40;
+  }
+
   updateField(ci);
-  const field=document.querySelector(`[data-plot="${ci}"]`);
-  field.classList.add('flash');
-  setTimeout(()=>field?.classList.remove('flash'),180);
   updateCareStatus();
 }
 
-function spawnPellet(clientX,clientY){
-  const stage=$('#farmStage').getBoundingClientRect(),machine=$('.fertilizer-machine').getBoundingClientRect(),pellet=document.createElement('span'),startX=machine.left+machine.width/2-stage.left,startY=machine.top+machine.height/2-stage.top;
-  pellet.className='fertilizer-pellet';
-  pellet.style.left=`${startX}px`;pellet.style.top=`${startY}px`;
-  pellet.style.setProperty('--dx',`${clientX-stage.left-startX}px`);
-  pellet.style.setProperty('--dy',`${clientY-stage.top-startY}px`);
-  $('#gameOverlay').appendChild(pellet);
-  pellet.addEventListener('animationend',()=>pellet.remove());
+/* ========================================================
+   31日目：生物用語タイピングチャレンジ（iPad＆PC両対応）
+   ======================================================== */
+const TYPING_QUESTIONS = [
+  { word: '成長曲線', ruby: 'せいちょうきょくせん', romaji: 'seityoukyokusen' },
+  { word: '環境収容力', ruby: 'かんきょうしゅうようりょく', romaji: 'kankyousyuuyouryoku' },
+  { word: '最終収量一定の法則', ruby: 'さいしゅうしゅうりょういっていのほうそく', romaji: 'saisyuusyuuryouitteinohousoku' }
+];
+
+function initTypingGame(){
+  state.typing = {
+    qIndex: 0,
+    charIndex: 0,
+    missCount: 0,
+    startTime: performance.now(),
+    elapsed: 0,
+    completed: false
+  };
+
+  renderTypingUI();
+  window.addEventListener('keydown', handleTypingKey);
 }
 
-function sendVoice(e){
-  e.preventDefault();
-  const input=$('#voiceInput'),text=input.value.trim();
-  if(!text||state.phrases.length>=3)return;
-  state.phrases.push(text);
-  input.value='';
-  // 1回目:9(吹き出し), 2回目:10(観察), 3回目:3(通常ピョンピョン跳ね)
-  const vs=[3,9,10,3][state.phrases.length]||3;
-  soundGood();
-  $$('.plant').forEach(p=>{
-    p.style.setProperty('--pos',POS[vs]);
-    p.style.transform='translateX(-50%) translateY(-12px) scale(1.1) rotate(var(--tilt,0deg))';
-    setTimeout(()=>{p.style.transform=''},380);
+function renderTypingUI(){
+  const overlay = $('#gameOverlay');
+  const q = TYPING_QUESTIONS[state.typing.qIndex];
+  if(!q){
+    finishTypingGame();
+    return;
+  }
+
+  const currentRuby = q.ruby;
+  const matchedPart = currentRuby.slice(0, state.typing.charIndex);
+  const remainingPart = currentRuby.slice(state.typing.charIndex);
+
+  const nextChar = currentRuby[state.typing.charIndex] || '';
+  const candidateChars = generateSoftKeys(nextChar);
+
+  overlay.innerHTML = `
+    <div class="typing-box" id="typingBox">
+      <div class="typing-header">
+        <span>⌨️ 生物用語タイピング (${state.typing.qIndex + 1}/3問)</span>
+        <span>ミス: <b id="typeMiss">${state.typing.missCount}</b> 回</span>
+      </div>
+      <div class="typing-target-word">${q.word}</div>
+      <div class="typing-ruby">${q.ruby}</div>
+      <div class="typing-input-display">
+        <span class="matched">${matchedPart}</span><span class="remaining">${remainingPart}</span>
+      </div>
+      <div class="typing-soft-keys">
+        ${candidateChars.map(ch => `<button type="button" class="typing-key-btn" data-char="${ch}">${ch}</button>`).join('')}
+      </div>
+      <div class="typing-stats">
+        <span>💡 キーボード入力 または 上の文字ボタンをタップ！</span>
+      </div>
+    </div>
+  `;
+
+  $$('.typing-key-btn').forEach(btn => {
+    btn.addEventListener('click', () => processTypingChar(btn.dataset.char));
   });
-  CROPS.forEach((_,i)=>updateField(i));
-  spawnDanmaku(text,state.phrases.length);
-  renderCare();
 }
 
-function spawnDanmaku(text,lane){
-  const msg=document.createElement('span');
-  msg.className='danmaku';msg.textContent=text;
-  msg.style.top=`${55+(lane-1)*112}px`;
+function generateSoftKeys(targetChar){
+  const pool = ['せ','い','ち','ょ','う','き','ょ','く','せ','ん','か','ん','し','ゅ','う','よ','う','り','ょ','く','さ','い','て','の','ほ','う','そ','く','ぐ','び','つ','る'];
+  const res = [targetChar];
+  while(res.length < 8){
+    const rnd = pool[Math.floor(Math.random() * pool.length)];
+    if(!res.includes(rnd)) res.push(rnd);
+  }
+  return res.sort(() => Math.random() - 0.5);
+}
+
+function handleTypingKey(e){
+  if(state.checkpoint !== 3 || state.typing.completed) return;
+  const q = TYPING_QUESTIONS[state.typing.qIndex];
+  if(!q) return;
+
+  const targetChar = q.ruby[state.typing.charIndex];
+  const key = e.key;
+
+  if(key.length === 1){
+    if(key === targetChar){
+      processTypingChar(key);
+    } else {
+      soundBuzzer();
+      state.typing.missCount++;
+      const missEl = $('#typeMiss');
+      if(missEl) missEl.textContent = state.typing.missCount;
+    }
+  }
+}
+
+function processTypingChar(char){
+  const q = TYPING_QUESTIONS[state.typing.qIndex];
+  if(!q) return;
+  const targetChar = q.ruby[state.typing.charIndex];
+
+  if(char === targetChar){
+    soundKeyClick();
+    state.typing.charIndex++;
+    if(state.typing.charIndex >= q.ruby.length){
+      soundBingo();
+      state.phrases.push(q.word);
+      spawnDanmaku(`✨ ${q.word} ✨`, state.typing.qIndex + 1);
+
+      $$('.plant').forEach(p => {
+        p.style.transform = 'translateX(-50%) translateY(-18px) scale(1.15) rotate(var(--tilt,0deg))';
+        setTimeout(() => { if(p) p.style.transform = ''; }, 450);
+      });
+
+      state.typing.qIndex++;
+      state.typing.charIndex = 0;
+      updateField(state.typing.qIndex - 1);
+      updateCareStatus();
+
+      if(state.typing.qIndex >= TYPING_QUESTIONS.length){
+        finishTypingGame();
+      } else {
+        setTimeout(renderTypingUI, 400);
+      }
+      return;
+    }
+    renderTypingUI();
+  } else {
+    soundBuzzer();
+    state.typing.missCount++;
+    const missEl = $('#typeMiss');
+    if(missEl) missEl.textContent = state.typing.missCount;
+  }
+}
+
+function finishTypingGame(){
+  state.typing.completed = true;
+  window.removeEventListener('keydown', handleTypingKey);
+  const elapsed = (performance.now() - state.typing.startTime) / 1000;
+  state.typing.elapsed = elapsed;
+
+  let timeBonus = Math.max(0, Math.round((40 - elapsed) * 25));
+  state.typingScore = Math.max(300, 1000 - state.typing.missCount * 40 + timeBonus);
+
+  const box = $('#typingBox');
+  if(box){
+    box.innerHTML = `
+      <div style="text-align:center;padding:10px">
+        <h4 style="margin:0 0 6px;color:#86efac;font-size:1.3rem">🎉 タイピング全問クリア！</h4>
+        <div style="font-size:0.95rem;color:#fde047">タイム: ${elapsed.toFixed(1)}秒 ｜ ミス: ${state.typing.missCount}回</div>
+        <div style="font-size:1.25rem;font-weight:900;color:#fff;margin-top:6px">スコア: +${state.typingScore} 点</div>
+      </div>
+    `;
+  }
+  updateCareStatus();
+}
+
+function spawnDanmaku(text, lane){
+  const msg = document.createElement('span');
+  msg.className = 'danmaku'; msg.textContent = text;
+  msg.style.top = `${50 + (lane - 1) * 90}px`;
   $('#gameOverlay').appendChild(msg);
-  msg.addEventListener('animationend',()=>msg.remove());
+  msg.addEventListener('animationend', () => msg.remove());
 }
 
 /* ========================================================
    84日目：農薬パチンコ（スリングショット）アーケードシューティング
-   - タイムアタック＆早いほど高得点
-   - コンボシステム（3コンボ=3way, 5コンボ=高速, 8コンボ=5way）
-   - 30匹目はボス害虫（HP 5、大迫力）
    ======================================================== */
 let bugGame = {
   score: 0,
@@ -577,9 +1064,7 @@ function initBugGame(){
     <div id="bugField"></div>
   `;
 
-  // 初期雑魚 5匹スポーン
   for(let i=0; i<5; i++) spawnBug();
-
   bindSlingshot();
   runBugGameLoop();
 }
@@ -612,19 +1097,19 @@ function spawnBug(){
   if(!bugGame.running) return;
   if(bugGame.killed >= 29 || bugGame.bossSpawned) return;
   if(bugGame.killed + bugGame.activeBugs.length >= 29) return;
-  
+
   const stage = $('#farmStage').getBoundingClientRect();
   const el = document.createElement('div');
   el.className = 'active-bug';
   el.textContent = '🐛';
-  
+
   const x = 35 + Math.random() * (stage.width - 70);
   const y = 45 + Math.random() * (stage.height - 165);
   const speed = 0.95 + Math.random() * 1.35;
   const angle = Math.random() * Math.PI * 2;
   const vx = Math.cos(angle) * speed;
   const vy = Math.sin(angle) * speed;
-  
+
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
   $('#bugField').appendChild(el);
@@ -635,14 +1120,12 @@ function spawnBoss(){
   if(bugGame.bossSpawned || !bugGame.running) return;
   bugGame.bossSpawned = true;
 
-  // 雑魚をすべてクリア
   bugGame.activeBugs.forEach(b => {
     b.alive = false;
     b.el.remove();
   });
   bugGame.activeBugs = [];
 
-  // WARNING 表示
   const stage = $('#farmStage');
   const warn = document.createElement('div');
   warn.className = 'boss-warning';
@@ -651,7 +1134,6 @@ function spawnBoss(){
   soundBingo();
   setTimeout(() => warn.remove(), 1200);
 
-  // ボス生成
   const sr = stage.getBoundingClientRect();
   const bx = sr.width / 2, by = 125;
   const el = document.createElement('div');
@@ -680,8 +1162,8 @@ function spawnBoss(){
 function bindSlingshot(){
   const ball = $('#slingBall'), area = $('#slingArea'), stage = $('#farmStage');
   const bandL = $('#bandL'), bandR = $('#bandR'), trajDots = $('#trajDots');
-  let dragging = false, startClientX = 0, startClientY = 0;
-  
+  let dragging = false;
+
   const getRest = () => {
     const sr = stage.getBoundingClientRect(), ar = area.getBoundingClientRect();
     return {
@@ -711,8 +1193,6 @@ function bindSlingshot(){
   const onPointerDown = e => {
     e.preventDefault();
     dragging = true;
-    startClientX = e.clientX;
-    startClientY = e.clientY;
     try { ball.setPointerCapture?.(e.pointerId); } catch(_){}
     ball.classList.add('dragging');
   };
@@ -725,11 +1205,10 @@ function bindSlingshot(){
     let dx = currX - rest.x, dy = currY - rest.y;
     const dist = Math.hypot(dx, dy), maxPull = 75;
     if(dist > maxPull) { dx *= maxPull / dist; dy *= maxPull / dist; }
-    
+
     ball.style.transform = `translate(calc(-50% + ${dx}px), calc(50% + ${dy}px)) scale(1.15)`;
     updateBands(rest.x + dx, rest.y + dy);
 
-    // 照準予測点線（コンボ数に応じて拡散ガイド）
     if(dist > 15){
       let dotsHtml = '';
       const baseAngle = Math.atan2(-dy, -dx);
@@ -769,12 +1248,12 @@ function bindSlingshot(){
     if(dist >= 18){
       soundShoot();
       let baseSpeed = Math.min(24, Math.max(10, dist * 0.3));
-      if(bugGame.combo >= 5) baseSpeed *= 1.45; // 5コンボ以上で高速化！
+      if(bugGame.combo >= 5) baseSpeed *= 1.45;
 
       const baseAngle = Math.atan2(-dy, -dx);
       let angles = [0];
-      if(bugGame.combo >= 8) angles = [-24, -12, 0, 12, 24]; // 8コンボで5-WAY!
-      else if(bugGame.combo >= 3) angles = [-16, 0, 16];      // 3コンボで3-WAY!
+      if(bugGame.combo >= 8) angles = [-24, -12, 0, 12, 24];
+      else if(bugGame.combo >= 3) angles = [-16, 0, 16];
 
       angles.forEach(deg => {
         const rad = baseAngle + deg * Math.PI / 180;
@@ -798,7 +1277,7 @@ function spawnBullet(x, y, vx, vy){
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
   $('#gameOverlay').appendChild(el);
-  bugGame.bullets.push({ el, x, y, vx, vy, alive: true, hitAny: false });
+  bugGame.bullets.push({ el, x, y, vx, vy, alive: true });
 }
 
 function runBugGameLoop(){
@@ -806,12 +1285,10 @@ function runBugGameLoop(){
   const now = performance.now();
   const stage = $('#farmStage').getBoundingClientRect();
 
-  // タイム更新
   bugGame.elapsedTime = (now - bugGame.startTime) / 1000;
   const timerEl = $('#bugTimer');
   if(timerEl) timerEl.textContent = `${bugGame.elapsedTime.toFixed(1)}s`;
 
-  // コンボタイムアウト（4秒間ヒットなしでリセット）
   if(bugGame.combo > 0 && now - bugGame.lastHitTime > 7500){
     bugGame.combo = 0;
     updateComboHud();
@@ -852,7 +1329,6 @@ function runBugGameLoop(){
     blt.el.style.left = `${blt.x}px`;
     blt.el.style.top = `${blt.y}px`;
 
-    // 画面外判定
     if(blt.x < -20 || blt.x > stage.width + 20 || blt.y < -20 || blt.y > stage.height + 20){
       blt.alive = false;
       blt.el.remove();
@@ -875,7 +1351,6 @@ function runBugGameLoop(){
         bugGame.lastHitTime = performance.now();
         updateComboHud(true);
 
-        // ボスダメージ演出
         bs.el.classList.add('boss-hit');
         setTimeout(() => bs.el.classList.remove('boss-hit'), 150);
         const hpBar = $('#bossHpInner');
@@ -886,7 +1361,6 @@ function runBugGameLoop(){
           showHitPopup(bs.x, bs.y, `BOSS HIT! 残りHP: ${bs.hp}`, 'bingo');
           bugGame.score += 150;
         } else {
-          // ボス撃破！
           bs.alive = false;
           soundBingo();
           showHitPopup(bs.x, bs.y, '💥 BOSS DEFEATED!! +1000', 'bingo');
@@ -917,19 +1391,18 @@ function runBugGameLoop(){
         blt.alive = false;
         blt.el.remove();
         bugGame.bullets.splice(i, 1);
-        
+
         bug.alive = false;
         const isBingo = dist <= 18;
         const addScore = isBingo ? 100 : 30;
         bugGame.score += addScore;
         bugGame.killed++;
 
-        // コンボ更新
         bugGame.combo++;
         bugGame.maxCombo = Math.max(bugGame.maxCombo, bugGame.combo);
         bugGame.lastHitTime = performance.now();
         updateComboHud(true);
-        
+
         if(isBingo){
           soundBingo();
           showHitPopup(bug.x, bug.y, `BINGO!! +${addScore}`, 'bingo');
@@ -947,7 +1420,6 @@ function runBugGameLoop(){
         $('#bugKilled').textContent = bugGame.killed;
         updateCareStatus();
 
-        // 29匹倒したらボス出現！
         if(bugGame.killed >= 29 && !bugGame.bossSpawned){
           setTimeout(() => spawnBoss(), 600);
         } else {
@@ -983,7 +1455,6 @@ function finishBugGame(){
   if(bugGame.animId) cancelAnimationFrame(bugGame.animId);
   state.bugs = new Set([0, 1, 2, 3]);
 
-  // タイムボーナス計算
   const sec = bugGame.elapsedTime;
   let timeBonus = 100;
   if(sec < 30) timeBonus = 2000;
@@ -993,8 +1464,8 @@ function finishBugGame(){
 
   const comboBonus = bugGame.maxCombo * 80;
   const totalFinalScore = bugGame.score + timeBonus + comboBonus;
+  state.bugScore = totalFinalScore;
 
-  // ランク判定
   let rank = 'B', rankClass = 'rank-b', rankTitle = '防除完了';
   if(totalFinalScore >= 3800){ rank = 'S'; rankClass = 'rank-s'; rankTitle = '👑 神速の防除マスター！'; }
   else if(totalFinalScore >= 2600){ rank = 'A'; rankClass = 'rank-a'; rankTitle = '🌟 優秀なダイズ栽培家！'; }
@@ -1020,46 +1491,77 @@ function finishBugGame(){
 }
 
 /* ========================================================
-   119日目：ポケモンスリープ風 きのみ回収 収穫アクション
+   119日目：3ウェーブ収穫タイムアタック（ポケモンスリープ風）
    ======================================================== */
-let harvestGame = { total: 28, collected: 0, beans: [] };
+let harvestGame = {
+  beans: [],
+  totalInCurrentWave: 24,
+  collectedInCurrentWave: 0,
+  touching: false
+};
 
 function initHarvestGame(){
-  harvestGame = { total: 28, collected: 0, beans: [] };
+  state.harvest = {
+    wave: 1,
+    maxWaves: 3,
+    collectedInWave: 0,
+    totalInWave: 24,
+    startTime: performance.now(),
+    elapsed: 0,
+    completed: false
+  };
+
   const overlay = $('#gameOverlay');
   overlay.innerHTML = `
     <div class="harvest-basket" id="harvestBasket" title="収穫カゴ">🧺</div>
-    <div class="harvest-guide-hint" id="harvestHint">🌾 畑の上を指でなぞると、熟した豆がカゴに吸い込まれるよ！</div>
+    <div class="harvest-wave-badge" id="harvestWaveBadge">🌾 WAVE 1 / 3 収穫中</div>
+    <div class="harvest-guide-hint" id="harvestHint">畑の上を指でなぞると、熟した豆がカゴに吸い込まれるよ！</div>
     <div id="beansContainer"></div>
   `;
-  
+
+  spawnWaveBeans(1);
+  bindHarvestSwipe();
+}
+
+function spawnWaveBeans(waveNum){
+  const container = $('#beansContainer');
+  if(!container) return;
+  container.innerHTML = '';
+  harvestGame.beans = [];
+  harvestGame.collectedInCurrentWave = 0;
+
+  const countPerPlot = waveNum === 3 ? 8 : 6;
+  harvestGame.totalInCurrentWave = countPerPlot * 4;
+
+  const badge = $('#harvestWaveBadge');
+  if(badge) badge.textContent = `🌾 WAVE ${waveNum} / 3 収穫タイムアタック！`;
+
   const soils = $$('.soil');
   const stR = $('#farmStage').getBoundingClientRect();
+
   soils.forEach((soil, ci) => {
     const sr = soil.getBoundingClientRect();
     const relLeft = sr.left - stR.left;
     const relTop = sr.top - stR.top;
-    for(let i=0; i<7; i++){
+    for(let i=0; i<countPerPlot; i++){
       const bx = relLeft + 25 + Math.random() * (sr.width - 50);
       const by = relTop + 30 + Math.random() * (sr.height - 50);
       const el = document.createElement('div');
       el.className = 'harvest-bean';
-      el.textContent = '🟡';
+      el.textContent = waveNum === 3 ? '🌟' : '🟡';
       el.style.left = `${bx}px`;
       el.style.top = `${by}px`;
-      $('#beansContainer').appendChild(el);
+      container.appendChild(el);
       harvestGame.beans.push({ ci, x: bx, y: by, el, collected: false });
     }
   });
-
-  bindHarvestSwipe();
 }
 
 function bindHarvestSwipe(){
   const stage = $('#farmStage');
-  let touching = false;
 
   const collectAt = (clientX, clientY) => {
+    if(state.harvest.completed) return;
     const sr = stage.getBoundingClientRect();
     const px = clientX - sr.left, py = clientY - sr.top;
     const basket = $('#harvestBasket');
@@ -1071,49 +1573,71 @@ function bindHarvestSwipe(){
     harvestGame.beans.forEach(b => {
       if(b.collected) return;
       const d = Math.hypot(px - b.x, py - b.y);
-      if(d <= 38){
+      if(d <= 42){
         b.collected = true;
         soundBerry();
         b.el.classList.add('collected');
-        
+
         b.el.style.transition = 'transform .45s cubic-bezier(.16,1,.3,1), opacity .4s ease-in';
         b.el.style.transform = `translate(${basketX - b.x}px, ${basketY - b.y}px) scale(0.35)`;
-        
+
         setTimeout(() => {
           b.el.remove();
-          harvestGame.collected++;
+          harvestGame.collectedInCurrentWave++;
           soundBasket();
-          updateCareStatus();
-          
+
           const bk = $('#harvestBasket');
           if(bk){
             bk.classList.add('bounce');
             setTimeout(() => bk.classList.remove('bounce'), 180);
           }
-
           spawnStar(basketX, basketY);
 
-          if(harvestGame.collected >= harvestGame.total){
-            state.harvested = new Set([0, 1, 2, 3]);
-            $('#harvestHint').textContent = '🎉 全区画のダイズを収穫完了！';
-            if(bk) bk.style.filter = 'drop-shadow(0 0 20px #fde047)';
-            soundBingo();
-            renderFields();
-            updateCareStatus();
+          if(harvestGame.collectedInCurrentWave >= harvestGame.totalInCurrentWave){
+            if(state.harvest.wave < state.harvest.maxWaves){
+              soundBingo();
+              state.harvest.wave++;
+              spawnWaveBeans(state.harvest.wave);
+            } else {
+              finishHarvestGame();
+            }
           }
-        }, 420);
+        }, 400);
       }
     });
   };
 
-  const onDown = e => { touching = true; collectAt(e.clientX, e.clientY); };
-  const onMove = e => { if(touching) collectAt(e.clientX, e.clientY); };
-  const onUp = () => { touching = false; };
+  const onDown = e => { harvestGame.touching = true; collectAt(e.clientX, e.clientY); };
+  const onMove = e => { if(harvestGame.touching) collectAt(e.clientX, e.clientY); };
+  const onUp = () => { harvestGame.touching = false; };
 
   stage.addEventListener('pointerdown', onDown);
   stage.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onUp);
+}
+
+function finishHarvestGame(){
+  state.harvest.completed = true;
+  state.harvested = new Set([0, 1, 2, 3]);
+  const elapsed = (performance.now() - state.harvest.startTime) / 1000;
+  state.harvest.elapsed = elapsed;
+
+  let timeBonus = 500;
+  if(elapsed < 15) timeBonus = 1500;
+  else if(elapsed < 25) timeBonus = 1100;
+  else if(elapsed < 35) timeBonus = 800;
+
+  state.harvestScore = 600 + timeBonus;
+
+  const hint = $('#harvestHint');
+  if(hint) hint.textContent = `🎉 3ウェーブ完熟収穫達成！ (${elapsed.toFixed(1)}秒 / +${state.harvestScore}点)`;
+
+  const bk = $('#harvestBasket');
+  if(bk) bk.style.filter = 'drop-shadow(0 0 25px #fde047)';
+  soundBingo();
+  renderFields();
+  updateCareStatus();
 }
 
 function spawnStar(x, y){
@@ -1129,158 +1653,330 @@ function spawnStar(x, y){
 }
 
 function renderCare(){
-  const cp=CHECKPOINTS[state.checkpoint],work=$('#careWork');
-  $('#careDay').textContent=`${cp.day}日目`;
-  $('#careTitle').textContent=cp.title;
-  const instructions=[
-    '4つの畑を直接タップし、好きな位置に種をまきます。',
-    'ジョーロをつかみ、4つの畑の上をまんべんなくなぞります。',
-    '畑を連打すると、肥料マシーンから粒が飛びます。各区画3発です。',
-    '畑の下の入力欄から3回声を届けます。文字が畑を流れ、表情が変わります。',
+  const cp = CHECKPOINTS[state.checkpoint], work = $('#careWork');
+  $('#careDay').textContent = `${cp.day}日目`;
+  $('#careTitle').textContent = cp.title;
+  const instructions = [
+    '4つの畑を直接タップし、好きな位置に種をまきます（その位置から育ちます！）。',
+    'ジョーロをつかみ、植物の株を狙って水をあげよう！光ると給水成功！',
+    '畑をタップ！広がるサークル内に全ダイズ株を入れるように施肥しよう！',
+    '重要生物用語のタイピングゲーム！キーボードまたは文字ボタンで入力！',
     '畑の「葉」マークをタップし、葉の重なりを観察します。',
     '中央の農薬パチンコを引いて発射！コンボを繋ぎ、30匹目のボスを倒そう！',
-    '畑の上を指でサーッとなぞって、ダイズを中央のカゴに収穫しよう！'
+    '畑の上を指でサーッとなぞって、ダイズを中央のカゴに収穫しよう！（全3ウェーブ）'
   ];
-  const tips=[
-    '🖐️ 畑の中なら、どこにまいても大丈夫',
-    '🚿 離さず動かすと水が出続けます',
-    '🚜 4区画すべてに3発ずつ',
-    '💬 自由な言葉でOK（植物への効果を示す実験ではありません）',
+  const tips = [
+    '🖐️ まいた位置からリアルに芽が出て育ちます',
+    '🚿 植物を狙うと「給水成功」でスコア獲得',
+    '🚜 1回の施肥でより多くの株をサークルに入れると高得点',
+    '💬 タイムが早いほど高得点！ミスタイプは減点',
     '👀 密度が高いほど下の葉へ光が届きにくい',
     '⏱️ タイムが早いほど高得点！3・5・8コンボでショットが強化！',
-    '🧺 指を滑らせると豆がポロポロ取れてカゴに吸い込まれます'
+    '🧺 3ウェーブを素早く回収してタイムアタック高得点を狙おう'
   ];
-  $('#careInstruction').textContent=instructions[state.checkpoint];
-  work.innerHTML=`<div class="care-status">${tips[state.checkpoint]}</div>`;
+  $('#careInstruction').textContent = instructions[state.checkpoint];
+  work.innerHTML = `<div class="care-status">${tips[state.checkpoint]}</div>`;
   updateCareStatus();
 }
 
 function careComplete(){
   return [
-    state.seeds.every((a,i)=>a.length>=CROPS[i].visible),
-    state.waterByPlot.every(v=>v>=100),
-    state.fertilizer.every(v=>v>=3),
-    state.phrases.length>=3,
-    state.observed.size===3,
-    state.bugs.size>=4,
-    state.harvested.size>=4
+    state.seeds.every((a,i) => a.length >= CROPS[i].visible),
+    state.waterByPlot.every(v => v >= 100),
+    state.fertilizer.every(v => v >= 3),
+    state.phrases.length >= 3,
+    state.observed.size === 3,
+    state.bugs.size >= 4,
+    state.harvested.size >= 4
   ][state.checkpoint];
 }
 
 function updateCareStatus(){
-  const complete=careComplete(),status=$('#careStatus'),progress=[
+  const complete = careComplete(), status = $('#careStatus'), progress = [
     `${state.seeds.reduce((n,a)=>n+a.length,0)}/${CROPS.reduce((n,c)=>n+c.visible,0)}粒`,
     `${state.waterByPlot.filter(v=>v>=100).length}/4区画`,
-    `${state.fertilizer.reduce((n,v)=>n+v,0)}/12発`,
-    `${state.phrases.length}/3通`,
+    `${state.fertilizer.reduce((n,v)=>n+v,0)}/12回`,
+    `${state.phrases.length}/3問クリア`,
     `${state.observed.size}/3か所`,
     `${bugGame.killed || (state.bugs.size>=4?30:0)}/30匹`,
-    `${harvestGame.collected || (state.harvested.size>=4?28:0)}/28粒`
+    state.harvest.completed ? '3/3ウェーブ完了' : `WAVE ${state.harvest.wave}/3`
   ][state.checkpoint];
-  status.textContent=complete?'今日のお世話、完了！ 次の日へ進めます。':`畑での進み具合：${progress}`;
-  status.classList.toggle('complete',complete);
-  $('#nextDay').disabled=!complete;
-  $('#nextDay').textContent=state.checkpoint===CHECKPOINTS.length-1?'収穫データをグラフにする':`${CHECKPOINTS[state.checkpoint+1].day}日目へ`;
+  status.textContent = complete ? '今日のお世話、完了！ 次の日へ進めます。' : `畑での進み具合：${progress}`;
+  status.classList.toggle('complete', complete);
+  $('#nextDay').disabled = !complete;
+  $('#nextDay').textContent = state.checkpoint === CHECKPOINTS.length - 1 ? '収穫データをグラフにする' : `${CHECKPOINTS[state.checkpoint+1].day}日目へ`;
 }
 
-function renderFarm(){renderTimeline();renderFields();renderCare()}
+function renderFarm(){ renderTimeline(); renderFields(); renderCare(); }
 
-$$('.choice').forEach(b=>b.addEventListener('click',()=>{
-  $$('.choice').forEach(x=>x.classList.remove('selected'));
+$$('.choice').forEach(b => b.addEventListener('click', () => {
+  $$('.choice').forEach(x => x.classList.remove('selected'));
   b.classList.add('selected');
-  state.prediction=b.dataset.prediction;
-  $('#toFarm').disabled=false;
+  state.prediction = b.dataset.prediction;
+  $('#toFarm').disabled = false;
 }));
-$('#toFarm').addEventListener('click',()=>{showScreen('Farm');renderFarm()});
-$('#nextDay').addEventListener('click',()=>{
-  if(!careComplete())return;
-  if(state.checkpoint<CHECKPOINTS.length-1){
+$('#toFarm').addEventListener('click', () => { showScreen('Farm'); renderFarm(); });
+$('#nextDay').addEventListener('click', () => {
+  if(!careComplete()) return;
+  if(state.checkpoint < CHECKPOINTS.length - 1){
     state.checkpoint++;
     renderFarm();
-  }else{
+  } else {
     buildGraphs();
     showScreen('Graph');
   }
 });
 
-function logMap(v,min,max,a,b){return a+(Math.log10(v)-Math.log10(min))/(Math.log10(max)-Math.log10(min))*(b-a)}
-function graphCoords(index,type){
-  const c=CROPS[index];
-  return{x:logMap(c.density,10,500,62,392),y:type==='total'?logMap(c.total,1,1000,252,38):logMap(c.mean,.1,100,252,38)};
+/* ========================================================
+   Screen 3：グラフ作成ゲーム（スピード＆正確さタイムアタック、連打誤打減点）
+   ======================================================== */
+function logMap(v, min, max, a, b){
+  return a + (Math.log10(v) - Math.log10(min)) / (Math.log10(max) - Math.log10(min)) * (b - a);
+}
+function graphCoords(index, type){
+  const c = CROPS[index];
+  return {
+    x: logMap(c.density, 10, 500, 62, 392),
+    y: type === 'total' ? logMap(c.total, 1, 1000, 252, 38) : logMap(c.mean, 0.1, 100, 252, 38)
+  };
 }
 
 function graphMarkup(type){
-  const xTicks=[10,50,100,500],yTicks=type==='total'?[1,10,100,500,1000]:[.1,1,10,100];
-  const xs=xTicks.map(v=>{const x=logMap(v,10,500,62,392);return`<line class="grid-line" x1="${x}" x2="${x}" y1="38" y2="252"/><text class="tick" x="${x}" y="270" text-anchor="middle">${v}</text>`}).join('');
-  const ys=yTicks.map(v=>{const y=type==='total'?logMap(v,1,1000,252,38):logMap(v,.1,100,252,38);return`<line class="grid-line" x1="62" x2="392" y1="${y}" y2="${y}"/><text class="tick" x="54" y="${y+4}" text-anchor="end">${v}</text>`}).join('');
-  return`${xs}${ys}<line class="axis" x1="62" x2="392" y1="252" y2="252"/><line class="axis" x1="62" x2="62" y1="38" y2="252"/><text class="axis-label" x="227" y="300" text-anchor="middle">個体群密度（本/m²）</text><g class="line-layer"></g><rect class="graph-tap" x="62" y="38" width="330" height="214" tabindex="0" role="button" aria-label="点を記入する領域"></rect><g class="point-layer"></g>`;
+  const xTicks = [10, 50, 100, 500], yTicks = type === 'total' ? [1, 10, 100, 500, 1000] : [0.1, 1, 10, 100];
+  const xs = xTicks.map(v => {
+    const x = logMap(v, 10, 500, 62, 392);
+    return `<line class="grid-line" x1="${x}" x2="${x}" y1="38" y2="252"/><text class="tick" x="${x}" y="270" text-anchor="middle">${v}</text>`;
+  }).join('');
+  const ys = yTicks.map(v => {
+    const y = type === 'total' ? logMap(v, 1, 1000, 252, 38) : logMap(v, 0.1, 100, 252, 38);
+    return `<line class="grid-line" x1="62" x2="392" y1="${y}" y2="${y}"/><text class="tick" x="54" y="${y+4}" text-anchor="end">${v}</text>`;
+  }).join('');
+  return `${xs}${ys}<line class="axis" x1="62" x2="392" y1="252" y2="252"/><line class="axis" x1="62" x2="62" y1="38" y2="252"/><text class="axis-label" x="227" y="300" text-anchor="middle">個体群密度（本/m²）</text><g class="line-layer"></g><rect class="graph-tap" x="62" y="38" width="330" height="214" tabindex="0" role="button" aria-label="点を記入する領域"></rect><g class="point-layer"></g>`;
 }
 
 function buildGraphs(){
-  state.plotTask=0;state.plotted={total:[],mean:[]};
-  $('#totalGraph').innerHTML=graphMarkup('total');
-  $('#meanGraph').innerHTML=graphMarkup('mean');
-  $('#totalGraph .graph-tap').addEventListener('pointerdown',e=>attemptPlot('total',e));
-  $('#meanGraph .graph-tap').addEventListener('pointerdown',e=>attemptPlot('mean',e));
-  $('#totalGraph .graph-tap').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')keyboardPlot('total')});
-  $('#meanGraph .graph-tap').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')keyboardPlot('mean')});
+  state.plotTask = 0;
+  state.plotted = { total: [], mean: [] };
+  state.graphGame = {
+    score: 0,
+    startTime: performance.now(),
+    missCount: 0,
+    completed: false
+  };
+
+  $('#totalGraph').innerHTML = graphMarkup('total');
+  $('#meanGraph').innerHTML = graphMarkup('mean');
+  $('#totalGraph .graph-tap').addEventListener('pointerdown', e => attemptPlot('total', e));
+  $('#meanGraph .graph-tap').addEventListener('pointerdown', e => attemptPlot('mean', e));
   updateGraphTask();
 }
 
-function currentPlotTask(){return{index:Math.floor(state.plotTask/2),type:state.plotTask%2===0?'total':'mean'}}
-function pointerToSvg(svg,e){const r=svg.getBoundingClientRect();return{x:(e.clientX-r.left)*420/r.width,y:(e.clientY-r.top)*310/r.height}}
-function attemptPlot(type,e){
-  const task=currentPlotTask();
-  if(state.plotTask>=8||task.type!==type){plotHint('黄色で光るグラフをタップします');return}
-  const p=pointerToSvg(e.currentTarget.ownerSVGElement,e),t=graphCoords(task.index,type);
-  if(Math.hypot(p.x-t.x,p.y-t.y)<=48){
+function currentPlotTask(){
+  return {
+    index: Math.floor(state.plotTask / 2),
+    type: state.plotTask % 2 === 0 ? 'total' : 'mean'
+  };
+}
+function pointerToSvg(svg, e){
+  const r = svg.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * 420 / r.width, y: (e.clientY - r.top) * 310 / r.height };
+}
+
+function attemptPlot(type, e){
+  if(state.plotTask >= 8) return;
+  const task = currentPlotTask();
+
+  if(task.type !== type){
+    soundBuzzer();
+    state.graphGame.missCount++;
+    state.graphGame.score = Math.max(0, state.graphGame.score - 40);
+    plotHint('❌ 反対側の光るグラフをタップしてね！（-40点）');
+    updateGraphHud();
+    return;
+  }
+
+  const p = pointerToSvg(e.currentTarget.ownerSVGElement, e), t = graphCoords(task.index, type);
+  const dist = Math.hypot(p.x - t.x, p.y - t.y);
+
+  if(dist <= 44){
     soundBingo();
-    acceptPoint(task.index,type);
-  }else{
+    const pts = dist <= 18 ? 200 : 120;
+    state.graphGame.score += pts;
+    plotHint(dist <= 18 ? `🎯 PERFECT BINGO!! +${pts}点` : `✨ GREAT! +${pts}点`);
+    acceptPoint(task.index, type);
+  } else if(dist >= 85){
+    soundBuzzer();
+    state.graphGame.missCount++;
+    state.graphGame.score = Math.max(0, state.graphGame.score - 30);
+    plotHint('⚠️ 位置が大きく外れています！（-30点 連打注意）');
+    updateGraphHud();
+  } else {
     soundGood();
-    const h=Math.abs(p.x-t.x)>28?(p.x<t.x?'もう少し右':'もう少し左'):'',v=Math.abs(p.y-t.y)>28?(p.y>t.y?'もう少し上':'もう少し下'):'';
-    plotHint([h,v].filter(Boolean).join('・')||'もう少し近くです');
+    const h = Math.abs(p.x - t.x) > 28 ? (p.x < t.x ? 'もう少し右' : 'もう少し左') : '';
+    const v = Math.abs(p.y - t.y) > 28 ? (p.y > t.y ? 'もう少し上' : 'もう少し下') : '';
+    plotHint([h, v].filter(Boolean).join('・') || 'もう少し近くです！');
   }
 }
-function keyboardPlot(type){const task=currentPlotTask();if(task.type===type&&state.plotTask<8)acceptPoint(task.index,type)}
-function plotHint(msg){$('#plotHint').textContent=msg}
-function acceptPoint(index,type){
+
+function plotHint(msg){ $('#plotHint').textContent = msg; }
+
+function acceptPoint(index, type){
   state.plotted[type].push(index);
   state.plotTask++;
   drawGraph(type);
   updateGraphTask();
-  plotHint('記録できました！');
-}
-function drawGraph(type){
-  const svg=$(`#${type}Graph`),indexes=state.plotted[type];
-  svg.querySelector('.point-layer').innerHTML=indexes.map(i=>{const p=graphCoords(i,type);return`<circle class="point ${type==='mean'?'mean':''}" cx="${p.x}" cy="${p.y}" r="8"/>`}).join('');
-  if(indexes.length>1)svg.querySelector('.line-layer').innerHTML=`<polyline class="data-line ${type==='mean'?'mean':''}" points="${indexes.map(i=>{const p=graphCoords(i,type);return p.x+','+p.y}).join(' ')}"/>`;
-}
-function specimenMarkup(crop,classes=''){
-  return`<div class="mini-specimen ${classes}"><div class="mini-plant" style="--scale:${crop.scale}" aria-hidden="true"></div><div><strong>${crop.density}本/m²</strong><span>平均 ${crop.mean}g/個体</span></div></div>`;
-}
-function updateGraphTask(){
-  const finished=state.plotTask>=8,task=finished?{index:3,type:'mean'}:currentPlotTask(),crop=CROPS[task.index];
-  $('#currentSpecimen').innerHTML=Array.from({length:Math.min(crop.visible,5)},(_,i)=>`<span class="plant" style="${plantStyle(i===0&&task.index===3?11:6,Math.round(105*crop.scale),35+i*9,5,i*2-4)}"></span>`).join('');
-  $('#currentData').innerHTML=`<strong>${crop.density}本/m²区</strong><p>畑全体 ${crop.total} g/m²<br>1個体平均 ${crop.mean} g</p>`;
-  $('#totalCard').classList.toggle('active',!finished&&task.type==='total');
-  $('#meanCard').classList.toggle('active',!finished&&task.type==='mean');
-  $('#specimenStrip').innerHTML=CROPS.map((c,i)=>specimenMarkup(c,i<Math.floor(state.plotTask/2)?'done':i===Math.floor(state.plotTask/2)&&!finished?'current':'')).join('');
-  if(finished){
-    $('#plotInstruction').textContent='8個の点を記録できました。植物の姿と2本の線を比べよう。';
-    $('#toDiscover').disabled=false;
-  }else {
-    $('#plotInstruction').textContent=`${crop.density}本/m²区の「${task.type==='total'?'畑全体 '+crop.total+' g/m²':'1個体平均 '+crop.mean+' g'}」を記入`;
+  updateGraphHud();
+
+  if(state.plotTask >= 8){
+    const elapsed = (performance.now() - state.graphGame.startTime) / 1000;
+    let timeBonus = Math.max(0, Math.round((45 - elapsed) * 20));
+    state.graphGame.score += timeBonus;
+    state.graphScore = state.graphGame.score;
+    soundBingo();
+    plotHint(`🎉 全8点プロット完了！ タイムボーナス: +${timeBonus}点`);
   }
 }
 
-$('#toDiscover').addEventListener('click',()=>showScreen('Discover'));
-$('#resetBtn')?.addEventListener('click',()=>location.reload());
+function updateGraphHud(){
+  const badge = $('#graphGameBadge');
+  if(badge) badge.textContent = `🎯 プロットスコア: ${state.graphGame.score}点 (ミス: ${state.graphGame.missCount}回)`;
+}
+
+function drawGraph(type){
+  const svg = $(`#${type}Graph`), indexes = state.plotted[type];
+  svg.querySelector('.point-layer').innerHTML = indexes.map(i => {
+    const p = graphCoords(i, type);
+    return `<circle class="point ${type==='mean'?'mean':''}" cx="${p.x}" cy="${p.y}" r="8"/>`;
+  }).join('');
+  if(indexes.length > 1){
+    svg.querySelector('.line-layer').innerHTML = `<polyline class="data-line ${type==='mean'?'mean':''}" points="${indexes.map(i => {
+      const p = graphCoords(i, type);
+      return p.x + ',' + p.y;
+    }).join(' ')}"/>`;
+  }
+}
+
+function specimenMarkup(crop, classes=''){
+  return `<div class="mini-specimen ${classes}"><div class="mini-plant" style="--scale:${crop.scale}" aria-hidden="true"></div><div><strong>${crop.density}本/m²</strong><span>平均 ${crop.mean}g/個体</span></div></div>`;
+}
+
+function updateGraphTask(){
+  const finished = state.plotTask >= 8, task = finished ? { index: 3, type: 'mean' } : currentPlotTask(), crop = CROPS[task.index];
+  $('#currentSpecimen').innerHTML = Array.from({length:Math.min(crop.visible, 5)}, (_,i) =>
+    `<span class="plant" style="${plantStyle(i===0&&task.index===3?11:6, Math.round(105*crop.scale), 35+i*9, 5, i*2-4)}"></span>`
+  ).join('');
+  $('#currentData').innerHTML = `<strong>${crop.density}本/m²区</strong><p>畑全体 ${crop.total} g/m²<br>1個体平均 ${crop.mean} g</p>`;
+  $('#totalCard').classList.toggle('active', !finished && task.type === 'total');
+  $('#meanCard').classList.toggle('active', !finished && task.type === 'mean');
+  $('#specimenStrip').innerHTML = CROPS.map((c,i) => specimenMarkup(c, i < Math.floor(state.plotTask/2) ? 'done' : i === Math.floor(state.plotTask/2) && !finished ? 'current' : '')).join('');
+  if(finished){
+    $('#plotInstruction').textContent = '8個の点を記録できました。植物の姿と2本の線を比べよう。';
+    $('#toDiscover').disabled = false;
+  } else {
+    $('#plotInstruction').textContent = `${crop.density}本/m²区の「${task.type==='total'?'畑全体 '+crop.total+' g/m²':'1個体平均 '+crop.mean+' g'}」を記入`;
+  }
+}
+
+$('#toDiscover').addEventListener('click', () => showScreen('Discover'));
+$('#resetBtn')?.addEventListener('click', () => location.reload());
 
 function syncDiscoverGraphs(){
   const tSvg = $('#totalGraph'), mSvg = $('#meanGraph');
   if(tSvg && $('#discTotalGraph')) $('#discTotalGraph').innerHTML = tSvg.innerHTML;
   if(mSvg && $('#discMeanGraph')) $('#discMeanGraph').innerHTML = mSvg.innerHTML;
+}
+
+/* ========================================================
+   Screen 4：総合リザルト＆トータルスコアカード
+   ======================================================== */
+function renderFinalTotalResults(){
+  const sowFactor = 0.98 + (state.sowScore / 500) * 0.04;
+  const waterFactor = 0.98 + (Math.min(800, state.waterScore) / 800) * 0.04;
+  const fertFactor = 0.98 + (Math.min(1000, state.fertScore) / 1000) * 0.04;
+  state.fluctuationFactor = sowFactor * waterFactor * fertFactor;
+
+  const actualLowTotal = Math.round(520 * state.fluctuationFactor);
+  const actualLowMean = (actualLowTotal / 10).toFixed(1);
+  const actualHighTotal = Math.round(610 * state.fluctuationFactor);
+  const actualHighMean = (actualHighTotal / 500).toFixed(2);
+
+  const dLow = $('#discDataLow'), dHigh = $('#discDataHigh');
+  if(dLow) dLow.innerHTML = `10本/m²<br><strong>${actualLowTotal} g/m²</strong><br><span style="font-size:0.75rem;color:var(--muted)">1個体 ${actualLowMean}g</span>`;
+  if(dHigh) dHigh.innerHTML = `500本/m²<br><strong>${actualHighTotal} g/m²</strong><br><span style="font-size:0.75rem;color:var(--muted)">1個体 ${actualHighMean}g</span>`;
+
+  const totalScore = (
+    state.sowScore +
+    state.waterScore +
+    state.fertScore +
+    state.typingScore +
+    state.bugScore +
+    state.harvestScore +
+    state.graphScore
+  );
+
+  let rank = 'B', rankClass = 'rank-b', rankTitle = '熟練ダイズ栽培者';
+  if(totalScore >= 7500){ rank = 'S'; rankClass = 'rank-s'; rankTitle = '👑 伝説の生物マスター農場主！'; }
+  else if(totalScore >= 5500){ rank = 'A'; rankClass = 'rank-a'; rankTitle = '🌟 一流ダイズサイエンティスト！'; }
+
+  const container = $('#totalScoreContainer');
+  if(container){
+    container.innerHTML = `
+      <div class="total-score-card">
+        <div class="total-score-head">
+          <div>
+            <h3>🏆 119日間の栽培＆生物探究 総合リザルト</h3>
+            <div style="font-size:0.86rem;color:#94a3b8;margin-top:2px">あなたの丁寧なお世話と素早い分析の成果です！</div>
+          </div>
+          <div><span class="total-badge-rank ${rankClass}">RANK ${rank}</span></div>
+        </div>
+
+        <div class="score-breakdown-grid">
+          <div class="score-item">
+            <span>🌱 種まき均等度</span>
+            <strong>+${state.sowScore} 点</strong>
+          </div>
+          <div class="score-item">
+            <span>💧 狙い撃ち給水</span>
+            <strong>+${state.waterScore} 点</strong>
+          </div>
+          <div class="score-item">
+            <span>🚜 肥料サークル</span>
+            <strong>+${state.fertScore} 点</strong>
+          </div>
+          <div class="score-item">
+            <span>⌨️ 用語タイピング</span>
+            <strong>+${state.typingScore} 点</strong>
+          </div>
+          <div class="score-item">
+            <span>🐛 害虫パチンコ</span>
+            <strong>+${state.bugScore} 点</strong>
+          </div>
+          <div class="score-item">
+            <span>🧺 収穫タイム</span>
+            <strong>+${state.harvestScore} 点</strong>
+          </div>
+          <div class="score-item">
+            <span>📊 グラフプロット</span>
+            <strong>+${state.graphScore} 点</strong>
+          </div>
+        </div>
+
+        <div class="total-sum-bar">
+          <div>
+            <div class="total-title">総合トータルスコア</div>
+            <div style="font-size:0.86rem;color:#fef08a">${rankTitle}</div>
+          </div>
+          <div class="total-val">${totalScore} 点</div>
+        </div>
+
+        <div class="fluctuation-note">
+          🔬 <strong>栽培結果のリアルな揺らぎ（個体差・環境影響）：</strong><br>
+          あなたのお世話精度により、畑全体の総収量は <strong>${actualLowTotal}g 〜 ${actualHighTotal}g/m²</strong> （基準比 ${(state.fluctuationFactor * 100 - 100 >= 0 ? '+' : '')}${(state.fluctuationFactor * 100 - 100).toFixed(1)}%）となりました。<br>
+          密度が50倍（10本→500本）になっても、総収量は驚くほど「一定」に収束しています！
+        </div>
+      </div>
+    `;
+  }
 }
 
 function revealHint(step){
@@ -1299,7 +1995,7 @@ function initGeminiConsult(){
   copyBtn.addEventListener('click', () => {
     const inputVal = $('#studentAnswerInput').value.trim();
     const studentAnswerText = inputVal ? inputVal : '【ここに手元の紙に書いた考察、またはあなたの回答を入力】';
-    
+
     const promptText = `あなたは高校生物の国公立大学二次試験の記述・論述指導を行う専門教員です。
 以下の実験データと生徒の回答を読み、採点基準に基づいて厳格かつ丁寧に添削・講評してください。
 
@@ -1354,7 +2050,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initGeminiConsult();
 });
 initGeminiConsult();
-
 </script>
 </body>
 </html>
