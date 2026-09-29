@@ -144,25 +144,25 @@
     .plant-water-ring.active{opacity:1;animation:waterPulse .6s infinite alternate}
     @keyframes waterPulse{from{transform:translateX(-50%) scale(0.85)}to{transform:translateX(-50%) scale(1.15)}}
 
-    /* Typing Game Enhanced (Centered Modal, High Visibility, Full iPad Touch Support) */
-    .typing-box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:94%;max-width:540px;padding:16px 18px;background:rgba(15,23,42,.96);border:3px solid #38bdf8;border-radius:20px;color:#fff;z-index:30;backdrop-filter:blur(14px);box-shadow:0 12px 36px rgba(0,0,0,.6);box-sizing:border-box;pointer-events:auto !important;touch-action:manipulation}
-    .typing-header{display:flex;justify-content:space-between;align-items:center;font-size:0.88rem;font-weight:900;color:#94a3b8;margin-bottom:6px}
-    .typing-target-word{font-size:1.5rem;font-weight:900;color:#fde047;letter-spacing:0.06em;text-align:center;margin:3px 0;text-shadow:0 2px 8px rgba(253,224,71,.3)}
-    .typing-ruby-guide{font-size:0.95rem;color:#7dd3fc;letter-spacing:0.08em;margin-bottom:6px;text-align:center}
+    /* Typing Game Enhanced (Bottom Positioned, Compact, Semi-Transparent Glassmorphism so plant reactions are visible) */
+    .typing-box{position:absolute;left:50%;bottom:6px;top:auto;transform:translateX(-50%);width:92%;max-width:440px;padding:6px 10px;background:rgba(15,23,42,.72);border:2px solid rgba(56,189,248,.75);border-radius:16px;color:#fff;z-index:30;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(0,0,0,.45);box-sizing:border-box;pointer-events:auto !important;touch-action:manipulation}
+    .typing-header{display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;font-weight:900;color:#94a3b8;margin-bottom:2px}
+    .typing-target-word{font-size:1.18rem;font-weight:900;color:#fde047;letter-spacing:0.04em;text-align:center;margin:1px 0;text-shadow:0 1px 6px rgba(253,224,71,.35)}
+    .typing-ruby-guide{font-size:0.84rem;color:#7dd3fc;letter-spacing:0.05em;margin-bottom:2px;text-align:center}
     .typing-ruby-guide .matched-kana{color:#4ade80;font-weight:900;text-shadow:0 0 6px rgba(74,222,128,.4)}
     .typing-ruby-guide .remaining-kana{color:#cbd5e1}
-    .typing-romaji-display{background:rgba(255,255,255,.08);border:2px solid #0284c7;border-radius:12px;padding:8px 12px;font-size:1.18rem;font-weight:900;text-align:center;letter-spacing:0.12em;min-height:28px;margin-bottom:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .typing-romaji-display{background:rgba(255,255,255,.08);border:1.5px solid #0284c7;border-radius:8px;padding:3px 6px;font-size:0.95rem;font-weight:900;text-align:center;letter-spacing:0.08em;min-height:20px;margin-bottom:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
     .typing-romaji-display .matched-romaji{color:#4ade80;text-shadow:0 0 6px rgba(74,222,128,.5)}
-    .typing-romaji-display .next-romaji{color:#fde047;text-decoration:underline;background:rgba(250,204,21,.3);border-radius:4px;padding:1px 5px;box-shadow:0 0 8px rgba(250,204,21,.4)}
+    .typing-romaji-display .next-romaji{color:#fde047;text-decoration:underline;background:rgba(250,204,21,.3);border-radius:4px;padding:1px 4px;box-shadow:0 0 6px rgba(250,204,21,.4)}
     .typing-romaji-display .remaining-romaji{color:#64748b}
-    .typing-input-bar{display:flex;gap:8px;margin-bottom:8px;pointer-events:auto}
-    .typing-input-field{flex:1;height:44px;border-radius:12px;border:2px solid #38bdf8;background:#0f172a;color:#fff;font-size:1.05rem;font-weight:800;padding:0 14px;outline:none;text-align:center;pointer-events:auto !important;touch-action:manipulation;-webkit-user-select:text;user-select:text}
-    .typing-input-field:focus{border-color:#fde047;box-shadow:0 0 12px rgba(253,224,71,.45)}
-    .typing-assist-btn{min-width:105px;height:44px;border-radius:12px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:900;font-size:0.88rem;cursor:pointer;touch-action:manipulation;box-shadow:0 3px 8px rgba(245,158,11,.3);pointer-events:auto !important}
+    .typing-input-bar{display:flex;gap:5px;margin-bottom:4px;pointer-events:auto}
+    .typing-input-field{flex:1;height:34px;border-radius:8px;border:1.5px solid #38bdf8;background:rgba(15,23,42,.9);color:#fff;font-size:0.9rem;font-weight:800;padding:0 10px;outline:none;text-align:center;pointer-events:auto !important;touch-action:manipulation;-webkit-user-select:text;user-select:text}
+    .typing-input-field:focus{border-color:#fde047;box-shadow:0 0 8px rgba(253,224,71,.4)}
+    .typing-assist-btn{min-width:88px;height:34px;border-radius:8px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:900;font-size:0.78rem;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 5px rgba(245,158,11,.3);pointer-events:auto !important}
     .typing-assist-btn:active{transform:scale(0.96);background:#d97706}
-    .typing-skip-btn{height:36px;padding:0 14px;border-radius:10px;border:1px solid #f87171;background:rgba(239,68,68,.18);color:#fca5a5;font-weight:800;font-size:0.8rem;cursor:pointer;margin-top:4px;pointer-events:auto !important;touch-action:manipulation}
-    .typing-soft-keys{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0;pointer-events:auto}
-    .typing-key-btn{min-width:44px;height:42px;padding:0 10px;border-radius:10px;border:1.5px solid #38bdf8;background:#1e293b;color:#fff;font-size:1.1rem;font-weight:900;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .08s,background .08s;pointer-events:auto !important}
+    .typing-skip-btn{height:28px;padding:0 8px;border-radius:6px;border:1px solid #f87171;background:rgba(239,68,68,.18);color:#fca5a5;font-weight:800;font-size:0.72rem;cursor:pointer;margin-top:2px;pointer-events:auto !important;touch-action:manipulation}
+    .typing-soft-keys{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:3px 0;pointer-events:auto}
+    .typing-key-btn{min-width:38px;height:34px;padding:0 6px;border-radius:6px;border:1.5px solid #38bdf8;background:rgba(30,41,59,.9);color:#fff;font-size:1rem;font-weight:900;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .08s,background .08s;pointer-events:auto !important}
     .typing-key-btn.next-key{border-color:#fde047;background:#0369a1;color:#fde047;box-shadow:0 0 12px rgba(253,224,71,.45);animation:keyPulse 1s infinite alternate}
     @keyframes keyPulse{from{transform:scale(1)}to{transform:scale(1.06)}}
     .typing-key-btn:active{background:#0284c7;transform:scale(.92)}
@@ -1166,6 +1166,15 @@ function generateKanaSoftKeys(q, curLen){
   for(let ch of pool){
     if(!res.includes(ch) && res.length < 12) res.push(ch);
   }
+
+  // Fisher-Yates シャッフルで毎文字のボタン配置をランダム化（連打クリア防止）
+  for(let i = res.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = res[i];
+    res[i] = res[j];
+    res[j] = tmp;
+  }
+
   return res;
 }
 
@@ -1553,11 +1562,18 @@ function bindSlingshot(){
       if(bugGame.combo >= 8) angles = [-24, -12, 0, 12, 24];
       else if(bugGame.combo >= 3) angles = [-16, 0, 16];
 
+      // 同一発射のショットグループ（3ウェイ以上で1発でも当たればコンボ継続）
+      const shotGroup = {
+        total: angles.length,
+        remaining: angles.length,
+        hitAny: false
+      };
+
       angles.forEach(deg => {
         const rad = baseAngle + deg * Math.PI / 180;
         const vx = Math.cos(rad) * baseSpeed;
         const vy = Math.sin(rad) * baseSpeed;
-        spawnBullet(rest.x + dx, rest.y + dy, vx, vy);
+        spawnBullet(rest.x + dx, rest.y + dy, vx, vy, shotGroup);
       });
     }
   };
@@ -1568,7 +1584,7 @@ function bindSlingshot(){
   ball.addEventListener('pointercancel', onPointerUp);
 }
 
-function spawnBullet(x, y, vx, vy){
+function spawnBullet(x, y, vx, vy, shotGroup = null){
   const isGiant = bugGame.combo >= 12;
   const el = document.createElement('div');
   el.className = `flying-bullet ${isGiant ? 'giant' : ''}`;
@@ -1576,7 +1592,7 @@ function spawnBullet(x, y, vx, vy){
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
   $('#gameOverlay').appendChild(el);
-  bugGame.bullets.push({ el, x, y, vx, vy, isGiant, hitBug: false, alive: true });
+  bugGame.bullets.push({ el, x, y, vx, vy, isGiant, hitBug: false, alive: true, shotGroup });
 }
 
 function runBugGameLoop(){
@@ -1628,14 +1644,22 @@ function runBugGameLoop(){
     blt.el.style.left = `${blt.x}px`;
     blt.el.style.top = `${blt.y}px`;
 
-    // 画面外判定（外れた弾はコンボリセット！）
+    // 画面外判定（全弾が外れた場合のみMISSリセット）
     if(blt.x < -30 || blt.x > stage.width + 30 || blt.y < -30 || blt.y > stage.height + 30){
       blt.alive = false;
       blt.el.remove();
       bugGame.bullets.splice(i, 1);
 
-      // 何にも当たらずに外れた場合、コンボをゼロにリセット！
-      if(!blt.hitBug && bugGame.combo > 0){
+      if(blt.shotGroup){
+        blt.shotGroup.remaining--;
+        // ショットグループ全弾が画面外に出た時点で、1発も当たっていなかった場合のみMISS！
+        if(blt.shotGroup.remaining <= 0 && !blt.shotGroup.hitAny && bugGame.combo > 0){
+          soundBuzzer();
+          bugGame.combo = 0;
+          updateComboHud(false);
+          showHitPopup(stage.width / 2, stage.height - 110, 'MISS! COMBO RESET', 'good');
+        }
+      } else if(!blt.hitBug && bugGame.combo > 0){
         soundBuzzer();
         bugGame.combo = 0;
         updateComboHud(false);
@@ -1651,6 +1675,10 @@ function runBugGameLoop(){
       const hitRadius = blt.isGiant ? 100 : 52;
       if(dist <= hitRadius){
         blt.hitBug = true;
+        if(blt.shotGroup){
+          blt.shotGroup.hitAny = true;
+          blt.shotGroup.remaining--;
+        }
         blt.alive = false;
         blt.el.remove();
         bugGame.bullets.splice(i, 1);
@@ -1702,8 +1730,14 @@ function runBugGameLoop(){
       const dist = Math.hypot(blt.x - bug.x, blt.y - bug.y);
       if(dist <= bugHitRadius){
         blt.hitBug = true;
+        if(blt.shotGroup){
+          blt.shotGroup.hitAny = true;
+        }
         // 通常弾は消滅、巨大弾（POWER MAX）は貫通して複数撃破！
         if(!blt.isGiant){
+          if(blt.shotGroup){
+            blt.shotGroup.remaining--;
+          }
           blt.alive = false;
           blt.el.remove();
           bugGame.bullets.splice(i, 1);
