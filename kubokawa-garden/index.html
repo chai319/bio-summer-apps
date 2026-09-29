@@ -75,7 +75,7 @@
     /* Harvest Pokémon Sleep Style Basket & Berries */
     .harvest-basket{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:96px;height:96px;border-radius:24px;background:linear-gradient(135deg,#fef3c7,#fde68a);border:4px solid #b45309;box-shadow:0 8px 24px rgba(180,83,9,.35);display:grid;place-items:center;font-size:46px;z-index:22;pointer-events:none;transition:transform .18s cubic-bezier(.34,1.56,.64,1);user-select:none}
     .harvest-basket.bounce{transform:translate(-50%,-50%) scale(1.3) rotate(-5deg)}
-    .harvest-guide-hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);padding:7px 14px;border-radius:99px;background:rgba(15,23,42,.85);color:#fff;font-size:.82rem;font-weight:900;z-index:25;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.25);pointer-events:none}
+    .harvest-guide-hint{position:absolute;left:50%;bottom:12px;top:auto;transform:translateX(-50%);padding:6px 16px;border-radius:99px;background:rgba(15,23,42,.88);color:#fff;font-size:.82rem;font-weight:900;z-index:25;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.35);pointer-events:none}
     .harvest-bean{position:absolute;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fde047,#eab308);border:3px solid #fff;box-shadow:0 4px 8px rgba(0,0,0,.2);display:grid;place-items:center;font-size:16px;z-index:21;cursor:pointer;touch-action:none;user-select:none;transform:translate(-50%,-50%);transition:transform .15s ease}
     .harvest-bean.collected{pointer-events:none}
     .harvest-particle{position:absolute;pointer-events:none;font-size:20px;z-index:28;animation:particleFade .5s ease-out forwards}
@@ -162,13 +162,15 @@
     .typing-assist-btn:active{transform:scale(0.96);background:#d97706}
     .typing-skip-btn{height:28px;padding:0 8px;border-radius:6px;border:1px solid #f87171;background:rgba(239,68,68,.18);color:#fca5a5;font-weight:800;font-size:0.72rem;cursor:pointer;margin-top:2px;pointer-events:auto !important;touch-action:manipulation}
     .typing-soft-keys{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:3px 0;pointer-events:auto}
-    .typing-key-btn{min-width:38px;height:34px;padding:0 6px;border-radius:6px;border:1.5px solid #38bdf8;background:rgba(30,41,59,.9);color:#fff;font-size:1rem;font-weight:900;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform .08s,background .08s;pointer-events:auto !important}
-    .typing-key-btn.next-key{border-color:#fde047;background:#0369a1;color:#fde047;box-shadow:0 0 12px rgba(253,224,71,.45);animation:keyPulse 1s infinite alternate}
-    @keyframes keyPulse{from{transform:scale(1)}to{transform:scale(1.06)}}
-    .typing-key-btn:active{background:#0284c7;transform:scale(.92)}
+    .typing-key-btn{min-width:38px;height:34px;padding:0 6px;border-radius:6px;border:1.5px solid rgba(56,189,248,.6);background:rgba(30,41,59,.9);color:#f1f5f9;font-size:1rem;font-weight:800;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background .08s,border-color .08s;pointer-events:auto !important}
+    .typing-key-btn:active{background:#0284c7;border-color:#38bdf8;transform:scale(.94)}
     .typing-stats{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;font-size:0.8rem;color:#94a3b8;margin-top:6px}
 
-    /* Wave Harvest HUD */
+    /* Wave Harvest HUD (Time Attack) */
+    .harvest-timer-hud{position:absolute;left:50%;top:8px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:6px 18px;border-radius:99px;background:rgba(15,23,42,.92);border:2px solid #facc15;color:#fff;font-weight:900;font-size:0.92rem;z-index:25;box-shadow:0 6px 20px rgba(0,0,0,.4);pointer-events:none}
+    .harvest-title-tag{color:#fde047;font-weight:900;letter-spacing:0.04em}
+    .harvest-time-val{color:#38bdf8;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.05rem;min-width:54px;text-align:right}
+    .harvest-wave-val{background:rgba(250,204,21,.2);color:#fef08a;padding:2px 8px;border-radius:8px;font-size:0.84rem}
     .harvest-wave-badge{position:absolute;left:50%;top:10px;transform:translateX(-50%);padding:6px 18px;border-radius:99px;background:rgba(15,23,42,.9);border:2px solid #facc15;color:#fde047;font-weight:900;font-size:0.95rem;z-index:25;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 
     /* Overall Result Card on Screen 4 */
@@ -591,7 +593,7 @@ function fieldFoot(ci, crop){
     return count === 0 ? '葉の重なりなし（良好）' : `重なり: ${penalized}/${count}箇所確認`;
   }
   if(state.checkpoint === 5) return state.bugs.size >= 4 ? '防除完了' : '害虫駆除中';
-  if(state.checkpoint === 6) return state.harvested.size >= 4 ? '全収穫完了' : `WAVE ${state.harvest.wave}/3 収穫中`;
+  if(state.checkpoint === 6) return state.harvested.size >= 4 ? '全収穫完了' : `WAVE ${state.harvest?.wave || 1}/3 収穫中`;
   return '';
 }
 
@@ -1057,8 +1059,8 @@ function setupTypingDOM(){
       </div>
       <div class="typing-target-word" id="typingTargetWord">成長曲線</div>
       <div class="typing-ruby-guide" id="typingRubyGuide" style="font-size:1.35rem;margin:8px 0;letter-spacing:0.12em"></div>
-      <div style="font-size:0.88rem;color:#7dd3fc;text-align:center;margin-bottom:8px">
-        👇 次の文字（光るボタン）をタップして言葉を完成させよう！
+      <div style="font-size:0.86rem;color:#7dd3fc;text-align:center;margin-bottom:6px">
+        👇 正しいひらがなを選んで言葉を完成させよう！
       </div>
       <div class="typing-input-bar">
         <input type="text" id="typingInput" class="typing-input-field" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="ひらがなボタンをタップ または キー入力">
@@ -1069,7 +1071,7 @@ function setupTypingDOM(){
         <button type="button" class="typing-skip-btn" id="typingSkipBtn" style="display:none">⏩ この単語を完成させる</button>
       </div>
       <div class="typing-stats">
-        <span>💡 iPadでは下のひらがなボタンをポンポンとタップするだけで進めます！</span>
+        <span>💡 下のひらがなボタンをタップして言葉を打ち込もう！</span>
       </div>
     </div>
   `;
@@ -1130,13 +1132,12 @@ function updateTypingDisplay(){
     skipBtn.style.display = state.typing.missCount >= 2 ? 'inline-block' : 'none';
   }
 
-  // ひらがなソフトキー更新（アルファベットを全廃し、出題のひらがなを選択）
+  // ひらがなソフトキー更新（フラットデザイン：光らせず自力で選ばせる）
   const softKeysContainer = $('#typingSoftKeys');
   if(softKeysContainer){
     const softKeys = generateKanaSoftKeys(q, curLen);
     softKeysContainer.innerHTML = softKeys.map((k) => {
-      const isNext = k === nextKana;
-      return `<button type="button" class="typing-key-btn ${isNext ? 'next-key' : ''}" data-key="${k}" style="min-width:48px;height:46px;font-size:1.2rem">${k}</button>`;
+      return `<button type="button" class="typing-key-btn" data-key="${k}">${k}</button>`;
     }).join('');
 
     softKeysContainer.querySelectorAll('.typing-key-btn').forEach(btn => {
@@ -1818,9 +1819,10 @@ function finishBugGame(){
   const totalFinalScore = bugGame.score + timeBonus + comboBonus;
   state.bugScore = totalFinalScore;
 
-  let rank = 'B', rankClass = 'rank-b', rankTitle = '防除完了';
-  if(totalFinalScore >= 3800){ rank = 'S'; rankClass = 'rank-s'; rankTitle = '👑 神速の防除マスター！'; }
-  else if(totalFinalScore >= 2600){ rank = 'A'; rankClass = 'rank-a'; rankTitle = '🌟 優秀なダイズ栽培家！'; }
+  let rank = 'C', rankClass = 'rank-b', rankTitle = '防除完了';
+  if(totalFinalScore >= 4800){ rank = 'S'; rankClass = 'rank-s'; rankTitle = '👑 神速の防除マスター！'; }
+  else if(totalFinalScore >= 3600){ rank = 'A'; rankClass = 'rank-a'; rankTitle = '🌟 優秀なダイズ栽培家！'; }
+  else if(totalFinalScore >= 2400){ rank = 'B'; rankClass = 'rank-b'; rankTitle = '🌱 防除達成！'; }
 
   const overlay = $('#gameOverlay');
   const board = document.createElement('div');
@@ -1852,7 +1854,14 @@ let harvestGame = {
   touching: false
 };
 
+let harvestTimerReq = null;
+
 function initHarvestGame(){
+  if(harvestTimerReq){
+    cancelAnimationFrame(harvestTimerReq);
+    harvestTimerReq = null;
+  }
+
   state.harvest = {
     wave: 1,
     maxWaves: 3,
@@ -1866,10 +1875,24 @@ function initHarvestGame(){
   const overlay = $('#gameOverlay');
   overlay.innerHTML = `
     <div class="harvest-basket" id="harvestBasket" title="収穫カゴ">🧺</div>
-    <div class="harvest-wave-badge" id="harvestWaveBadge">🌾 WAVE 1 / 3 収穫中</div>
+    <div class="harvest-timer-hud" id="harvestTimerHud">
+      <span class="harvest-title-tag">⏱️ タイムアタック！！</span>
+      <span class="harvest-time-val" id="harvestTimeVal">0.0s</span>
+      <span class="harvest-wave-val" id="harvestWaveVal">🌾 WAVE 1/3</span>
+    </div>
     <div class="harvest-guide-hint" id="harvestHint">畑の上を指でなぞると、熟した豆がカゴに吸い込まれるよ！</div>
     <div id="beansContainer"></div>
   `;
+
+  const tickHarvestTimer = () => {
+    if(state.harvest.completed) return;
+    const now = performance.now();
+    const elapsed = (now - state.harvest.startTime) / 1000;
+    const timeEl = $('#harvestTimeVal');
+    if(timeEl) timeEl.textContent = `${elapsed.toFixed(1)}s`;
+    harvestTimerReq = requestAnimationFrame(tickHarvestTimer);
+  };
+  harvestTimerReq = requestAnimationFrame(tickHarvestTimer);
 
   spawnWaveBeans(1);
   bindHarvestSwipe();
@@ -1885,8 +1908,8 @@ function spawnWaveBeans(waveNum){
   const countPerPlot = waveNum === 3 ? 8 : 6;
   harvestGame.totalInCurrentWave = countPerPlot * 4;
 
-  const badge = $('#harvestWaveBadge');
-  if(badge) badge.textContent = `🌾 WAVE ${waveNum} / 3 収穫タイムアタック！`;
+  const waveVal = $('#harvestWaveVal');
+  if(waveVal) waveVal.textContent = `🌾 WAVE ${waveNum}/3`;
 
   const soils = $$('.soil');
   const stR = $('#farmStage').getBoundingClientRect();
@@ -1970,10 +1993,20 @@ function bindHarvestSwipe(){
 }
 
 function finishHarvestGame(){
+  if(harvestTimerReq){
+    cancelAnimationFrame(harvestTimerReq);
+    harvestTimerReq = null;
+  }
+
   state.harvest.completed = true;
   state.harvested = new Set([0, 1, 2, 3]);
   const elapsed = (performance.now() - state.harvest.startTime) / 1000;
   state.harvest.elapsed = elapsed;
+
+  const timeEl = $('#harvestTimeVal');
+  if(timeEl) timeEl.textContent = `${elapsed.toFixed(1)}s`;
+  const waveVal = $('#harvestWaveVal');
+  if(waveVal) waveVal.textContent = '🎉 COMPLETE!';
 
   // 3回終わったら実がならないように、豆コンテナを完全消去＆追加生成停止
   harvestGame.beans = [];
@@ -1988,7 +2021,7 @@ function finishHarvestGame(){
   state.harvestScore = 600 + timeBonus;
 
   const hint = $('#harvestHint');
-  if(hint) hint.textContent = `🎉 3ウェーブ完熟収穫達成！すべての実を収穫しました！ (${elapsed.toFixed(1)}秒 / +${state.harvestScore}点)`;
+  if(hint) hint.textContent = `🎉 3ウェーブ完熟収穫達成！タイムアタック記録: ${elapsed.toFixed(1)}秒 (+${state.harvestScore}点)`;
 
   const bk = $('#harvestBasket');
   if(bk) bk.style.filter = 'drop-shadow(0 0 25px #fde047)';
@@ -2017,7 +2050,7 @@ function renderCare(){
     '4つの畑を直接タップし、好きな位置に種をまきます（その位置から育ちます！）。',
     'ジョーロをつかみ、各株に水を届けよう！ゲージが満タンになると「OK」が出ます！',
     '畑をタップ！広がるサークル内に全ダイズ株を入れるように施肥しよう！',
-    '重要生物用語のひらがな選択チャレンジ！光るひらがなボタンをポンポンとタップ！',
+    '重要生物用語のひらがな選択チャレンジ！ひらがなボタンをポンポンとタップ！',
     '密に育った株の間にある【重】マークをタップして光不足（光競合）を発見しよう！',
     '中央の農薬パチンコを引いて発射！コンボを繋ぎ、30匹目のボスを倒そう！',
     '畑の上を指でサーッとなぞって、ダイズを中央のカゴに収穫しよう！（全3ウェーブ）'
@@ -2115,9 +2148,13 @@ function getDynamicYields(){
     state.harvestScore
   );
 
-  // お世話係数 (0.75 〜 1.40倍)
-  // 基準スコア約6000〜8000点。スコアが高いほど絶対的な収量が底上げされる！
-  const careFactor = Math.max(0.72, Math.min(1.42, 0.72 + (careScore / 11000) * 0.65));
+  // お世話係数 (0.42倍 〜 1.95倍のダイナミック変動！)
+  // 基準スコア7500点で1.00倍。低スコアでは半分に激減し、ハイスコア・丁寧なお世話では2倍近くの大豊作に！
+  const ratio = careScore / 7500;
+  const rawFactor = ratio <= 1.0 
+    ? 0.45 + ratio * 0.55 
+    : 1.00 + (ratio - 1.0) * 1.55;
+  const careFactor = Math.max(0.42, Math.min(1.95, Number(rawFactor.toFixed(2))));
   state.fluctuationFactor = careFactor;
 
   return CROPS.map((crop, i) => {
@@ -2325,9 +2362,10 @@ function renderFinalTotalResults(){
     state.graphScore
   );
 
-  let rank = 'B', rankClass = 'rank-b', rankTitle = '熟練ダイズ栽培者';
-  if(totalScore >= 7500){ rank = 'S'; rankClass = 'rank-s'; rankTitle = '👑 伝説の生物マスター農場主！'; }
-  else if(totalScore >= 5500){ rank = 'A'; rankClass = 'rank-a'; rankTitle = '🌟 一流ダイズサイエンティスト！'; }
+  let rank = 'C', rankClass = 'rank-b', rankTitle = '新米ダイズ栽培者';
+  if(totalScore >= 10500){ rank = 'S'; rankClass = 'rank-s'; rankTitle = '👑 伝説の生物マスター農場主！'; }
+  else if(totalScore >= 8000){ rank = 'A'; rankClass = 'rank-a'; rankTitle = '🌟 一流ダイズサイエンティスト！'; }
+  else if(totalScore >= 5500){ rank = 'B'; rankClass = 'rank-b'; rankTitle = '🌱 熟練ダイズ栽培者'; }
 
   const container = $('#totalScoreContainer');
   if(container){
