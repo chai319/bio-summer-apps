@@ -55,6 +55,46 @@
     .rubric-list span{display:inline-block;padding:2px 6px;border-radius:4px;background:#dcfce7;color:#15803d;font-weight:bold;margin-right:6px}
     .next-hint-btn{min-height:48px;border:0;border-radius:14px;padding:0 20px;background:var(--blue);color:#fff;font-weight:900;box-shadow:0 4px 0 #153b9a;cursor:pointer;margin-top:10px}
 
+  
+    /* Slingshot Bug Shooting Game */
+    .slingshot-area{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:110px;height:95px;z-index:25;pointer-events:auto;touch-action:none;user-select:none}
+    .slingshot-frame{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:70px;height:70px;pointer-events:none}
+    .slingshot-ball{position:absolute;left:50%;bottom:42px;transform:translate(-50%,50%);width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#a3e635,#4d7c0f);border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.35);cursor:grab;touch-action:none;display:grid;place-items:center;font-size:20px;z-index:26;user-select:none}
+    .slingshot-ball.dragging{cursor:grabbing;transform:translate(-50%,50%) scale(1.15);box-shadow:0 0 14px #a3e635}
+    .slingshot-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:24;overflow:visible}
+    .game-hud{position:absolute;left:8px;right:8px;top:8px;z-index:30;display:flex;justify-content:space-between;align-items:center;padding:7px 14px;background:rgba(15,23,42,.88);backdrop-filter:blur(6px);border-radius:13px;color:#fff;font-weight:900;font-size:.86rem;border:2px solid rgba(255,255,255,.2);box-shadow:0 4px 12px rgba(0,0,0,.25)}
+    .game-hud .score-badge{color:#fde047;font-size:1.15rem;letter-spacing:.05em}
+    .game-hud .killed-badge{color:#86efac;font-size:1.05rem}
+    .flying-bullet{position:absolute;width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fde047,#ca8a04);border:2px solid #fff;box-shadow:0 0 12px #fde047;pointer-events:none;z-index:27;transform:translate(-50%,-50%)}
+    .active-bug{position:absolute;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:26px;z-index:23;pointer-events:none;user-select:none;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 5px rgba(0,0,0,.25))}
+    .hit-popup{position:absolute;z-index:40;font-weight:900;pointer-events:none;transform:translate(-50%,-50%);animation:popEffect .75s ease-out forwards;text-shadow:0 2px 4px rgba(0,0,0,.5);white-space:nowrap}
+    .hit-popup.bingo{font-size:1.85rem;color:#facc15;-webkit-text-stroke:1.2px #78350f}
+    .hit-popup.good{font-size:1.4rem;color:#4ade80;-webkit-text-stroke:1px #14532d}
+    @keyframes popEffect{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}25%{opacity:1;transform:translate(-50%,-75%) scale(1.3)}100%{opacity:0;transform:translate(-50%,-120%) scale(1)}}
+
+    /* Harvest Pokémon Sleep Style Basket & Berries */
+    .harvest-basket{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:96px;height:96px;border-radius:24px;background:linear-gradient(135deg,#fef3c7,#fde68a);border:4px solid #b45309;box-shadow:0 8px 24px rgba(180,83,9,.35);display:grid;place-items:center;font-size:46px;z-index:22;pointer-events:none;transition:transform .18s cubic-bezier(.34,1.56,.64,1);user-select:none}
+    .harvest-basket.bounce{transform:translate(-50%,-50%) scale(1.3) rotate(-5deg)}
+    .harvest-guide-hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);padding:7px 14px;border-radius:99px;background:rgba(15,23,42,.85);color:#fff;font-size:.82rem;font-weight:900;z-index:25;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.25);pointer-events:none}
+    .harvest-bean{position:absolute;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fde047,#eab308);border:3px solid #fff;box-shadow:0 4px 8px rgba(0,0,0,.2);display:grid;place-items:center;font-size:16px;z-index:21;cursor:pointer;touch-action:none;user-select:none;transform:translate(-50%,-50%);transition:transform .15s ease}
+    .harvest-bean.collected{pointer-events:none}
+    .harvest-particle{position:absolute;pointer-events:none;font-size:20px;z-index:28;animation:particleFade .5s ease-out forwards}
+    @keyframes particleFade{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(calc(-50% + var(--pdx)),calc(-50% + var(--pdy))) scale(.4)}}
+
+    /* Gemini Consultation Card */
+    .gemini-consult-card{margin-top:20px;padding:20px;border-radius:20px;background:linear-gradient(135deg,#f8faff 0%,#eef4ff 100%);border:2px solid #c7d9fe;box-shadow:0 6px 18px rgba(37,99,235,.08)}
+    .gemini-consult-card h4{margin:0 0 8px;font-size:1.15rem;color:#1e40af;display:flex;align-items:center;gap:8px}
+    .gemini-consult-card p{margin:0 0 12px;color:#475569;font-size:.9rem;line-height:1.6}
+    .gemini-textarea{width:100%;box-sizing:border-box;min-height:76px;padding:12px 14px;border:2px solid #cbd5e1;border-radius:12px;font:inherit;font-size:.92rem;line-height:1.6;resize:vertical;background:#fff;margin-bottom:12px}
+    .gemini-btn-row{display:flex;gap:12px;flex-wrap:wrap}
+    .gemini-btn{min-height:46px;padding:0 18px;border-radius:12px;font-weight:900;font-size:.88rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;border:none;transition:all .2s ease}
+    .gemini-btn-copy{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;box-shadow:0 4px 10px rgba(29,78,216,.25)}
+    .gemini-btn-copy:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(29,78,216,.35)}
+    .gemini-btn-open{background:#fff;color:#1e40af;border:2px solid #bfdbfe;text-decoration:none;display:inline-flex;align-items:center}
+    .gemini-btn-open:hover{background:#eff6ff}
+    .toast-msg{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(40px);background:rgba(15,23,42,.96);border:2px solid #3b82f6;color:#fff;padding:11px 24px;border-radius:99px;font-weight:900;font-size:.92rem;box-shadow:0 6px 20px rgba(0,0,0,.3);pointer-events:none;opacity:0;transition:all .3s ease;z-index:1000}
+    .toast-msg.show{transform:translateX(-50%) translateY(0);opacity:1}
+
   </style>
 </head>
 <body>
@@ -182,6 +222,24 @@
         </div>
       </div>
 
+      
+        <!-- Gemini AI Consultation Card -->
+        <div class="gemini-consult-card">
+          <h4>🤖 自分の回答をGemini（AI）に添削・相談しよう</h4>
+          <p>紙に書いた考察や、自分で考えた文章をGeminiに入力して、国公立二次試験の採点基準で厳格に添削・講評してもらいましょう。</p>
+          <label for="studentAnswerInput" class="sr-only">あなたの回答（下書き）</label>
+          <textarea id="studentAnswerInput" class="gemini-textarea" placeholder="【任意】ここに紙に書いたあなたの考察を入力すると、プロンプトに自動で組み込まれます（空欄でもOK）"></textarea>
+          <div class="gemini-btn-row">
+            <button type="button" class="gemini-btn gemini-btn-copy" id="copyGeminiPromptBtn">
+              📋 添削プロンプトをコピー
+            </button>
+            <a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer" class="gemini-btn gemini-btn-open">
+              🚀 Gemini（gemini.google.com）を開く ↗
+            </a>
+          </div>
+        </div>
+        <div id="toastMsg" class="toast-msg">📋 添削プロンプトをコピーしました！Geminiに貼り付けてみよう</div>
+
       <div class="action-row" style="margin-top:20px">
         <button class="primary" type="button" onclick="location.reload()">最初からもう一度体験する</button>
       </div>
@@ -190,101 +248,769 @@
 </main>
 <script>
 const CROPS=[{density:10,total:520,mean:52,visible:2,scale:1.18,name:'ゆったり区'},{density:50,total:575,mean:11.5,visible:4,scale:.91,name:'ほどほど区'},{density:100,total:595,mean:5.95,visible:7,scale:.74,name:'こんでいる区'},{density:500,total:610,mean:1.22,visible:12,scale:.52,name:'ぎっしり区'}];
-const CHECKPOINTS=[{day:0,label:'種うえ',title:'好きな位置に種をまこう'},{day:12,label:'水やり',title:'水をしっかり届けよう'},{day:21,label:'追肥',title:'必要な場所へ追肥しよう'},{day:31,label:'声かけ',title:'ダイズに声をかけよう'},{day:45,label:'見守る',title:'葉の重なりを観察しよう'},{day:84,label:'農薬',title:'害虫だけに農薬を使おう'},{day:119,label:'収穫',title:'119日目、収穫しよう'}];
+const CHECKPOINTS=[{day:0,label:'種うえ',title:'好きな位置に種をまこう'},{day:12,label:'水やり',title:'水をしっかり届けよう'},{day:21,label:'追肥',title:'必要な場所へ追肥しよう'},{day:31,label:'声かけ',title:'ダイズに声をかけよう'},{day:45,label:'見守る',title:'葉の重なりを観察しよう'},{day:84,label:'農薬',title:'農薬パチンコで害虫退治！'},{day:119,label:'収穫',title:'指でなぞってダイズを収穫！'}];
 const POS=Array.from({length:12},(_,i)=>`${i%4*33.333}% ${Math.floor(i/4)*50}%`);
 const state={prediction:'',checkpoint:0,seeds:CROPS.map(()=>[]),waterByPlot:[0,0,0,0],fertilizer:[0,0,0,0],phrases:[],observed:new Set(),bugs:new Set(),harvested:new Set(),plotTask:0,plotted:{total:[],mean:[]}};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],screenNames=['Predict','Farm','Graph','Discover'];
-function showScreen(name){screenNames.forEach((n,i)=>{$(`#screen${n}`).hidden=n!==name;const step=document.querySelector(`[data-step="${i+1}"]`);step.classList.toggle('active',n===name);step.classList.toggle('done',i<screenNames.indexOf(name))});window.scrollTo({top:0,behavior:'smooth'})}
-function plantStyle(sprite,size,x,y,tilt=0){return`--pos:${POS[sprite]};--size:${size}px;--x:${x}%;--y:${y}px;--tilt:${tilt}deg`}function stageSprite(){return state.checkpoint===0?0:Math.min(state.checkpoint,6)}function autoPositions(count){const cols=Math.ceil(Math.sqrt(count*1.7));return Array.from({length:count},(_,i)=>({x:10+(i%cols+.5)*(80/cols),y:6+Math.floor(i/cols)*27}))}
-function renderTimeline(){$('#timeline').innerHTML=CHECKPOINTS.map((c,i)=>`<button class="day-chip ${i===state.checkpoint?'current':''} ${i<state.checkpoint?'complete':''}" type="button" disabled><strong>${c.day}日目</strong><span>${c.label}</span></button>`).join('')}
-function renderFieldTargets(ci){
-  if(state.checkpoint===4&&ci<3&&!state.observed.has(ci)){const s=[[24,38],[62,31],[72,47]];return`<button type="button" class="leaf-clue" data-target="${ci}" style="left:${s[ci][0]}%;top:${s[ci][1]}%" aria-label="葉の重なりを観察">葉</button>`}
-  if(state.checkpoint===5&&!state.bugs.has(ci)){const s=[[22,28],[66,33],[43,22],[76,42]];return`<button type="button" class="bug" data-target="${ci}" style="left:${s[ci][0]}%;top:${s[ci][1]}%" aria-label="害虫を指で弾き飛ばす">🐛</button>`}
-  if(state.checkpoint===6&&!state.harvested.has(ci))return`<button type="button" class="harvest-clue" data-target="${ci}" aria-label="${CROPS[ci].density}本区を収穫">🌾 収穫</button>`;
-  return''
+
+// Web Audio API for interactive feedback
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
 }
+function playTone(freq, type='sine', duration=0.1, gain=0.15){
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    g.gain.setValueAtTime(gain, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  } catch(e){}
+}
+function soundShoot(){ playTone(480, 'triangle', 0.12, 0.2); }
+function soundBingo(){
+  playTone(523, 'sine', 0.08, 0.25);
+  setTimeout(()=>playTone(659, 'sine', 0.08, 0.25), 60);
+  setTimeout(()=>playTone(784, 'triangle', 0.16, 0.3), 120);
+}
+function soundGood(){ playTone(440, 'sine', 0.1, 0.2); setTimeout(()=>playTone(554, 'sine', 0.12, 0.2), 60); }
+function soundBerry(){ playTone(600 + Math.random()*220, 'sine', 0.09, 0.22); }
+function soundBasket(){ playTone(330, 'triangle', 0.12, 0.25); setTimeout(()=>playTone(440, 'triangle', 0.12, 0.25), 70); }
+
+function showScreen(name){
+  screenNames.forEach((n,i)=>{
+    $(`#screen${n}`).hidden=n!==name;
+    const step=document.querySelector(`[data-step="${i+1}"]`);
+    step.classList.toggle('active',n===name);
+    step.classList.toggle('done',i<screenNames.indexOf(name));
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(name==='Discover'){ syncDiscoverGraphs(); }
+}
+
+function plantStyle(sprite,size,x,y,tilt=0){return`--pos:${POS[sprite]};--size:${size}px;--x:${x}%;--y:${y}px;--tilt:${tilt}deg`}
+function stageSprite(){return state.checkpoint===0?0:Math.min(state.checkpoint,6)}
+function autoPositions(count){
+  const cols=Math.ceil(Math.sqrt(count*1.7));
+  return Array.from({length:count},(_,i)=>({x:10+(i%cols+.5)*(80/cols),y:6+Math.floor(i/cols)*27}));
+}
+
+function renderTimeline(){
+  $('#timeline').innerHTML=CHECKPOINTS.map((c,i)=>`<button class="day-chip ${i===state.checkpoint?'current':''} ${i<state.checkpoint?'complete':''}" type="button" disabled><strong>${c.day}日目</strong><span>${c.label}</span></button>`).join('');
+}
+
+function renderFieldTargets(ci){
+  if(state.checkpoint===4&&ci<3&&!state.observed.has(ci)){
+    const s=[[24,38],[62,31],[72,47]];
+    return`<button type="button" class="leaf-clue" data-target="${ci}" style="left:${s[ci][0]}%;top:${s[ci][1]}%" aria-label="葉の重なりを観察">葉</button>`;
+  }
+  return '';
+}
+
 function fieldFoot(ci,crop){
   if(state.checkpoint===0)return`表示用の種 ${state.seeds[ci].length}/${crop.visible}`;
   if(state.checkpoint===1)return`水 ${state.waterByPlot[ci]}%`;
   if(state.checkpoint===2)return`肥料 ${state.fertilizer[ci]}/3発`;
   if(state.checkpoint===3)return state.phrases.length?`声かけ ${Math.min(state.phrases.length,3)}/3`:'言葉を待っています';
-  if(state.checkpoint===5)return state.bugs.has(ci)?'害虫退治！':'🐛を弾き飛ばす';
-  if(state.checkpoint===6)return state.harvested.has(ci)?'収穫済み':'畑をタップして収穫';
-  return`${CHECKPOINTS[state.checkpoint].day}日目の姿`
+  if(state.checkpoint===4)return state.observed.has(ci)?'観察完了':'葉の重なりを観察';
+  if(state.checkpoint===5)return state.bugs.size>=4?'農薬散布完了':'害虫駆除中';
+  if(state.checkpoint===6)return state.harvested.size>=4?'収穫完了':'豆をなぞって収穫';
+  return '';
 }
+
 function renderFields(){
   const sprite=stageSprite();
   $('#fields').innerHTML=CROPS.map((crop,ci)=>{
     let contents='';
     if(state.checkpoint===0)contents=state.seeds[ci].map(p=>`<span class="seed-dot" style="left:${p.x}%;top:${p.y}%"></span>`).join('');
-    else contents=autoPositions(crop.visible).map((p,i)=>{const base=[34,54,68,80,94,104,102][state.checkpoint],size=Math.round(base*crop.scale*(.96+(i%3)*.03)),useSprite=state.checkpoint===3&&state.phrases.length?([3,8,9,5][state.phrases.length]||5):state.checkpoint===6&&ci===3&&i%3===0?11:sprite;return`<span class="plant" style="${plantStyle(useSprite,size,p.x,p.y,((i%5)-2)*(ci+1))}"></span>`}).join('');
-    const done=[state.seeds[ci].length>=crop.visible,state.waterByPlot[ci]>=100,state.fertilizer[ci]>=3,state.phrases.length>=3,state.observed.has(ci),state.bugs.has(ci),state.harvested.has(ci)][state.checkpoint];
+    else contents=autoPositions(crop.visible).map((p,i)=>{
+      // 45日目(checkpoint 4)は葉が大きく茂り重なり合う
+      const base=[34,54,68,80,108,104,102][state.checkpoint];
+      const size=Math.round(base*crop.scale*(.96+(i%3)*.03));
+      // checkpoint 3(声かけ)は吹き出し付き(9)
+      // checkpoint 6(収穫)のぎっしり区(ci===3)は小型化(11)
+      const useSprite=state.checkpoint===3&&state.phrases.length?([3,9,10,3][state.phrases.length]||3):state.checkpoint===6&&ci===3&&i%3===0?11:sprite;
+      return`<span class="plant" style="${plantStyle(useSprite,size,p.x,p.y,((i%5)-2)*(ci+1))}"></span>`;
+    }).join('');
+    const done=[state.seeds[ci].length>=crop.visible,state.waterByPlot[ci]>=100,state.fertilizer[ci]>=3,state.phrases.length>=3,state.observed.has(ci),state.bugs.size>=4,state.harvested.size>=4][state.checkpoint];
     const watering=state.checkpoint===1&&state.waterByPlot[ci]>0&&state.waterByPlot[ci]<100?'watering':'';
-    return`<article class="field ${done?'done':''} ${watering} ${state.harvested.has(ci)?'harvested':''}" data-plot="${ci}"><div class="field-head"><strong>${crop.name}</strong><span class="density">${crop.density}本/m²</span></div><div class="soil" data-field="${ci}" aria-label="${crop.density}本毎平方メートルの畑">${contents}${renderFieldTargets(ci)}</div><div class="field-foot">${fieldFoot(ci,crop)}</div></article>`
+    return`<article class="field ${done?'done':''} ${watering} ${state.harvested.size>=4?'harvested':''}" data-plot="${ci}"><div class="field-head"><strong>${crop.name}</strong><span class="density">${crop.density}本/m²</span></div><div class="soil" data-field="${ci}" aria-label="${crop.density}本毎平方メートルの畑">${contents}${renderFieldTargets(ci)}</div><div class="field-foot">${fieldFoot(ci,crop)}</div></article>`;
   }).join('');
-  $$('.soil').forEach(el=>{el.addEventListener('pointerdown',sowSeed);if(state.checkpoint===2)el.addEventListener('pointerdown',fertilizeSoil)});
+  $$('.soil').forEach(el=>{
+    el.addEventListener('pointerdown',sowSeed);
+    if(state.checkpoint===2)el.addEventListener('pointerdown',fertilizeSoil);
+  });
   $$('.leaf-clue').forEach(el=>el.addEventListener('click',observeLeaf));
-  $$('.bug').forEach(bindBugFlick);
-  $$('.harvest-clue').forEach(el=>el.addEventListener('click',harvestPlot));
-  renderGameOverlay()
+  renderGameOverlay();
 }
-function sowSeed(e){if(state.checkpoint!==0)return;const ci=Number(e.currentTarget.dataset.field),crop=CROPS[ci];if(state.seeds[ci].length>=crop.visible)return;const r=e.currentTarget.getBoundingClientRect();state.seeds[ci].push({x:Math.max(7,Math.min(93,(e.clientX-r.left)/r.width*100)),y:Math.max(50,Math.min(88,(e.clientY-r.top)/r.height*100))});renderFields();updateCareStatus()}
-function observeLeaf(e){e.stopPropagation();state.observed.add(Number(e.currentTarget.dataset.target));renderFields();updateCareStatus()}
-function harvestPlot(e){e.stopPropagation();state.harvested.add(Number(e.currentTarget.dataset.target));renderFields();updateCareStatus()}
-function updateField(ci){const field=document.querySelector(`[data-plot="${ci}"]`);if(!field)return;field.querySelector('.field-foot').textContent=fieldFoot(ci,CROPS[ci]);const done=state.checkpoint===1?state.waterByPlot[ci]>=100:state.checkpoint===2?state.fertilizer[ci]>=3:state.checkpoint===3?state.phrases.length>=3:false;field.classList.toggle('done',done);field.classList.toggle('watering',state.checkpoint===1&&state.waterByPlot[ci]>0&&state.waterByPlot[ci]<100)}
+
+function sowSeed(e){
+  if(state.checkpoint!==0)return;
+  const ci=Number(e.currentTarget.dataset.field),crop=CROPS[ci];
+  if(state.seeds[ci].length>=crop.visible)return;
+  const r=e.currentTarget.getBoundingClientRect();
+  state.seeds[ci].push({x:Math.max(7,Math.min(93,(e.clientX-r.left)/r.width*100)),y:Math.max(50,Math.min(88,(e.clientY-r.top)/r.height*100))});
+  renderFields();
+  updateCareStatus();
+}
+
+function observeLeaf(e){
+  e.stopPropagation();
+  state.observed.add(Number(e.currentTarget.dataset.target));
+  soundBingo();
+  renderFields();
+  updateCareStatus();
+}
+
+function updateField(ci){
+  const field=document.querySelector(`[data-plot="${ci}"]`);
+  if(!field)return;
+  field.querySelector('.field-foot').textContent=fieldFoot(ci,CROPS[ci]);
+  const done=state.checkpoint===1?state.waterByPlot[ci]>=100:state.checkpoint===2?state.fertilizer[ci]>=3:state.checkpoint===3?state.phrases.length>=3:false;
+  field.classList.toggle('done',done);
+  field.classList.toggle('watering',state.checkpoint===1&&state.waterByPlot[ci]>0&&state.waterByPlot[ci]<100);
+}
+
 function renderGameOverlay(){
-  const overlay=$('#gameOverlay');overlay.innerHTML='';
-  if(state.checkpoint===1){overlay.innerHTML='<button type="button" class="watering-can" aria-label="ジョーロ。つかんで畑の上をなぞる">🚿</button>';bindWateringCan()}
-  else if(state.checkpoint===2)overlay.innerHTML='<div class="fertilizer-machine" aria-hidden="true"><div><b>🚜</b>肥料マシーン<br>畑を連打！</div></div>';
-  else if(state.checkpoint===3){overlay.innerHTML='<form class="voice-composer" id="voiceComposer"><label class="sr-only" for="voiceInput">ダイズへかける言葉</label><input id="voiceInput" maxlength="40" autocomplete="off" placeholder="ダイズに言葉をかけよう"><button type="submit">送る</button></form>';$('#voiceComposer').addEventListener('submit',sendVoice)}
-  else if(state.checkpoint===5)overlay.innerHTML='<div class="flick-hint">🐛を指でつかみ、勢いよく弾こう！</div>'
+  const overlay=$('#gameOverlay');
+  overlay.innerHTML='';
+  if(bugGame.animId){ cancelAnimationFrame(bugGame.animId); bugGame.running = false; }
+  
+  if(state.checkpoint===1){
+    overlay.innerHTML='<button type="button" class="watering-can" aria-label="ジョーロ。つかんで畑の上をなぞる">🚿</button>';
+    bindWateringCan();
+  } else if(state.checkpoint===2){
+    overlay.innerHTML='<div class="fertilizer-machine" aria-hidden="true"><div><b>🚜</b>肥料マシーン<br>畑を連打！</div></div>';
+  } else if(state.checkpoint===3){
+    overlay.innerHTML='<form class="voice-composer" id="voiceComposer"><label class="sr-only" for="voiceInput">ダイズへかける言葉</label><input id="voiceInput" maxlength="40" autocomplete="off" placeholder="ダイズに言葉をかけよう"><button type="submit">送る</button></form>';
+    $('#voiceComposer').addEventListener('submit',sendVoice);
+  } else if(state.checkpoint===5){
+    initBugGame();
+  } else if(state.checkpoint===6){
+    initHarvestGame();
+  }
 }
+
 function bindWateringCan(){
   const can=$('.watering-can'),stage=$('#farmStage');let dragging=false,offsetX=0,offsetY=0,lastAt=0;
-  const waterAt=e=>{const now=performance.now();if(now-lastAt<45)return;lastAt=now;const soils=$$('.soil');const ci=soils.findIndex(soil=>{const r=soil.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom});if(ci<0||state.waterByPlot[ci]>=100)return;state.waterByPlot[ci]=Math.min(100,state.waterByPlot[ci]+5);updateField(ci);spawnDrop(e.clientX,e.clientY);updateCareStatus()};
-  can.addEventListener('pointerdown',e=>{e.preventDefault();dragging=true;const r=can.getBoundingClientRect();offsetX=e.clientX-r.left;offsetY=e.clientY-r.top;can.setPointerCapture?.(e.pointerId);can.classList.add('dragging');waterAt(e)});
-  can.addEventListener('pointermove',e=>{if(!dragging)return;e.preventDefault();const sr=stage.getBoundingClientRect();const x=Math.max(0,Math.min(sr.width-can.offsetWidth,e.clientX-sr.left-offsetX)),y=Math.max(0,Math.min(sr.height-can.offsetHeight,e.clientY-sr.top-offsetY));can.style.left=`${x}px`;can.style.top=`${y}px`;waterAt(e)});
-  const stop=()=>{dragging=false;can.classList.remove('dragging')};can.addEventListener('pointerup',stop);can.addEventListener('pointercancel',stop)
-}
-function spawnDrop(clientX,clientY){const stage=$('#farmStage').getBoundingClientRect(),drop=document.createElement('span');drop.className='water-drop';drop.textContent='💧';drop.style.left=`${clientX-stage.left}px`;drop.style.top=`${clientY-stage.top}px`;$('#gameOverlay').appendChild(drop);drop.addEventListener('animationend',()=>drop.remove())}
-function fertilizeSoil(e){if(state.checkpoint!==2)return;e.preventDefault();const ci=Number(e.currentTarget.dataset.field);if(state.fertilizer[ci]>=3)return;state.fertilizer[ci]++;spawnPellet(e.clientX,e.clientY);updateField(ci);const field=document.querySelector(`[data-plot="${ci}"]`);field.classList.add('flash');setTimeout(()=>field?.classList.remove('flash'),180);updateCareStatus()}
-function spawnPellet(clientX,clientY){const stage=$('#farmStage').getBoundingClientRect(),machine=$('.fertilizer-machine').getBoundingClientRect(),pellet=document.createElement('span'),startX=machine.left+machine.width/2-stage.left,startY=machine.top+machine.height/2-stage.top;pellet.className='fertilizer-pellet';pellet.style.left=`${startX}px`;pellet.style.top=`${startY}px`;pellet.style.setProperty('--dx',`${clientX-stage.left-startX}px`);pellet.style.setProperty('--dy',`${clientY-stage.top-startY}px`);$('#gameOverlay').appendChild(pellet);pellet.addEventListener('animationend',()=>pellet.remove())}
-function sendVoice(e){e.preventDefault();const input=$('#voiceInput'),text=input.value.trim();if(!text||state.phrases.length>=3)return;state.phrases.push(text);input.value='';const vs=[3,8,9,5][state.phrases.length]||5;$$('.plant').forEach(p=>{p.style.setProperty('--pos',POS[vs]);p.style.transform='translateX(-50%) translateY(-10px) scale(1.08) rotate(var(--tilt,0deg))';setTimeout(()=>{p.style.transform=''},380)});CROPS.forEach((_,i)=>updateField(i));spawnDanmaku(text,state.phrases.length);renderCare()}
-function spawnDanmaku(text,lane){const msg=document.createElement('span');msg.className='danmaku';msg.textContent=text;msg.style.top=`${55+(lane-1)*112}px`;$('#gameOverlay').appendChild(msg);msg.addEventListener('animationend',()=>msg.remove())}
-function bindBugFlick(bug){
-  let sx=0,sy=0,dx=0,dy=0,active=false,dragged=false;
-  const eliminateBug=()=>{
-    const tid=Number(bug.dataset.target);
-    if(state.bugs.has(tid))return;
-    state.bugs.add(tid);
-    bug.style.transition='transform .35s ease-out, opacity .25s ease-out';
-    bug.style.transform=`translate(${dx*6||160}px, ${dy*6||-180}px) scale(0.2) rotate(720deg)`;
-    bug.style.opacity='0';
-    bug.style.pointerEvents='none';
-    setTimeout(()=>{renderFields();updateCareStatus()},250);
+  const waterAt=e=>{
+    const now=performance.now();if(now-lastAt<45)return;lastAt=now;
+    const soils=$$('.soil');
+    const ci=soils.findIndex(soil=>{const r=soil.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom});
+    if(ci<0||state.waterByPlot[ci]>=100)return;
+    state.waterByPlot[ci]=Math.min(100,state.waterByPlot[ci]+5);
+    updateField(ci);
+    spawnDrop(e.clientX,e.clientY);
+    updateCareStatus();
   };
-  bug.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();eliminateBug()});
-  bug.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();active=true;dragged=false;sx=e.clientX;sy=e.clientY;dx=0;dy=0;try{bug.setPointerCapture?.(e.pointerId)}catch(_){};bug.style.animation='none'});
-  bug.addEventListener('pointermove',e=>{if(!active)return;dx=e.clientX-sx;dy=e.clientY-sy;if(Math.hypot(dx,dy)>6)dragged=true;bug.style.transform=`translate(${dx}px,${dy}px) rotate(${dx}deg)`});
-  const finish=e=>{if(!active)return;active=false;if(Math.hypot(dx,dy)>=18||dragged){eliminateBug()}else{bug.style.transform='';bug.style.animation='pulse 1.1s ease-in-out infinite'}};
-  bug.addEventListener('pointerup',finish);bug.addEventListener('pointercancel',finish);
+  can.addEventListener('pointerdown',e=>{e.preventDefault();dragging=true;const r=can.getBoundingClientRect();offsetX=e.clientX-r.left;offsetY=e.clientY-r.top;try{can.setPointerCapture?.(e.pointerId)}catch(_){};can.classList.add('dragging');waterAt(e)});
+  can.addEventListener('pointermove',e=>{if(!dragging)return;e.preventDefault();const sr=stage.getBoundingClientRect();const x=Math.max(0,Math.min(sr.width-can.offsetWidth,e.clientX-sr.left-offsetX)),y=Math.max(0,Math.min(sr.height-can.offsetHeight,e.clientY-sr.top-offsetY));can.style.left=`${x}px`;can.style.top=`${y}px`;waterAt(e)});
+  const stop=()=>{dragging=false;can.classList.remove('dragging')};
+  can.addEventListener('pointerup',stop);can.addEventListener('pointercancel',stop);
 }
+
+function spawnDrop(clientX,clientY){
+  const stage=$('#farmStage').getBoundingClientRect(),drop=document.createElement('span');
+  drop.className='water-drop';drop.textContent='💧';
+  drop.style.left=`${clientX-stage.left}px`;drop.style.top=`${clientY-stage.top}px`;
+  $('#gameOverlay').appendChild(drop);
+  drop.addEventListener('animationend',()=>drop.remove());
+}
+
+function fertilizeSoil(e){
+  if(state.checkpoint!==2)return;
+  e.preventDefault();
+  const ci=Number(e.currentTarget.dataset.field);
+  if(state.fertilizer[ci]>=3)return;
+  state.fertilizer[ci]++;
+  playTone(300 + state.fertilizer[ci]*80, 'sine', 0.1, 0.2);
+  spawnPellet(e.clientX,e.clientY);
+  updateField(ci);
+  const field=document.querySelector(`[data-plot="${ci}"]`);
+  field.classList.add('flash');
+  setTimeout(()=>field?.classList.remove('flash'),180);
+  updateCareStatus();
+}
+
+function spawnPellet(clientX,clientY){
+  const stage=$('#farmStage').getBoundingClientRect(),machine=$('.fertilizer-machine').getBoundingClientRect(),pellet=document.createElement('span'),startX=machine.left+machine.width/2-stage.left,startY=machine.top+machine.height/2-stage.top;
+  pellet.className='fertilizer-pellet';
+  pellet.style.left=`${startX}px`;pellet.style.top=`${startY}px`;
+  pellet.style.setProperty('--dx',`${clientX-stage.left-startX}px`);
+  pellet.style.setProperty('--dy',`${clientY-stage.top-startY}px`);
+  $('#gameOverlay').appendChild(pellet);
+  pellet.addEventListener('animationend',()=>pellet.remove());
+}
+
+function sendVoice(e){
+  e.preventDefault();
+  const input=$('#voiceInput'),text=input.value.trim();
+  if(!text||state.phrases.length>=3)return;
+  state.phrases.push(text);
+  input.value='';
+  // 1回目:9(吹き出し), 2回目:10(観察), 3回目:3(通常ピョンピョン跳ね)
+  const vs=[3,9,10,3][state.phrases.length]||3;
+  soundGood();
+  $$('.plant').forEach(p=>{
+    p.style.setProperty('--pos',POS[vs]);
+    p.style.transform='translateX(-50%) translateY(-12px) scale(1.1) rotate(var(--tilt,0deg))';
+    setTimeout(()=>{p.style.transform=''},380);
+  });
+  CROPS.forEach((_,i)=>updateField(i));
+  spawnDanmaku(text,state.phrases.length);
+  renderCare();
+}
+
+function spawnDanmaku(text,lane){
+  const msg=document.createElement('span');
+  msg.className='danmaku';msg.textContent=text;
+  msg.style.top=`${55+(lane-1)*112}px`;
+  $('#gameOverlay').appendChild(msg);
+  msg.addEventListener('animationend',()=>msg.remove());
+}
+
+/* ========================================================
+   84日目：農薬パチンコ（スリングショット）シューティングゲーム
+   ======================================================== */
+let bugGame = { score: 0, killed: 0, total: 30, activeBugs: [], bullets: [], running: false, animId: null };
+
+function initBugGame(){
+  if(bugGame.animId) cancelAnimationFrame(bugGame.animId);
+  bugGame = { score: 0, killed: 0, total: 30, activeBugs: [], bullets: [], running: true, animId: null };
+  const overlay = $('#gameOverlay');
+  overlay.innerHTML = `
+    <div class="game-hud">
+      <div>🎯 スコア: <span class="score-badge" id="bugScore">0</span> 点</div>
+      <div style="font-size:0.8rem;color:#cbd5e1">指で引っ張って離す！直撃=BINGO! かすり=good</div>
+      <div>🐛 退治数: <span class="killed-badge" id="bugKilled">0</span> / 30匹</div>
+    </div>
+    <svg class="slingshot-svg" id="slingSvg">
+      <line id="bandL" stroke="#b45309" stroke-width="4" stroke-linecap="round" />
+      <line id="bandR" stroke="#b45309" stroke-width="4" stroke-linecap="round" />
+      <g id="trajDots"></g>
+    </svg>
+    <div class="slingshot-area" id="slingArea">
+      <div class="slingshot-frame">
+        <svg viewBox="0 0 70 70" width="70" height="70">
+          <path d="M35 70 L35 38 L16 12 M35 38 L54 12" stroke="#78350f" stroke-width="8" stroke-linecap="round" fill="none" />
+          <circle cx="16" cy="12" r="5" fill="#92400e" />
+          <circle cx="54" cy="12" r="5" fill="#92400e" />
+        </svg>
+      </div>
+      <div class="slingshot-ball" id="slingBall">🧪</div>
+    </div>
+    <div id="bugField"></div>
+  `;
+
+  // 初期スポーン 5匹
+  for(let i=0; i<5; i++) spawnBug();
+
+  bindSlingshot();
+  runBugGameLoop();
+}
+
+function spawnBug(){
+  if(!bugGame.running || bugGame.killed + bugGame.activeBugs.length >= bugGame.total) return;
+  const stage = $('#farmStage').getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'active-bug';
+  el.textContent = '🐛';
+  
+  const x = 35 + Math.random() * (stage.width - 70);
+  const y = 45 + Math.random() * (stage.height - 155);
+  const speed = 0.9 + Math.random() * 1.3;
+  const angle = Math.random() * Math.PI * 2;
+  const vx = Math.cos(angle) * speed;
+  const vy = Math.sin(angle) * speed;
+  
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  $('#bugField').appendChild(el);
+  bugGame.activeBugs.push({ el, x, y, vx, vy, alive: true });
+}
+
+function bindSlingshot(){
+  const ball = $('#slingBall'), area = $('#slingArea'), stage = $('#farmStage');
+  const bandL = $('#bandL'), bandR = $('#bandR'), trajDots = $('#trajDots');
+  let dragging = false, startClientX = 0, startClientY = 0;
+  
+  const getRest = () => {
+    const sr = stage.getBoundingClientRect(), ar = area.getBoundingClientRect();
+    return {
+      x: ar.left + ar.width / 2 - sr.left,
+      y: ar.top + ar.height - 45 - sr.top,
+      anchorL: { x: ar.left + ar.width / 2 - 18 - sr.left, y: ar.top + ar.height - 58 - sr.top },
+      anchorR: { x: ar.left + ar.width / 2 + 18 - sr.left, y: ar.top + ar.height - 58 - sr.top }
+    };
+  };
+
+  const updateBands = (bx, by) => {
+    const rest = getRest();
+    bandL.setAttribute('x1', rest.anchorL.x); bandL.setAttribute('y1', rest.anchorL.y);
+    bandL.setAttribute('x2', bx); bandL.setAttribute('y2', by);
+    bandR.setAttribute('x1', rest.anchorR.x); bandR.setAttribute('y1', rest.anchorR.y);
+    bandR.setAttribute('x2', bx); bandR.setAttribute('y2', by);
+  };
+
+  const resetBands = () => {
+    const rest = getRest();
+    updateBands(rest.x, rest.y);
+    trajDots.innerHTML = '';
+  };
+
+  resetBands();
+
+  const onPointerDown = e => {
+    e.preventDefault();
+    dragging = true;
+    startClientX = e.clientX;
+    startClientY = e.clientY;
+    try { ball.setPointerCapture?.(e.pointerId); } catch(_){}
+    ball.classList.add('dragging');
+  };
+
+  const onPointerMove = e => {
+    if(!dragging) return;
+    e.preventDefault();
+    const sr = stage.getBoundingClientRect(), rest = getRest();
+    const currX = e.clientX - sr.left, currY = e.clientY - sr.top;
+    let dx = currX - rest.x, dy = currY - rest.y;
+    const dist = Math.hypot(dx, dy), maxPull = 75;
+    if(dist > maxPull) { dx *= maxPull / dist; dy *= maxPull / dist; }
+    
+    ball.style.transform = `translate(calc(-50% + ${dx}px), calc(50% + ${dy}px)) scale(1.15)`;
+    updateBands(rest.x + dx, rest.y + dy);
+
+    // 照準予測点線
+    if(dist > 15){
+      let dotsHtml = '';
+      const stepX = -dx * 0.45, stepY = -dy * 0.45;
+      for(let i=1; i<=7; i++){
+        const px = rest.x + dx + stepX * i;
+        const py = rest.y + dy + stepY * i;
+        dotsHtml += `<circle cx="${px}" cy="${py}" r="${4.5 - i*0.4}" fill="#fde047" opacity="${0.9 - i*0.1}" />`;
+      }
+      trajDots.innerHTML = dotsHtml;
+    } else {
+      trajDots.innerHTML = '';
+    }
+  };
+
+  const onPointerUp = e => {
+    if(!dragging) return;
+    dragging = false;
+    ball.classList.remove('dragging');
+    const sr = stage.getBoundingClientRect(), rest = getRest();
+    const currX = e.clientX - sr.left, currY = e.clientY - sr.top;
+    let dx = currX - rest.x, dy = currY - rest.y;
+    const dist = Math.hypot(dx, dy), maxPull = 75;
+    if(dist > maxPull) { dx *= maxPull / dist; dy *= maxPull / dist; }
+
+    ball.style.transform = '';
+    resetBands();
+
+    if(dist >= 18){
+      soundShoot();
+      const speed = Math.min(24, Math.max(10, dist * 0.3));
+      const vx = (-dx / dist) * speed, vy = (-dy / dist) * speed;
+      spawnBullet(rest.x + dx, rest.y + dy, vx, vy);
+    }
+  };
+
+  ball.addEventListener('pointerdown', onPointerDown);
+  ball.addEventListener('pointermove', onPointerMove);
+  ball.addEventListener('pointerup', onPointerUp);
+  ball.addEventListener('pointercancel', onPointerUp);
+}
+
+function spawnBullet(x, y, vx, vy){
+  const el = document.createElement('div');
+  el.className = 'flying-bullet';
+  el.textContent = '💊';
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  $('#gameOverlay').appendChild(el);
+  bugGame.bullets.push({ el, x, y, vx, vy, alive: true });
+}
+
+function runBugGameLoop(){
+  if(!bugGame.running) return;
+  const stage = $('#farmStage').getBoundingClientRect();
+
+  // 1. 害虫の移動
+  bugGame.activeBugs.forEach(b => {
+    if(!b.alive) return;
+    b.x += b.vx; b.y += b.vy;
+    if(b.x < 25){ b.x = 25; b.vx *= -1; }
+    if(b.x > stage.width - 25){ b.x = stage.width - 25; b.vx *= -1; }
+    if(b.y < 35){ b.y = 35; b.vy *= -1; }
+    if(b.y > stage.height - 110){ b.y = stage.height - 110; b.vy *= -1; }
+    b.el.style.left = `${b.x}px`;
+    b.el.style.top = `${b.y}px`;
+    b.el.style.transform = `translate(-50%,-50%) scaleX(${b.vx > 0 ? -1 : 1})`;
+  });
+
+  // 2. 弾の移動＆当たり判定
+  for(let i = bugGame.bullets.length - 1; i >= 0; i--){
+    const blt = bugGame.bullets[i];
+    if(!blt.alive) continue;
+    blt.x += blt.vx; blt.y += blt.vy;
+    blt.el.style.left = `${blt.x}px`;
+    blt.el.style.top = `${blt.y}px`;
+
+    // 画面外判定
+    if(blt.x < -20 || blt.x > stage.width + 20 || blt.y < -20 || blt.y > stage.height + 20){
+      blt.alive = false;
+      blt.el.remove();
+      bugGame.bullets.splice(i, 1);
+      continue;
+    }
+
+    // 害虫との衝突判定
+    for(let j = 0; j < bugGame.activeBugs.length; j++){
+      const bug = bugGame.activeBugs[j];
+      if(!bug.alive) continue;
+      const dist = Math.hypot(blt.x - bug.x, blt.y - bug.y);
+      if(dist <= 40){
+        blt.alive = false;
+        blt.el.remove();
+        bugGame.bullets.splice(i, 1);
+        
+        bug.alive = false;
+        const isBingo = dist <= 18;
+        const addScore = isBingo ? 100 : 30;
+        bugGame.score += addScore;
+        bugGame.killed++;
+        
+        if(isBingo){
+          soundBingo();
+          showHitPopup(bug.x, bug.y, 'BINGO!! +100', 'bingo');
+        } else {
+          soundGood();
+          showHitPopup(bug.x, bug.y, 'good! +30', 'good');
+        }
+
+        bug.el.style.transition = 'transform .4s ease-out, opacity .3s ease-out';
+        bug.el.style.transform = `translate(-50%, -50%) scale(0.2) rotate(720deg)`;
+        bug.el.style.opacity = '0';
+        setTimeout(() => bug.el.remove(), 400);
+
+        $('#bugScore').textContent = bugGame.score;
+        $('#bugKilled').textContent = bugGame.killed;
+        updateCareStatus();
+
+        setTimeout(() => spawnBug(), 400);
+
+        if(bugGame.killed >= bugGame.total){
+          finishBugGame();
+        }
+        break;
+      }
+    }
+  }
+
+  bugGame.activeBugs = bugGame.activeBugs.filter(b => b.alive);
+  if(bugGame.running && bugGame.activeBugs.length < 5 && bugGame.killed + bugGame.activeBugs.length < bugGame.total){
+    spawnBug();
+  }
+
+  if(bugGame.running){
+    bugGame.animId = requestAnimationFrame(runBugGameLoop);
+  }
+}
+
+function showHitPopup(x, y, text, type){
+  const el = document.createElement('div');
+  el.className = `hit-popup ${type}`;
+  el.textContent = text;
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  $('#gameOverlay').appendChild(el);
+  setTimeout(() => el.remove(), 750);
+}
+
+function finishBugGame(){
+  bugGame.running = false;
+  if(bugGame.animId) cancelAnimationFrame(bugGame.animId);
+  state.bugs = new Set([0, 1, 2, 3]);
+  const overlay = $('#gameOverlay');
+  const banner = document.createElement('div');
+  banner.className = 'game-hud';
+  banner.style.top = '38%';
+  banner.style.left = '12%';
+  banner.style.right = '12%';
+  banner.style.flexDirection = 'column';
+  banner.style.gap = '8px';
+  banner.style.padding = '18px';
+  banner.innerHTML = `<span style="font-size:1.4rem;color:#fde047">🎉 害虫30匹退治完了！</span><span>最終スコア: <strong style="font-size:1.3rem;color:#86efac">${bugGame.score}</strong> 点</span><span style="font-size:0.85rem;color:#cbd5e1">作物を傷つけず害虫だけをピンポイント防除しました</span>`;
+  overlay.appendChild(banner);
+  soundBingo();
+  updateCareStatus();
+}
+
+/* ========================================================
+   119日目：ポケモンスリープ風 きのみ回収 収穫アクション
+   ======================================================== */
+let harvestGame = { total: 28, collected: 0, beans: [] };
+
+function initHarvestGame(){
+  harvestGame = { total: 28, collected: 0, beans: [] };
+  const overlay = $('#gameOverlay');
+  overlay.innerHTML = `
+    <div class="harvest-basket" id="harvestBasket" title="収穫カゴ">🧺</div>
+    <div class="harvest-guide-hint" id="harvestHint">🌾 畑の上を指でなぞると、熟した豆がカゴに吸い込まれるよ！</div>
+    <div id="beansContainer"></div>
+  `;
+  
+  const soils = $$('.soil');
+  const stR = $('#farmStage').getBoundingClientRect();
+  soils.forEach((soil, ci) => {
+    const sr = soil.getBoundingClientRect();
+    const relLeft = sr.left - stR.left;
+    const relTop = sr.top - stR.top;
+    for(let i=0; i<7; i++){
+      const bx = relLeft + 25 + Math.random() * (sr.width - 50);
+      const by = relTop + 30 + Math.random() * (sr.height - 50);
+      const el = document.createElement('div');
+      el.className = 'harvest-bean';
+      el.textContent = '🟡';
+      el.style.left = `${bx}px`;
+      el.style.top = `${by}px`;
+      $('#beansContainer').appendChild(el);
+      harvestGame.beans.push({ ci, x: bx, y: by, el, collected: false });
+    }
+  });
+
+  bindHarvestSwipe();
+}
+
+function bindHarvestSwipe(){
+  const stage = $('#farmStage');
+  let touching = false;
+
+  const collectAt = (clientX, clientY) => {
+    const sr = stage.getBoundingClientRect();
+    const px = clientX - sr.left, py = clientY - sr.top;
+    const basket = $('#harvestBasket');
+    if(!basket) return;
+    const br = basket.getBoundingClientRect();
+    const basketX = br.left + br.width / 2 - sr.left;
+    const basketY = br.top + br.height / 2 - sr.top;
+
+    harvestGame.beans.forEach(b => {
+      if(b.collected) return;
+      const d = Math.hypot(px - b.x, py - b.y);
+      if(d <= 38){
+        b.collected = true;
+        soundBerry();
+        b.el.classList.add('collected');
+        
+        b.el.style.transition = 'transform .45s cubic-bezier(.16,1,.3,1), opacity .4s ease-in';
+        b.el.style.transform = `translate(${basketX - b.x}px, ${basketY - b.y}px) scale(0.35)`;
+        
+        setTimeout(() => {
+          b.el.remove();
+          harvestGame.collected++;
+          soundBasket();
+          updateCareStatus();
+          
+          const bk = $('#harvestBasket');
+          if(bk){
+            bk.classList.add('bounce');
+            setTimeout(() => bk.classList.remove('bounce'), 180);
+          }
+
+          spawnStar(basketX, basketY);
+
+          if(harvestGame.collected >= harvestGame.total){
+            state.harvested = new Set([0, 1, 2, 3]);
+            $('#harvestHint').textContent = '🎉 全区画のダイズを収穫完了！';
+            if(bk) bk.style.filter = 'drop-shadow(0 0 20px #fde047)';
+            soundBingo();
+            renderFields();
+            updateCareStatus();
+          }
+        }, 420);
+      }
+    });
+  };
+
+  const onDown = e => { touching = true; collectAt(e.clientX, e.clientY); };
+  const onMove = e => { if(touching) collectAt(e.clientX, e.clientY); };
+  const onUp = () => { touching = false; };
+
+  stage.addEventListener('pointerdown', onDown);
+  stage.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
+}
+
+function spawnStar(x, y){
+  const star = document.createElement('div');
+  star.className = 'harvest-particle';
+  star.textContent = '✨';
+  star.style.left = `${x}px`;
+  star.style.top = `${y}px`;
+  star.style.setProperty('--pdx', `${(Math.random() - 0.5) * 60}px`);
+  star.style.setProperty('--pdy', `${-20 - Math.random() * 40}px`);
+  $('#gameOverlay').appendChild(star);
+  setTimeout(() => star.remove(), 500);
+}
+
 function renderCare(){
-  const cp=CHECKPOINTS[state.checkpoint],work=$('#careWork');$('#careDay').textContent=`${cp.day}日目`;$('#careTitle').textContent=cp.title;
-  const instructions=['4つの畑を直接タップし、好きな位置に種をまきます。','ジョーロをつかみ、4つの畑の上をまんべんなくなぞります。','畑を連打すると、肥料マシーンから粒が飛びます。各区画3発です。','畑の下の入力欄から3回声を届けます。文字が畑を流れ、表情が変わります。','畑の「葉」マークをタップし、葉の重なりを観察します。','畑の🐛をつかんで、スワイプで弾き飛ばします。','各畑に現れる「収穫」をタップします。'];
-  const tips=['🖐️ 畑の中なら、どこにまいても大丈夫','🚿 離さず動かすと水が出続けます','🚜 4区画すべてに3発ずつ','💬 自由な言葉でOK（植物への効果を示す実験ではありません）','👀 密度が高いほど下の葉へ光が届きにくい','🎯 虫だけを狙い、植物には散布しません','🌾 1個体の大きさの違いにも注目'];
-  $('#careInstruction').textContent=instructions[state.checkpoint];work.innerHTML=`<div class="care-status">${tips[state.checkpoint]}</div>`;updateCareStatus()
+  const cp=CHECKPOINTS[state.checkpoint],work=$('#careWork');
+  $('#careDay').textContent=`${cp.day}日目`;
+  $('#careTitle').textContent=cp.title;
+  const instructions=[
+    '4つの畑を直接タップし、好きな位置に種をまきます。',
+    'ジョーロをつかみ、4つの畑の上をまんべんなくなぞります。',
+    '畑を連打すると、肥料マシーンから粒が飛びます。各区画3発です。',
+    '畑の下の入力欄から3回声を届けます。文字が畑を流れ、表情が変わります。',
+    '畑の「葉」マークをタップし、葉の重なりを観察します。',
+    '中央の農薬パチンコを指で引っ張って離す！害虫30匹を倒そう。',
+    '畑の上を指でサーッとなぞって、ダイズを中央のカゴに収穫しよう！'
+  ];
+  const tips=[
+    '🖐️ 畑の中なら、どこにまいても大丈夫',
+    '🚿 離さず動かすと水が出続けます',
+    '🚜 4区画すべてに3発ずつ',
+    '💬 自由な言葉でOK（植物への効果を示す実験ではありません）',
+    '👀 密度が高いほど下の葉へ光が届きにくい',
+    '🎯 直撃で「BINGO!」かすめて「good!」30匹撃破を目指そう',
+    '🧺 指を滑らせると豆がポロポロ取れてカゴに吸い込まれます'
+  ];
+  $('#careInstruction').textContent=instructions[state.checkpoint];
+  work.innerHTML=`<div class="care-status">${tips[state.checkpoint]}</div>`;
+  updateCareStatus();
 }
-function careComplete(){return[state.seeds.every((a,i)=>a.length>=CROPS[i].visible),state.waterByPlot.every(v=>v>=100),state.fertilizer.every(v=>v>=3),state.phrases.length>=3,state.observed.size===3,state.bugs.size===4,state.harvested.size===4][state.checkpoint]}
-function updateCareStatus(){const complete=careComplete(),status=$('#careStatus'),progress=[`${state.seeds.reduce((n,a)=>n+a.length,0)}/${CROPS.reduce((n,c)=>n+c.visible,0)}粒`,`${state.waterByPlot.filter(v=>v>=100).length}/4区画`,`${state.fertilizer.reduce((n,v)=>n+v,0)}/12発`,`${state.phrases.length}/3通`,`${state.observed.size}/3か所`,`${state.bugs.size}/4匹`,`${state.harvested.size}/4区画`][state.checkpoint];status.textContent=complete?'今日のお世話、完了！ 次の日へ進めます。':`畑での進み具合：${progress}`;status.classList.toggle('complete',complete);$('#nextDay').disabled=!complete;$('#nextDay').textContent=state.checkpoint===CHECKPOINTS.length-1?'収穫データをグラフにする':`${CHECKPOINTS[state.checkpoint+1].day}日目へ`}
+
+function careComplete(){
+  return [
+    state.seeds.every((a,i)=>a.length>=CROPS[i].visible),
+    state.waterByPlot.every(v=>v>=100),
+    state.fertilizer.every(v=>v>=3),
+    state.phrases.length>=3,
+    state.observed.size===3,
+    state.bugs.size>=4,
+    state.harvested.size>=4
+  ][state.checkpoint];
+}
+
+function updateCareStatus(){
+  const complete=careComplete(),status=$('#careStatus'),progress=[
+    `${state.seeds.reduce((n,a)=>n+a.length,0)}/${CROPS.reduce((n,c)=>n+c.visible,0)}粒`,
+    `${state.waterByPlot.filter(v=>v>=100).length}/4区画`,
+    `${state.fertilizer.reduce((n,v)=>n+v,0)}/12発`,
+    `${state.phrases.length}/3通`,
+    `${state.observed.size}/3か所`,
+    `${bugGame.killed || (state.bugs.size>=4?30:0)}/30匹`,
+    `${harvestGame.collected || (state.harvested.size>=4?28:0)}/28粒`
+  ][state.checkpoint];
+  status.textContent=complete?'今日のお世話、完了！ 次の日へ進めます。':`畑での進み具合：${progress}`;
+  status.classList.toggle('complete',complete);
+  $('#nextDay').disabled=!complete;
+  $('#nextDay').textContent=state.checkpoint===CHECKPOINTS.length-1?'収穫データをグラフにする':`${CHECKPOINTS[state.checkpoint+1].day}日目へ`;
+}
+
 function renderFarm(){renderTimeline();renderFields();renderCare()}
-$$('.choice').forEach(b=>b.addEventListener('click',()=>{$$('.choice').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');state.prediction=b.dataset.prediction;$('#toFarm').disabled=false}));$('#toFarm').addEventListener('click',()=>{showScreen('Farm');renderFarm()});$('#nextDay').addEventListener('click',()=>{if(!careComplete())return;if(state.checkpoint<CHECKPOINTS.length-1){state.checkpoint++;renderFarm()}else{buildGraphs();showScreen('Graph')}});
-function logMap(v,min,max,a,b){return a+(Math.log10(v)-Math.log10(min))/(Math.log10(max)-Math.log10(min))*(b-a)}function graphCoords(index,type){const c=CROPS[index];return{x:logMap(c.density,10,500,62,392),y:type==='total'?logMap(c.total,1,1000,252,38):logMap(c.mean,.1,100,252,38)}}
-function graphMarkup(type){const xTicks=[10,50,100,500],yTicks=type==='total'?[1,10,100,500,1000]:[.1,1,10,100],xs=xTicks.map(v=>{const x=logMap(v,10,500,62,392);return`<line class="grid-line" x1="${x}" x2="${x}" y1="38" y2="252"/><text class="tick" x="${x}" y="270" text-anchor="middle">${v}</text>`}).join(''),ys=yTicks.map(v=>{const y=type==='total'?logMap(v,1,1000,252,38):logMap(v,.1,100,252,38);return`<line class="grid-line" x1="62" x2="392" y1="${y}" y2="${y}"/><text class="tick" x="54" y="${y+4}" text-anchor="end">${v}</text>`}).join('');return`${xs}${ys}<line class="axis" x1="62" x2="392" y1="252" y2="252"/><line class="axis" x1="62" x2="62" y1="38" y2="252"/><text class="axis-label" x="227" y="300" text-anchor="middle">個体群密度（本/m²）</text><g class="line-layer"></g><rect class="graph-tap" x="62" y="38" width="330" height="214" tabindex="0" role="button" aria-label="点を記入する領域"></rect><g class="point-layer"></g>`}
-function buildGraphs(){state.plotTask=0;state.plotted={total:[],mean:[]};$('#totalGraph').innerHTML=graphMarkup('total');$('#meanGraph').innerHTML=graphMarkup('mean');$('#totalGraph .graph-tap').addEventListener('pointerdown',e=>attemptPlot('total',e));$('#meanGraph .graph-tap').addEventListener('pointerdown',e=>attemptPlot('mean',e));$('#totalGraph .graph-tap').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')keyboardPlot('total')});$('#meanGraph .graph-tap').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')keyboardPlot('mean')});updateGraphTask()}
-function currentPlotTask(){return{index:Math.floor(state.plotTask/2),type:state.plotTask%2===0?'total':'mean'}}function pointerToSvg(svg,e){const r=svg.getBoundingClientRect();return{x:(e.clientX-r.left)*420/r.width,y:(e.clientY-r.top)*310/r.height}}function attemptPlot(type,e){const task=currentPlotTask();if(state.plotTask>=8||task.type!==type){plotHint('黄色で光るグラフをタップします');return}const p=pointerToSvg(e.currentTarget.ownerSVGElement,e),t=graphCoords(task.index,type);if(Math.hypot(p.x-t.x,p.y-t.y)<=48)acceptPoint(task.index,type);else{const h=Math.abs(p.x-t.x)>28?(p.x<t.x?'もう少し右':'もう少し左'):'',v=Math.abs(p.y-t.y)>28?(p.y>t.y?'もう少し上':'もう少し下'):'';plotHint([h,v].filter(Boolean).join('・')||'もう少し近くです')}}function keyboardPlot(type){const task=currentPlotTask();if(task.type===type&&state.plotTask<8)acceptPoint(task.index,type)}function plotHint(msg){$('#plotHint').textContent=msg}
-function acceptPoint(index,type){state.plotted[type].push(index);state.plotTask++;drawGraph(type);updateGraphTask();plotHint('記録できました！')}function drawGraph(type){const svg=$(`#${type}Graph`),indexes=state.plotted[type];svg.querySelector('.point-layer').innerHTML=indexes.map(i=>{const p=graphCoords(i,type);return`<circle class="point ${type==='mean'?'mean':''}" cx="${p.x}" cy="${p.y}" r="8"/>`}).join('');if(indexes.length>1)svg.querySelector('.line-layer').innerHTML=`<polyline class="data-line ${type==='mean'?'mean':''}" points="${indexes.map(i=>{const p=graphCoords(i,type);return p.x+','+p.y}).join(' ')}"/>`}
-function specimenMarkup(crop,classes=''){return`<div class="mini-specimen ${classes}"><div class="mini-plant" style="--scale:${crop.scale}" aria-hidden="true"></div><div><strong>${crop.density}本/m²</strong><span>平均 ${crop.mean}g/個体</span></div></div>`}function updateGraphTask(){const finished=state.plotTask>=8,task=finished?{index:3,type:'mean'}:currentPlotTask(),crop=CROPS[task.index];$('#currentSpecimen').innerHTML=Array.from({length:Math.min(crop.visible,5)},(_,i)=>`<span class="plant" style="${plantStyle(i===0&&task.index===3?11:6,Math.round(105*crop.scale),35+i*9,5,i*2-4)}"></span>`).join('');$('#currentData').innerHTML=`<strong>${crop.density}本/m²区</strong><p>畑全体 ${crop.total} g/m²<br>1個体平均 ${crop.mean} g</p>`;$('#totalCard').classList.toggle('active',!finished&&task.type==='total');$('#meanCard').classList.toggle('active',!finished&&task.type==='mean');$('#specimenStrip').innerHTML=CROPS.map((c,i)=>specimenMarkup(c,i<Math.floor(state.plotTask/2)?'done':i===Math.floor(state.plotTask/2)&&!finished?'current':'')).join('');if(finished){$('#plotInstruction').textContent='8個の点を記録できました。植物の姿と2本の線を比べよう。';$('#toDiscover').disabled=false}else $('#plotInstruction').textContent=`${crop.density}本/m²区の「${task.type==='total'?'畑全体 '+crop.total+' g/m²':'1個体平均 '+crop.mean+' g'}」を記入`}
+
+$$('.choice').forEach(b=>b.addEventListener('click',()=>{
+  $$('.choice').forEach(x=>x.classList.remove('selected'));
+  b.classList.add('selected');
+  state.prediction=b.dataset.prediction;
+  $('#toFarm').disabled=false;
+}));
+$('#toFarm').addEventListener('click',()=>{showScreen('Farm');renderFarm()});
+$('#nextDay').addEventListener('click',()=>{
+  if(!careComplete())return;
+  if(state.checkpoint<CHECKPOINTS.length-1){
+    state.checkpoint++;
+    renderFarm();
+  }else{
+    buildGraphs();
+    showScreen('Graph');
+  }
+});
+
+function logMap(v,min,max,a,b){return a+(Math.log10(v)-Math.log10(min))/(Math.log10(max)-Math.log10(min))*(b-a)}
+function graphCoords(index,type){
+  const c=CROPS[index];
+  return{x:logMap(c.density,10,500,62,392),y:type==='total'?logMap(c.total,1,1000,252,38):logMap(c.mean,.1,100,252,38)};
+}
+
+function graphMarkup(type){
+  const xTicks=[10,50,100,500],yTicks=type==='total'?[1,10,100,500,1000]:[.1,1,10,100];
+  const xs=xTicks.map(v=>{const x=logMap(v,10,500,62,392);return`<line class="grid-line" x1="${x}" x2="${x}" y1="38" y2="252"/><text class="tick" x="${x}" y="270" text-anchor="middle">${v}</text>`}).join('');
+  const ys=yTicks.map(v=>{const y=type==='total'?logMap(v,1,1000,252,38):logMap(v,.1,100,252,38);return`<line class="grid-line" x1="62" x2="392" y1="${y}" y2="${y}"/><text class="tick" x="54" y="${y+4}" text-anchor="end">${v}</text>`}).join('');
+  return`${xs}${ys}<line class="axis" x1="62" x2="392" y1="252" y2="252"/><line class="axis" x1="62" x2="62" y1="38" y2="252"/><text class="axis-label" x="227" y="300" text-anchor="middle">個体群密度（本/m²）</text><g class="line-layer"></g><rect class="graph-tap" x="62" y="38" width="330" height="214" tabindex="0" role="button" aria-label="点を記入する領域"></rect><g class="point-layer"></g>`;
+}
+
+function buildGraphs(){
+  state.plotTask=0;state.plotted={total:[],mean:[]};
+  $('#totalGraph').innerHTML=graphMarkup('total');
+  $('#meanGraph').innerHTML=graphMarkup('mean');
+  $('#totalGraph .graph-tap').addEventListener('pointerdown',e=>attemptPlot('total',e));
+  $('#meanGraph .graph-tap').addEventListener('pointerdown',e=>attemptPlot('mean',e));
+  $('#totalGraph .graph-tap').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')keyboardPlot('total')});
+  $('#meanGraph .graph-tap').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')keyboardPlot('mean')});
+  updateGraphTask();
+}
+
+function currentPlotTask(){return{index:Math.floor(state.plotTask/2),type:state.plotTask%2===0?'total':'mean'}}
+function pointerToSvg(svg,e){const r=svg.getBoundingClientRect();return{x:(e.clientX-r.left)*420/r.width,y:(e.clientY-r.top)*310/r.height}}
+function attemptPlot(type,e){
+  const task=currentPlotTask();
+  if(state.plotTask>=8||task.type!==type){plotHint('黄色で光るグラフをタップします');return}
+  const p=pointerToSvg(e.currentTarget.ownerSVGElement,e),t=graphCoords(task.index,type);
+  if(Math.hypot(p.x-t.x,p.y-t.y)<=48){
+    soundBingo();
+    acceptPoint(task.index,type);
+  }else{
+    soundGood();
+    const h=Math.abs(p.x-t.x)>28?(p.x<t.x?'もう少し右':'もう少し左'):'',v=Math.abs(p.y-t.y)>28?(p.y>t.y?'もう少し上':'もう少し下'):'';
+    plotHint([h,v].filter(Boolean).join('・')||'もう少し近くです');
+  }
+}
+function keyboardPlot(type){const task=currentPlotTask();if(task.type===type&&state.plotTask<8)acceptPoint(task.index,type)}
+function plotHint(msg){$('#plotHint').textContent=msg}
+function acceptPoint(index,type){
+  state.plotted[type].push(index);
+  state.plotTask++;
+  drawGraph(type);
+  updateGraphTask();
+  plotHint('記録できました！');
+}
+function drawGraph(type){
+  const svg=$(`#${type}Graph`),indexes=state.plotted[type];
+  svg.querySelector('.point-layer').innerHTML=indexes.map(i=>{const p=graphCoords(i,type);return`<circle class="point ${type==='mean'?'mean':''}" cx="${p.x}" cy="${p.y}" r="8"/>`}).join('');
+  if(indexes.length>1)svg.querySelector('.line-layer').innerHTML=`<polyline class="data-line ${type==='mean'?'mean':''}" points="${indexes.map(i=>{const p=graphCoords(i,type);return p.x+','+p.y}).join(' ')}"/>`;
+}
+function specimenMarkup(crop,classes=''){
+  return`<div class="mini-specimen ${classes}"><div class="mini-plant" style="--scale:${crop.scale}" aria-hidden="true"></div><div><strong>${crop.density}本/m²</strong><span>平均 ${crop.mean}g/個体</span></div></div>`;
+}
+function updateGraphTask(){
+  const finished=state.plotTask>=8,task=finished?{index:3,type:'mean'}:currentPlotTask(),crop=CROPS[task.index];
+  $('#currentSpecimen').innerHTML=Array.from({length:Math.min(crop.visible,5)},(_,i)=>`<span class="plant" style="${plantStyle(i===0&&task.index===3?11:6,Math.round(105*crop.scale),35+i*9,5,i*2-4)}"></span>`).join('');
+  $('#currentData').innerHTML=`<strong>${crop.density}本/m²区</strong><p>畑全体 ${crop.total} g/m²<br>1個体平均 ${crop.mean} g</p>`;
+  $('#totalCard').classList.toggle('active',!finished&&task.type==='total');
+  $('#meanCard').classList.toggle('active',!finished&&task.type==='mean');
+  $('#specimenStrip').innerHTML=CROPS.map((c,i)=>specimenMarkup(c,i<Math.floor(state.plotTask/2)?'done':i===Math.floor(state.plotTask/2)&&!finished?'current':'')).join('');
+  if(finished){
+    $('#plotInstruction').textContent='8個の点を記録できました。植物の姿と2本の線を比べよう。';
+    $('#toDiscover').disabled=false;
+  }else {
+    $('#plotInstruction').textContent=`${crop.density}本/m²区の「${task.type==='total'?'畑全体 '+crop.total+' g/m²':'1個体平均 '+crop.mean+' g'}」を記入`;
+  }
+}
+
 $('#toDiscover').addEventListener('click',()=>showScreen('Discover'));
 $('#resetBtn')?.addEventListener('click',()=>location.reload());
 
@@ -303,14 +1029,68 @@ function revealHint(step){
   badge.textContent = isHidden ? '開く / 閉じる' : 'タップして表示';
 }
 
-// Hook into showScreen to update discover graphs
-const origShowScreen = showScreen;
-showScreen = function(name){
-  origShowScreen(name);
-  if(name === 'Discover'){
-    syncDiscoverGraphs();
-  }
-};
+/* Gemini Consultation Prompt Generator */
+function initGeminiConsult(){
+  const copyBtn = $('#copyGeminiPromptBtn');
+  if(!copyBtn) return;
+  copyBtn.addEventListener('click', () => {
+    const inputVal = $('#studentAnswerInput').value.trim();
+    const studentAnswerText = inputVal ? inputVal : '【ここに手元の紙に書いた考察、またはあなたの回答を入力】';
+    
+    const promptText = `あなたは高校生物の国公立大学二次試験の記述・論述指導を行う専門教員です。
+以下の実験データと生徒の回答を読み、採点基準に基づいて厳格かつ丁寧に添削・講評してください。
+
+【実験内容】
+・対象：ダイズの個体群密度と収量の関係（119日間の栽培実験）
+・結果：個体群密度が10本/m²から500本/m²（50倍）になっても、畑全体の総乾物収量は約520g〜610g/m²とほぼ一定（最終収量一定の法則）。一方、1個体の平均乾物重は52.0gから1.22gへと著しく低下し、密度に反比例した。
+
+【問い】
+密度が50倍になっても畑全体の乾物収量がほぼ一定となる理由と、そのとき1個体の姿がどうなるかを、「光合成」「葉の重なり」「種内競争」に着目して説明しなさい。
+
+【採点基準（各2点／計6点満点）】
+・要点1：個体群密度が高くなると、葉の重なり合い（相互遮蔽）により下層葉の光合成量が低下することに言及しているか？（2点）
+・要点2：単位面積あたりで利用できる光エネルギーに上限があるため、群落全体の総同化量・総乾物収量は飽和してほぼ一定になることに言及しているか？（2点）
+・要点3：総収量が一定のとき、w ≒ Y / N より、1個体の平均質量が密度に反比例して小型化することに言及しているか？（2点）
+
+【生徒の回答】
+${studentAnswerText}
+
+【指導指示】
+1. 得点（〇点／6点満点）とその採点理由（各要点の合否）を述べてください。
+2. 良かった点と、国公立二次試験で確実に満点を取るための改善点（加点ポイント）を具体的にアドバイスしてください。
+3. より洗練された別解・模範解答（80〜100字版および120〜150字版）を提示してください。`;
+
+    const copySuccess = () => showToast('📋 添削プロンプトをコピーしました！Geminiに貼り付けてみよう');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(promptText).then(copySuccess).catch(() => fallbackCopy(promptText));
+    } else {
+      fallbackCopy(promptText);
+    }
+  });
+}
+
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showToast('📋 添削プロンプトをコピーしました！Geminiに貼り付けてみよう'); } catch(e){}
+  ta.remove();
+}
+
+function showToast(msg){
+  const t = $('#toastMsg');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  initGeminiConsult();
+});
+initGeminiConsult();
 
 </script>
 </body>
