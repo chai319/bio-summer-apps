@@ -23,10 +23,12 @@ export class LocustBuilder {
     const morphometrics = {
       phase: phase,
       bodyLength: isSolitary ? 4.5 : 4.3,      // Total body length ~45mm
-      headWidth: isSolitary ? 1.05 : 1.35,     // Gregarious has wider cranium
+      // Gregarious locusts have a somewhat wider head, but the difference is
+      // morphometric rather than a conspicuous projection.
+      headWidth: isSolitary ? 1.08 : 1.15,
       pronotumLength: isSolitary ? 1.3 : 1.15,
-      pronotumHeight: isSolitary ? 1.4 : 0.95, // Solitary is distinctly arched crest
-      pronotumForm: isSolitary ? 'arched_crest' : 'saddle_depressed',
+      pronotumHeight: isSolitary ? 0.82 : 0.72,
+      pronotumForm: isSolitary ? 'gently_convex' : 'low_flat',
       femurLength: isSolitary ? 3.6 : 2.7,     // Solitary has very long jumping hind legs
       femurWidth: isSolitary ? 0.62 : 0.72,
       tibiaLength: isSolitary ? 3.65 : 2.75,   // Tibia matches femur length
@@ -135,47 +137,36 @@ export class LocustBuilder {
     pronotumGroup.name = 'pronotum';
     pronotumGroup.position.set(0, 1.55, 0.65);
 
-    const pSegX = 32;
-    const pSegZ = 24;
     const pWidth = morphometrics.headWidth * 1.18;
     const pLength = morphometrics.pronotumLength * 1.4;
-    const pHeight = morphometrics.pronotumHeight * 1.1;
+    const pHeight = morphometrics.pronotumHeight;
 
-    const pGeo = new THREE.CylinderGeometry(0.85, 0.95, pLength, pSegX, pSegZ, true, 0, Math.PI);
+    // The previous half-cylinder produced a tall open edge that looked like a
+    // curled sail from the left side. A pronotum is a low dorsal shield, so use
+    // a closed, rounded capsule that follows the thorax instead.
+    const capsuleRadius = 0.5;
+    const capsuleBodyLength = Math.max(0.15, pLength - capsuleRadius * 2);
+    const pGeo = new THREE.CapsuleGeometry(capsuleRadius, capsuleBodyLength, 12, 28);
     pGeo.rotateX(Math.PI / 2);
-
-    const pos = pGeo.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      let x = pos.getX(i);
-      let y = pos.getY(i);
-      let z = pos.getZ(i);
-
-      const nz = z / (pLength / 2);
-
-      if (isSolitary) {
-        const arch = Math.cos(nz * 1.4) * 0.42;
-        const keel = (1.0 - Math.min(1.0, Math.abs(x) * 2.5)) * 0.25;
-        y += arch + keel;
-      } else {
-        const saddle = -Math.cos(nz * Math.PI) * 0.22;
-        const constriction = 1.0 - 0.22 * (1.0 - nz * nz);
-        x *= constriction;
-        y += saddle;
-      }
-
-      pos.setXYZ(i, x * (pWidth / 1.5), y * pHeight, z);
-    }
-    pGeo.computeVertexNormals();
+    pGeo.scale(pWidth, pHeight, 1);
 
     const pronotumMesh = new THREE.Mesh(pGeo, pronotumMaterial);
     pronotumMesh.castShadow = true;
     pronotumMesh.receiveShadow = true;
     pronotumGroup.add(pronotumMesh);
 
-    const pUnderGeo = new THREE.BoxGeometry(pWidth * 0.85, 0.2, pLength * 0.95);
-    const pUnderMesh = new THREE.Mesh(pUnderGeo, bodyMaterial);
-    pUnderMesh.position.y = -0.3;
-    pronotumGroup.add(pUnderMesh);
+    // A subtle median keel conveys the solitary-phase convexity without
+    // inventing a horn or a large head-like protrusion.
+    const ridgeHeight = isSolitary ? 0.08 : 0.025;
+    const ridgeCurve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(0, pHeight * 0.48, -pLength * 0.40),
+      new THREE.Vector3(0, pHeight * 0.50 + ridgeHeight, 0),
+      new THREE.Vector3(0, pHeight * 0.48, pLength * 0.40)
+    );
+    const ridgeGeo = new THREE.TubeGeometry(ridgeCurve, 28, 0.018, 6, false);
+    const ridgeMesh = new THREE.Mesh(ridgeGeo, pronotumMaterial);
+    ridgeMesh.castShadow = true;
+    pronotumGroup.add(ridgeMesh);
 
     locustGroup.add(pronotumGroup);
     locustGroup.userData.pronotumGroup = pronotumGroup;

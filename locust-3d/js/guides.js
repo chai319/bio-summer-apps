@@ -153,7 +153,7 @@ export class LocustGuides {
     ctxC.font = 'bold 22px sans-serif';
     ctxC.textAlign = 'center';
     ctxC.textBaseline = 'middle';
-    ctxC.fillText(isSolitary ? '前胸背板: 弓なり隆起' : '前胸背板: くびれ鞍型', 128, 32);
+    ctxC.fillText(isSolitary ? '前胸背板: なだらかな凸型' : '前胸背板: 低く平たい', 128, 32);
 
     const crestSpriteMat = new THREE.SpriteMaterial({
       map: new THREE.CanvasTexture(crestCanvas),
