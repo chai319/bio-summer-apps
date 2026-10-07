@@ -8,7 +8,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { LocustBuilder } from './locust_builder.js';
 import { LocustAnimator } from './animation.js';
 import { LocustGuides } from './guides.js';
-import { LocustARManager } from './ar.js';
+import { LocustARManager } from './ar.js?v=20261007';
 import { LocustMeasurementTool } from './measurement_tool.js';
 
 class LocustApp {

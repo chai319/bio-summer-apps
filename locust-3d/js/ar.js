@@ -31,10 +31,18 @@ export class LocustARManager {
       // Clone target so that live animation / guides are not disrupted
       const exportClone = targetObject.clone(true);
 
-      // Hide or remove non-geometry helpers (like guides or sprites) from USDZ export
+      // Hide non-geometry helpers and fix negative scales for USDZExporter
       exportClone.traverse((child) => {
         if (child.name === 'measurement_guides' || child.isSprite || child.isLine) {
           child.visible = false;
+        }
+        if (child.isMesh && child.geometry && (child.scale.x < 0 || child.scale.y < 0 || child.scale.z < 0)) {
+          const sx = child.scale.x;
+          const sy = child.scale.y;
+          const sz = child.scale.z;
+          child.geometry = child.geometry.clone();
+          child.geometry.scale(Math.sign(sx), Math.sign(sy), Math.sign(sz));
+          child.scale.set(Math.abs(sx), Math.abs(sy), Math.abs(sz));
         }
       });
 
@@ -42,29 +50,34 @@ export class LocustARManager {
       // If 1 unit = 10mm, 0.1 scale = realistic life size; 0.5 scale = comfortable tabletop study size
       exportClone.scale.multiplyScalar(0.4);
 
-      const arrayBuffer = await exporter.parseAsync(exportClone);
+      const arrayBuffer = await exporter.parse(exportClone, { quickLookCompatible: true });
       const blob = new Blob([arrayBuffer], { type: 'model/vnd.usdz+zip' });
       const blobUrl = URL.createObjectURL(blob);
 
       if (onProgress) onProgress('AR Quick Look を起動中...');
 
-      // iOS Safari AR Quick Look trigger: anchor with rel="ar" and an <img> child
+      const isAppleMobile = this.isIOSorIPad();
       const arAnchor = document.createElement('a');
-      arAnchor.setAttribute('rel', 'ar');
-      arAnchor.setAttribute('href', blobUrl);
-      arAnchor.setAttribute('download', filename);
+      arAnchor.href = blobUrl;
 
-      const thumbImg = document.createElement('img');
-      thumbImg.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
-      arAnchor.appendChild(thumbImg);
+      if (isAppleMobile) {
+        // iOS / iPadOS Safari Quick Look trigger
+        arAnchor.rel = 'ar';
+        const thumbImg = document.createElement('img');
+        thumbImg.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
+        arAnchor.appendChild(thumbImg);
+      } else {
+        // Desktop / Other: Trigger USDZ file download
+        arAnchor.download = filename;
+      }
 
       document.body.appendChild(arAnchor);
       arAnchor.click();
 
       setTimeout(() => {
-        document.body.removeChild(arAnchor);
-        if (onProgress) onProgress('AR準備完了');
-      }, 2000);
+        if (arAnchor.parentNode) document.body.removeChild(arAnchor);
+        if (onProgress) onProgress(isAppleMobile ? 'AR Quick Look 起動完了' : 'USDZファイルを書き出しました');
+      }, 1500);
 
       return { success: true, url: blobUrl };
     } catch (err) {
