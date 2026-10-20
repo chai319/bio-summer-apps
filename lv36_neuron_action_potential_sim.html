@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【Lv36】ニューロンの興奮と膜電位シミュレーター - 高校生物</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Canvas Confetti for Interactive Quiz -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Zen Maru Gothic', 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Glowing and Pulse Animations */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-active {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+
+        /* Channel Gate Transitions */
+        .gate-path {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Ergonomic touch targets */
+        .touch-btn {
+            min-height: 44px;
+            min-width: 44px;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-indigo-600 to-sky-500 text-white p-2.5 rounded-2xl shadow-md">
+                    <i data-lucide="zap" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg md:text-xl text-slate-800 flex items-center gap-2">
+                        ニューロン興奮ラボ <span class="text-xs bg-indigo-100 text-indigo-700 font-bold px-2.5 py-0.5 rounded-full">Lv36 生物基礎</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 hidden sm:block">イオンの出入りと膜電位グラフのリアルタイム完全連動モデル</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button id="btn-quiz-toggle" class="touch-btn px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-sm text-sm flex items-center gap-1.5 transition active:scale-95">
+                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                    <span>演習問題 (全3問)</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-3 sm:px-4 py-4 w-full flex-grow flex flex-col gap-4">
+
+        <!-- Top Control Bar (Ergonomic Interactive Controls) -->
+        <section class="bg-white rounded-3xl p-4 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Timeline Controls -->
+            <div class="flex items-center gap-3 w-full md:w-auto justify-center">
+                <button id="btn-play" class="touch-btn px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-md flex items-center gap-2 text-sm transition active:scale-95">
+                    <i data-lucide="play" class="w-5 h-5 fill-current" id="icon-play"></i>
+                    <span id="text-play">再生</span>
+                </button>
+                <button id="btn-stimulate" class="touch-btn px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl shadow-md flex items-center gap-2 text-sm transition active:scale-95">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                    <span>刺激を与える (+30mV)</span>
+                </button>
+                <button id="btn-reset" class="touch-btn px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl transition active:scale-95 text-sm flex items-center gap-1.5">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    <span>リセット</span>
+                </button>
+            </div>
+
+            <!-- Interactive Timeline Slider -->
+            <div class="flex items-center gap-3 w-full md:flex-1 max-w-2xl px-2">
+                <span class="text-xs font-bold text-slate-500 whitespace-nowrap">時間(ms):</span>
+                <input type="range" id="timeline" min="0" max="100" value="0" step="0.5" class="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                <span id="time-display" class="font-mono font-bold text-indigo-700 text-sm bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 w-16 text-center">0.0ms</span>
+            </div>
+
+            <!-- Current Phase Indicator Badge -->
+            <div id="phase-badge" class="px-4 py-2 rounded-2xl bg-sky-100 text-sky-800 font-bold text-sm border border-sky-200 flex items-center gap-2 whitespace-nowrap shadow-sm">
+                <span class="w-2.5 h-2.5 rounded-full bg-sky-500 animate-ping"></span>
+                <span id="phase-title">静止電位 (-60mV)</span>
+            </div>
+        </section>
+
+        <!-- Central Grid Container -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow">
+            
+            <!-- Left Side: Membrane & Ion Visualizer (Canvas/SVG simulation) -->
+            <section class="lg:col-span-7 bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200 flex flex-col justify-between relative overflow-hidden min-h-[420px]">
+                
+                <!-- Section Title & Legend -->
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-2">
+                    <h2 class="font-black text-slate-800 flex items-center gap-2 text-base">
+                        <i data-lucide="layers" class="w-5 h-5 text-indigo-600"></i>
+                        軸索膜モデルとイオン移動 (リアルタイム)
+                    </h2>
+                    <!-- Ion Legend -->
+                    <div class="flex items-center gap-3 text-xs font-semibold">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-sm inline-block"></span>
+                            <span>Na⁺ (ナトリウム)</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-sm inline-block"></span>
+                            <span>K⁺ (カリウム)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Membrane Canvas Container -->
+                <div class="relative w-full h-[320px] bg-gradient-to-b from-sky-50/50 via-slate-50 to-amber-50/40 rounded-2xl border border-slate-200 overflow-hidden shadow-inner flex items-center justify-center">
+                    
+                    <!-- Outside / Inside Label Badges -->
+                    <div class="absolute top-3 left-4 bg-sky-500/10 text-sky-700 border border-sky-200 px-3 py-1 rounded-full text-xs font-black backdrop-blur-sm">
+                        細胞外（Na⁺多 / 陽電荷+）
+                    </div>
+                    <div class="absolute bottom-3 left-4 bg-amber-500/10 text-amber-800 border border-amber-200 px-3 py-1 rounded-full text-xs font-black backdrop-blur-sm">
+                        細胞内（K⁺多 / 負電荷-）
+                    </div>
+
+                    <!-- Dynamic Charge Indicators (+/-) -->
+                    <div id="charge-outside" class="absolute top-10 right-6 flex gap-2 font-mono font-black text-rose-500 text-lg transition-all">
+                        +++++
+                    </div>
+                    <div id="charge-inside" class="absolute bottom-10 right-6 flex gap-2 font-mono font-black text-indigo-500 text-lg transition-all">
+                        -----
+                    </div>
+
+                    <!-- Canvas element for animated ion particle flows -->
+                    <canvas id="membraneCanvas" class="absolute inset-0 w-full h-full pointer-events-none z-10"></canvas>
+
+                    <!-- SVG Overlay for Channel Structures -->
+                    <svg id="membraneSVG" class="w-full h-full absolute inset-0 z-0" viewBox="0 0 700 320" preserveAspectRatio="xMidYMid meet">
+                        <!-- Phospholipid Bilayer Background -->
+                        <g id="bilayer">
+                            <!-- Top Layer -->
+                            <line x1="0" y1="140" x2="700" y2="140" stroke="#cbd5e1" stroke-width="4" />
+                            <!-- Bottom Layer -->
+                            <line x1="0" y1="180" x2="700" y2="180" stroke="#cbd5e1" stroke-width="4" />
+                        </g>
+
+                        <!-- Na+ Channel -->
+                        <g id="na-channel" transform="translate(160, 110)">
+                            <!-- Channel Body -->
+                            <path d="M 0 0 L 25 0 L 25 100 L 0 100 Z" fill="#f59e0b" rx="4" />
+                            <path d="M 45 0 L 70 0 L 70 100 L 45 100 Z" fill="#f59e0b" rx="4" />
+                            <!-- Gates -->
+                            <path id="na-gate" d="M 25 50 L 45 50" stroke="#b45309" stroke-width="8" stroke-linecap="round" class="gate-path" />
+                            <!-- Label -->
+                            <rect x="-10" y="-25" width="90" height="20" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+                            <text x="35" y="-11" font-size="11" font-weight="bold" fill="#78350f" text-anchor="middle">Na⁺チャネル</text>
+                        </g>
+
+                        <!-- K+ Channel -->
+                        <g id="k-channel" transform="translate(350, 110)">
+                            <!-- Channel Body -->
+                            <path d="M 0 0 L 25 0 L 25 100 L 0 100 Z" fill="#10b981" rx="4" />
+                            <path d="M 45 0 L 70 0 L 70 100 L 45 100 Z" fill="#10b981" rx="4" />
+                            <!-- Gates -->
+                            <path id="k-gate" d="M 25 50 L 45 50" stroke="#047857" stroke-width="8" stroke-linecap="round" class="gate-path" />
+                            <!-- Label -->
+                            <rect x="-10" y="-25" width="90" height="20" rx="6" fill="#d1fae5" stroke="#10b981" stroke-width="1.5"/>
+                            <text x="35" y="-11" font-size="11" font-weight="bold" fill="#065f46" text-anchor="middle">K⁺チャネル</text>
+                        </g>
+
+                        <!-- Na+/K+ Pump -->
+                        <g id="nak-pump" transform="translate(520, 110)">
+                            <path d="M 0 0 L 70 0 L 60 100 L 10 100 Z" fill="#8b5cf6" opacity="0.85" rx="6" />
+                            <circle cx="35" cy="50" r="16" fill="#7c3aed" />
+                            <!-- ATP Icon -->
+                            <text x="35" y="54" font-size="10" font-weight="900" fill="#ffffff" text-anchor="middle">ATP</text>
+                            <rect x="-10" y="-25" width="90" height="20" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+                            <text x="35" y="-11" font-size="11" font-weight="bold" fill="#5b21b6" text-anchor="middle">Na⁺-K⁺ポンプ</text>
+                        </g>
+                    </svg>
+
+                </div>
+
+                <!-- Explanation / Status Message Banner below Canvas -->
+                <div id="status-banner" class="mt-3 bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-start gap-3">
+                    <div class="p-2 bg-indigo-100 text-indigo-600 rounded-xl mt-0.5">
+                        <i data-lucide="info" class="w-4 h-4"></i>
+                    </div>
+                    <div class="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                        <span id="status-text" class="font-bold">【静止状態】</span>
+                        <span id="status-detail">Na⁺-K⁺ポンプが常に働いて濃度差を維持。また、非特異的カリウム漏出チャネルにより、内部は-60mVの負に保たれています。</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Side: Membrane Potential Chart & Dynamic Explanation -->
+            <section class="lg:col-span-5 flex flex-col gap-4">
+                
+                <!-- Chart Card -->
+                <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                        <h2 class="font-black text-slate-800 flex items-center gap-2 text-base">
+                            <i data-lucide="line-chart" class="w-5 h-5 text-indigo-600"></i>
+                            膜電位の変化 (mV)
+                        </h2>
+                        <span class="text-xs bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-md">問題図連動</span>
+                    </div>
+
+                    <!-- Chart Canvas Container -->
+                    <div class="relative w-full h-[220px]">
+                        <canvas id="potentialChart"></canvas>
+                    </div>
+
+                    <!-- Graph Point Key Markers (1 to 4) -->
+                    <div class="grid grid-cols-4 gap-1.5 mt-3 pt-2 border-t border-slate-100">
+                        <button class="step-btn text-xs font-bold py-1.5 px-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl text-slate-600 border border-slate-200 text-center transition" data-step="0">
+                            ① 静止電位
+                        </button>
+                        <button class="step-btn text-xs font-bold py-1.5 px-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl text-slate-600 border border-slate-200 text-center transition" data-step="25">
+                            A: 脱分極
+                        </button>
+                        <button class="step-btn text-xs font-bold py-1.5 px-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl text-slate-600 border border-slate-200 text-center transition" data-step="45">
+                            ③ 最大値
+                        </button>
+                        <button class="step-btn text-xs font-bold py-1.5 px-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl text-slate-600 border border-slate-200 text-center transition" data-step="65">
+                            ④ 再分極
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Point Explanation Card -->
+                <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-3xl p-5 shadow-md flex flex-col justify-between flex-grow">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider">ポイント解説</span>
+                            <span id="concept-tag" class="text-xs bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2.5 py-0.5 rounded-full font-bold">静止膜電位</span>
+                        </div>
+                        <h3 id="concept-title" class="font-black text-lg text-white mb-2">静止電位とイオンの分布</h3>
+                        <p id="concept-body" class="text-xs sm:text-sm text-indigo-100/90 leading-relaxed">
+                            ニューロンが興奮していない時、細胞外には<strong class="text-amber-300">Na⁺</strong>が多く、細胞内には<strong class="text-emerald-300">K⁺</strong>が多く存在します。細胞内は負（約 -60mV）に帯電しています。
+                        </p>
+                    </div>
+
+                    <!-- Concept Key Takeaway Box -->
+                    <div class="mt-4 pt-3 border-t border-indigo-700/50 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center shrink-0">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        </div>
+                        <p id="concept-key" class="text-xs font-bold text-amber-200">
+                            試してみよう：「刺激を与える」を押すと脱分極が始まります！
+                        </p>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+
+    </main>
+
+    <!-- Quiz Modal -->
+    <div id="quiz-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="bg-amber-100 text-amber-800 text-xs font-black px-2.5 py-1 rounded-lg">問題演習</span>
+                    <h2 class="font-black text-slate-800 text-lg">問53. ニューロンの興奮（過去問確認）</h2>
+                </div>
+                <button id="btn-quiz-close" class="touch-btn p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Quiz Navigation Tabs -->
+            <div class="flex gap-2">
+                <button class="quiz-tab touch-btn flex-1 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-sm" data-quiz="1">問1 (静止電位)</button>
+                <button class="quiz-tab touch-btn flex-1 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200" data-quiz="2">問2 (脱分極の現象)</button>
+                <button class="quiz-tab touch-btn flex-1 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200" data-quiz="3">問3 (ニューロンの法則)</button>
+            </div>
+
+            <!-- Quiz Content Box -->
+            <div id="quiz-container" class="space-y-4">
+                <!-- Dynamically Inserted Quiz Content -->
+            </div>
+
+            <!-- Quiz Feedback Alert Box -->
+            <div id="quiz-feedback" class="hidden p-4 rounded-2xl text-xs sm:text-sm leading-relaxed border font-medium"></div>
+
+            <!-- Footer -->
+            <div class="flex justify-end pt-2 border-t border-slate-100">
+                <button id="btn-quiz-done" class="touch-btn px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-sm transition">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+        <a href="index.html" class="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 font-bold mb-1.5">
+            <i data-lucide="home" class="w-4 h-4"></i> デジタルコンテンツポータルへ戻る
+        </a>
+        <p>高校生物基礎・生物 学習支援シミュレーター | 滋賀県立河瀬高等学校</p>
+    </footer>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        /* ==========================================================================
+           1. DATA STRUCTURES & STATE MANAGEMENT
+           ========================================================================== */
+        const TOTAL_STEPS = 100;
+        let currentTime = 0; // 0 to 100
+        let isPlaying = false;
+        let animationFrameId = null;
+
+        function getPotentialAt(t) {
+            if (t < 20) {
+                return -60;
+            } else if (t >= 20 && t < 45) {
+                const progress = (t - 20) / 25;
+                return -60 + (95 * Math.sin(progress * Math.PI / 2));
+            } else if (t >= 45 && t < 70) {
+                const progress = (t - 45) / 25;
+                return 35 - (110 * Math.sin(progress * Math.PI / 2));
+            } else if (t >= 70 && t < 90) {
+                const progress = (t - 70) / 20;
+                return -75 + (15 * Math.sin(progress * Math.PI / 2));
+            } else {
+                return -60;
+            }
+        }
+
+        // Ion Particle Class for Animation
+        class Particle {
+            constructor(type, canvasWidth, canvasHeight) {
+                this.type = type;
+                this.x = Math.random() * canvasWidth;
+                if (type === 'Na') {
+                    this.y = Math.random() < 0.85 ? Math.random() * 110 : 210 + Math.random() * 100;
+                } else {
+                    this.y = Math.random() < 0.85 ? 210 + Math.random() * 100 : Math.random() * 110;
+                }
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.vy = (Math.random() - 0.5) * 0.8;
+                this.radius = type === 'Na' ? 5 : 6;
+            }
+
+            update(t, canvasWidth, canvasHeight) {
+                const naChannelX = canvasWidth * 0.28;
+                const kChannelX = canvasWidth * 0.55;
+
+                if (t >= 20 && t < 45 && this.type === 'Na') {
+                    if (Math.abs(this.x - naChannelX) < 60 && this.y < 160) {
+                        this.vx = (naChannelX - this.x) * 0.1;
+                        this.vy = 2.5;
+                    }
+                } else if (t >= 45 && t < 70 && this.type === 'K') {
+                    if (Math.abs(this.x - kChannelX) < 60 && this.y > 160) {
+                        this.vx = (kChannelX - this.x) * 0.1;
+                        this.vy = -2.5;
+                    }
+                } else {
+                    if (this.y > 120 && this.y < 200) {
+                        if (this.y < 160) this.vy = -Math.abs(this.vy) - 0.5;
+                        else this.vy = Math.abs(this.vy) + 0.5;
+                    }
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 10 || this.x > canvasWidth - 10) this.vx *= -1;
+                if (this.y < 10 || this.y > canvasHeight - 10) this.vy *= -1;
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                if (this.type === 'Na') {
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.shadowColor = '#f59e0b';
+                } else {
+                    ctx.fillStyle = '#10b981';
+                    ctx.shadowColor = '#10b981';
+                }
+                ctx.shadowBlur = 4;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '900 8px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.type, this.x, this.y);
+            }
+        }
+
+        /* ==========================================================================
+           2. CANVAS & SVG MEMBRANE ANIMATION
+           ========================================================================== */
+        const canvas = document.getElementById('membraneCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function initCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            particles = [];
+            for (let i = 0; i < 35; i++) particles.push(new Particle('Na', canvas.width, canvas.height));
+            for (let i = 0; i < 35; i++) particles.push(new Particle('K', canvas.width, canvas.height));
+        }
+
+        function renderMembrane(t) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                p.update(t, canvas.width, canvas.height);
+                p.draw(ctx);
+            });
+
+            const naGate = document.getElementById('na-gate');
+            const kGate = document.getElementById('k-gate');
+
+            if (t >= 20 && t < 45) {
+                naGate.setAttribute('d', 'M 25 20 L 25 80');
+                naGate.setAttribute('stroke', '#ef4444');
+            } else {
+                naGate.setAttribute('d', 'M 25 50 L 45 50');
+                naGate.setAttribute('stroke', '#b45309');
+            }
+
+            if (t >= 45 && t < 70) {
+                kGate.setAttribute('d', 'M 25 20 L 25 80');
+                kGate.setAttribute('stroke', '#10b981');
+            } else {
+                kGate.setAttribute('d', 'M 25 50 L 45 50');
+                kGate.setAttribute('stroke', '#047857');
+            }
+        }
+
+        /* ==========================================================================
+           3. CHART.JS INTEGRATION
+           ========================================================================== */
+        const chartCtx = document.getElementById('potentialChart').getContext('2d');
+
+        const chartLabels = [];
+        const chartData = [];
+        for (let i = 0; i <= TOTAL_STEPS; i++) {
+            chartLabels.push((i * 0.04).toFixed(1));
+            chartData.push(getPotentialAt(i));
+        }
+
+        const potentialChart = new Chart(chartCtx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [
+                    {
+                        label: '膜電位 (mV)',
+                        data: chartData,
+                        borderColor: '#6366f1',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        tension: 0.3,
+                        fill: {
+                            target: 'origin',
+                            above: 'rgba(99, 102, 241, 0.08)'
+                        }
+                    },
+                    {
+                        label: '現在の位置',
+                        data: [{ x: '0.0', y: -60 }],
+                        borderColor: '#ef4444',
+                        backgroundColor: '#ef4444',
+                        pointRadius: 7,
+                        pointHoverRadius: 9,
+                        type: 'scatter'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: '時間 (ms)', font: { size: 10, weight: 'bold' } },
+                        ticks: { maxTicksLimit: 6, font: { size: 10 } },
+                        grid: { color: '#f1f5f9' }
+                    },
+                    y: {
+                        min: -90,
+                        max: 50,
+                        title: { display: true, text: '膜電位 (mV)', font: { size: 10, weight: 'bold' } },
+                        ticks: { stepSize: 30, font: { size: 10 } },
+                        grid: { color: '#f1f5f9' }
+                    }
+                }
+            }
+        });
+
+        function updateChartCursor(t) {
+            const timeLabel = (t * 0.04).toFixed(1);
+            const val = getPotentialAt(t);
+            potentialChart.data.datasets[1].data = [{ x: timeLabel, y: val }];
+            potentialChart.update('none');
+        }
+
+        /* ==========================================================================
+           4. UI & EXPLANATION DYNAMIC UPDATE
+           ========================================================================== */
+        const timeline = document.getElementById('timeline');
+        const timeDisplay = document.getElementById('time-display');
+        const phaseTitle = document.getElementById('phase-title');
+        const statusText = document.getElementById('status-text');
+        const statusDetail = document.getElementById('status-detail');
+        const conceptTag = document.getElementById('concept-tag');
+        const conceptTitle = document.getElementById('concept-title');
+        const conceptBody = document.getElementById('concept-body');
+        const conceptKey = document.getElementById('concept-key');
+        const chargeOutside = document.getElementById('charge-outside');
+        const chargeInside = document.getElementById('charge-inside');
+
+        function updateUI(t) {
+            const mv = Math.round(getPotentialAt(t));
+            timeDisplay.textContent = `${(t * 0.04).toFixed(1)}ms`;
+
+            if (t < 20) {
+                phaseTitle.textContent = `① 静止電位 (${mv}mV)`;
+                statusText.textContent = "【静止状態】";
+                statusDetail.textContent = "Na⁺-K⁺ポンプにより細胞外にNa⁺、細胞内にK⁺が多く維持されています。静止膜電位は約-60mVです。";
+                
+                conceptTag.textContent = "問題①の答え";
+                conceptTitle.textContent = "静止電位 (Resting Potential)";
+                conceptBody.textContent = "ニューロンが刺激を受けていない時の電位差。細胞内が負(-)に帯電しており、グラフの①がこれを示しています。";
+                conceptKey.textContent = "ポイント：Na⁺-K⁺ポンプがATPを消費して濃度差を保っています。";
+
+                chargeOutside.textContent = "+++++";
+                chargeOutside.className = "absolute top-10 right-6 flex gap-2 font-mono font-black text-rose-500 text-lg transition-all";
+                chargeInside.textContent = "-----";
+                chargeInside.className = "absolute bottom-10 right-6 flex gap-2 font-mono font-black text-indigo-500 text-lg transition-all";
+
+            } else if (t >= 20 && t < 45) {
+                phaseTitle.textContent = `A: 脱分極 (${mv}mV)`;
+                statusText.textContent = "【脱分極 (Na⁺流入)】";
+                statusDetail.textContent = "閾値以上の刺激により電位依存性Na⁺チャネルが開口！細胞外のNa⁺が速やかに細胞内へ流入します。";
+                
+                conceptTag.textContent = "問題②の正解 (Aの地点)";
+                conceptTitle.textContent = "脱分極 (Depolarization)";
+                conceptBody.textContent = "Na⁺が細胞内に急激に入ることで、膜電位が正(+)に向かって逆転します。問題問2の答えは『② Na⁺が軸索内に入る』です。";
+                conceptKey.textContent = "重要：カルシウムイオン(Ca²⁺)はこの膜電位の変化には直接関与しません。";
+
+                chargeOutside.textContent = "----";
+                chargeOutside.className = "absolute top-10 right-6 flex gap-2 font-mono font-black text-indigo-500 text-lg transition-all";
+                chargeInside.textContent = "++++";
+                chargeInside.className = "absolute bottom-10 right-6 flex gap-2 font-mono font-black text-rose-500 text-lg transition-all";
+
+            } else if (t >= 45 && t < 70) {
+                phaseTitle.textContent = `④ 再分極 (${mv}mV)`;
+                statusText.textContent = "【再分極 (K⁺流出)】";
+                statusDetail.textContent = "Na⁺チャネルが閉じ、K⁺チャネルが開口。K⁺が細胞外へ流出することで、膜電位が再び負に戻ります。";
+                
+                conceptTag.textContent = "再分極相";
+                conceptTitle.textContent = "再分極 (Repolarization)";
+                conceptBody.textContent = "ピーク(約+35mV)に達するとNa⁺チャネルが閉じ、遅れてK⁺チャネルが開きK⁺が外へ出ます。これにより元の負の電位へ戻ります。";
+                conceptKey.textContent = "ポイント：興奮の山（活動電位）をつくるのはNa⁺の流入とK⁺の流出のタッグです！";
+
+                chargeOutside.textContent = "++++";
+                chargeOutside.className = "absolute top-10 right-6 flex gap-2 font-mono font-black text-rose-500 text-lg transition-all";
+                chargeInside.textContent = "----";
+                chargeInside.className = "absolute bottom-10 right-6 flex gap-2 font-mono font-black text-indigo-500 text-lg transition-all";
+
+            } else {
+                phaseTitle.textContent = `過分極・回復 (${mv}mV)`;
+                statusText.textContent = "【過分極から回復】";
+                statusDetail.textContent = "一時的に静止電位より低くなりますが、Na⁺-K⁺ポンプの働きにより元の静止電位状態へと復元します。";
+
+                conceptTag.textContent = "不応期・回復";
+                conceptTitle.textContent = "全か無かの法則";
+                conceptBody.textContent = "閾値未満の刺激では興奮せず、閾値以上では刺激の強さに関わらず一定の大きさの活動電位が発生します（全か無かの法則）。";
+                conceptKey.textContent = "確認：問題問3の①は誤り（閾値『以下』ではなく『以上』で起こる）。";
+
+                chargeOutside.textContent = "+++++";
+                chargeOutside.className = "absolute top-10 right-6 flex gap-2 font-mono font-black text-rose-500 text-lg transition-all";
+                chargeInside.textContent = "-----";
+                chargeInside.className = "absolute bottom-10 right-6 flex gap-2 font-mono font-black text-indigo-500 text-lg transition-all";
+            }
+
+            renderMembrane(t);
+            updateChartCursor(t);
+        }
+
+        /* ==========================================================================
+           5. ANIMATION LOOP & CONTROLS
+           ========================================================================== */
+        function loop() {
+            if (isPlaying) {
+                currentTime += 0.5;
+                if (currentTime > TOTAL_STEPS) {
+                    currentTime = 0;
+                }
+                timeline.value = currentTime;
+                updateUI(currentTime);
+            }
+            animationFrameId = requestAnimationFrame(loop);
+        }
+
+        const btnPlay = document.getElementById('btn-play');
+        const iconPlay = document.getElementById('icon-play');
+        const textPlay = document.getElementById('text-play');
+
+        btnPlay.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+                iconPlay.setAttribute('data-lucide', 'pause');
+                textPlay.textContent = '一時停止';
+            } else {
+                iconPlay.setAttribute('data-lucide', 'play');
+                textPlay.textContent = '再生';
+            }
+            lucide.createIcons();
+        });
+
+        document.getElementById('btn-stimulate').addEventListener('click', () => {
+            currentTime = 20;
+            timeline.value = currentTime;
+            isPlaying = true;
+            iconPlay.setAttribute('data-lucide', 'pause');
+            textPlay.textContent = '一時停止';
+            lucide.createIcons();
+            updateUI(currentTime);
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            isPlaying = false;
+            currentTime = 0;
+            timeline.value = 0;
+            iconPlay.setAttribute('data-lucide', 'play');
+            textPlay.textContent = '再生';
+            lucide.createIcons();
+            updateUI(0);
+        });
+
+        timeline.addEventListener('input', (e) => {
+            currentTime = parseFloat(e.target.value);
+            updateUI(currentTime);
+        });
+
+        document.querySelectorAll('.step-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const step = parseFloat(btn.dataset.step);
+                currentTime = step;
+                timeline.value = step;
+                isPlaying = false;
+                iconPlay.setAttribute('data-lucide', 'play');
+                textPlay.textContent = '再生';
+                lucide.createIcons();
+                updateUI(step);
+            });
+        });
+
+        /* ==========================================================================
+           6. QUIZ MODAL SYSTEM
+           ========================================================================== */
+        const quizModal = document.getElementById('quiz-modal');
+        const btnQuizToggle = document.getElementById('btn-quiz-toggle');
+        const btnQuizClose = document.getElementById('btn-quiz-close');
+        const btnQuizDone = document.getElementById('btn-quiz-done');
+        const quizContainer = document.getElementById('quiz-container');
+        const quizFeedback = document.getElementById('quiz-feedback');
+
+        const quizData = {
+            1: {
+                title: "問1 図中の①〜④のうち、静止電位を示すものを選べ。",
+                options: [
+                    { text: "① 静止電位 (-60mVの電位差)", correct: true },
+                    { text: "② 膜電位の総変化量", correct: false },
+                    { text: "③ 活動電位の最大振幅", correct: false },
+                    { text: "④ 再分極時の変化幅", correct: false }
+                ],
+                explanation: "正解は ① です！興奮していないときの細胞内外の電位差（約-60mV）を静止電位と呼びます。"
+            },
+            2: {
+                title: "問2 図中の A のときに起こっている変化として最も適当なものを選べ。",
+                options: [
+                    { text: "① 軸索内のナトリウムイオンが速やかに軸索外に出る。", correct: false },
+                    { text: "② 軸索外のナトリウムイオンが速やかに軸索内に入る。", correct: true },
+                    { text: "③ 軸索内のカルシウムイオンが速やかに軸索外に出る。", correct: false },
+                    { text: "④ 軸索外のカルシウムイオンが速やかに軸索内に入る。", correct: false }
+                ],
+                explanation: "正解は ② です！Aは「脱分極」の過程であり、Na⁺チャネルが開いて軸索外のNa⁺が軸索内へ急速に流入します。"
+            },
+            3: {
+                title: "問3 ニューロンに関する記述として最も適当なものを選べ。",
+                options: [
+                    { text: "① ニューロンが閾値以下の刺激で興奮することを全か無かの法則という。", correct: false },
+                    { text: "② 脊椎動物の多くの神経は無髄神経繊維からなる。", correct: false },
+                    { text: "③ 有髄神経ではランビエ絞輪に興奮が生じないので跳躍伝導する。", correct: false },
+                    { text: "④ 受容器が敏感に受容できる特定の刺激の種類を適刺激という。", correct: true }
+                ],
+                explanation: "正解は ④ です！\n① 閾値『以上』で興奮します。\n② 脊椎動物の多くは『有髄』神経繊維です。\n③ ランビエ絞輪『でのみ』興奮が生じるため跳躍伝導します。"
+            }
+        };
+
+        let currentQuizIndex = 1;
+
+        function loadQuiz(index) {
+            currentQuizIndex = index;
+            const data = quizData[index];
+            quizFeedback.className = "hidden";
+
+            document.querySelectorAll('.quiz-tab').forEach(tab => {
+                if (parseInt(tab.dataset.quiz) === index) {
+                    tab.className = "quiz-tab touch-btn flex-1 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white shadow-sm";
+                } else {
+                    tab.className = "quiz-tab touch-btn flex-1 py-2 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200";
+                }
+            });
+
+            quizContainer.innerHTML = `
+                <p class="font-bold text-slate-800 text-sm sm:text-base">${data.title}</p>
+                <div class="space-y-2 mt-3">
+                    ${data.options.map((opt, i) => `
+                        <button class="quiz-option w-full text-left p-3 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition font-medium text-xs sm:text-sm text-slate-700 flex items-center justify-between" data-correct="${opt.correct}">
+                            <span>${opt.text}</span>
+                            <i data-lucide="circle" class="w-4 h-4 text-slate-300 shrink-0"></i>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            lucide.createIcons();
+
+            document.querySelectorAll('.quiz-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const isCorrect = btn.dataset.correct === "true";
+                    quizFeedback.classList.remove('hidden');
+                    
+                    if (isCorrect) {
+                        quizFeedback.className = "p-4 rounded-2xl text-xs sm:text-sm leading-relaxed border font-medium bg-emerald-50 text-emerald-800 border-emerald-200";
+                        quizFeedback.innerHTML = `<div class="font-black text-emerald-700 text-base mb-1">🎉 正解です！</div>${data.explanation}`;
+                        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+                    } else {
+                        quizFeedback.className = "p-4 rounded-2xl text-xs sm:text-sm leading-relaxed border font-medium bg-rose-50 text-rose-800 border-rose-200";
+                        quizFeedback.innerHTML = `<div class="font-black text-rose-700 text-base mb-1">❌ 残念！もう一度考えてみよう</div>シミュレーターのグラフィックと動くタイムラインを確認してみてね！`;
+                    }
+                });
+            });
+        }
+
+        btnQuizToggle.addEventListener('click', () => {
+            quizModal.classList.remove('opacity-0', 'pointer-events-none');
+            loadQuiz(1);
+        });
+
+        btnQuizClose.addEventListener('click', () => {
+            quizModal.classList.add('opacity-0', 'pointer-events-none');
+        });
+
+        btnQuizDone.addEventListener('click', () => {
+            quizModal.classList.add('opacity-0', 'pointer-events-none');
+        });
+
+        document.querySelectorAll('.quiz-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                loadQuiz(parseInt(tab.dataset.quiz));
+            });
+        });
+
+        /* ==========================================================================
+           7. INITIALIZATION & RESIZE HANDLING
+           ========================================================================== */
+        window.addEventListener('resize', () => {
+            initCanvas();
+            renderMembrane(currentTime);
+        });
+
+        window.onload = () => {
+            initCanvas();
+            updateUI(0);
+            loop();
+        };
+    </script>
+</body>
+</html>
