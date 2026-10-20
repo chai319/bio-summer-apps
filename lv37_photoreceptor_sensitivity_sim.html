@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【Lv37】視細胞ニューロンの感度変化シミュレーター - 高校生物</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Noto Sans JP -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        /* Custom scrollbar for ergonomics */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        /* Pulse Animation */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.08); }
+        }
+        .animate-glow {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header with Ergonomic Clear Navigation -->
+    <header class="bg-indigo-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 sm:px-6 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-xl shadow-inner">
+                    <i class="fa-solid fa-brain text-amber-300 text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg sm:text-xl tracking-tight leading-tight flex items-center gap-2">
+                        <span class="bg-amber-400 text-indigo-950 text-xs px-2 py-0.5 rounded-full font-black">Lv37</span>
+                        高校生物：光刺激とニューロンの応答
+                    </h1>
+                    <p class="text-xs text-indigo-200">コオロギの視細胞ニューロンX 感度変化インタラクティブ・ラボ</p>
+                </div>
+            </div>
+            
+            <!-- Sound & Help Controls & Portal -->
+            <div class="flex items-center space-x-2">
+                <a href="index.html" class="px-3 py-1.5 bg-indigo-800 hover:bg-indigo-700 active:scale-95 text-xs sm:text-sm font-medium rounded-lg border border-indigo-600 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="hidden sm:inline">ポータル</span>
+                </a>
+                <button id="soundToggleBtn" onclick="toggleAudio()" class="px-3 py-1.5 bg-indigo-800 hover:bg-indigo-700 active:scale-95 text-xs sm:text-sm font-medium rounded-lg border border-indigo-600 transition flex items-center gap-2">
+                    <i id="soundIcon" class="fa-solid fa-volume-xmark text-rose-400"></i>
+                    <span id="soundLabel">効果音 OFF</span>
+                </button>
+                <button onclick="openHelpModal()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-indigo-950 font-bold text-xs sm:text-sm rounded-lg shadow transition flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-circle-question"></i>
+                    <span>使い方ガイド</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto w-full px-3 sm:px-6 py-4 sm:py-6 flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <section class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- Mode Selector Tabs -->
+            <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200 flex text-xs sm:text-sm font-bold">
+                <button id="tab1Btn" onclick="switchTab('oscilloscope')" class="flex-1 py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow">
+                    <i class="fa-solid fa-wave-square"></i>
+                    1. オシロスコープ実験 (問1)
+                </button>
+                <button id="tab2Btn" onclick="switchTab('graph')" class="flex-1 py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-slate-600 hover:text-indigo-600">
+                    <i class="fa-solid fa-chart-line"></i>
+                    2. 昼と夜の感度比較 (問2)
+                </button>
+            </div>
+
+            <!-- Experiment Canvas Area -->
+            <div class="bg-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-xl border border-slate-800 flex flex-col justify-between relative overflow-hidden">
+                
+                <!-- Status Badge -->
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-xs font-semibold text-slate-300 tracking-wider uppercase">リアルタイム記録中</span>
+                    </div>
+                    <div id="envTag" class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                        <i id="envIcon" class="fa-solid fa-moon"></i>
+                        <span id="envLabel">夜の環境 (暗闇)</span>
+                    </div>
+                </div>
+
+                <!-- Visual Light Pulse Visualizer -->
+                <div id="lightFlashBox" class="w-full h-8 rounded-lg border border-slate-700 bg-slate-950 mb-3 flex items-center justify-center text-xs font-mono transition-all duration-150 relative overflow-hidden">
+                    <div id="lightBar" class="absolute inset-0 bg-yellow-400 opacity-0 transition-opacity duration-100"></div>
+                    <span id="lightText" class="relative z-10 text-slate-400 font-bold"><i class="fa-regular fa-lightbulb mr-1"></i> 光刺激 OFF</span>
+                </div>
+
+                <!-- Canvas Component for Oscilloscope / Graph -->
+                <div class="relative w-full aspect-[16/9] sm:aspect-[16/8] bg-black rounded-xl overflow-hidden border border-slate-800 shadow-inner">
+                    <canvas id="simCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+                    <!-- Latency Highlight Overlay -->
+                    <div id="latencyOverlay" class="hidden absolute top-0 bottom-0 bg-amber-500/20 border-x border-amber-400 pointer-events-none flex items-center justify-center">
+                        <span class="bg-amber-500 text-slate-950 text-[10px] font-bold px-1.5 py-0.5 rounded shadow">潜伏期 (Latency)</span>
+                    </div>
+                </div>
+
+                <!-- Audio Wave Visualizer Indicator -->
+                <div class="mt-3 flex justify-between items-center text-xs text-slate-400 font-mono">
+                    <span><i class="fa-solid fa-clock text-indigo-400 mr-1"></i> 時間軸: 0 ~ 800 ms (刺激: 0~400ms)</span>
+                    <span id="spikeCounter" class="text-emerald-400 font-bold">発火回数: 0 回</span>
+                </div>
+            </div>
+
+            <!-- Controls Ergonomics Section -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col gap-4">
+                <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
+                    <i class="fa-solid fa-sliders text-indigo-600"></i>
+                    実験条件の設定（操作パネル）
+                </h2>
+
+                <!-- Control 1: Environment Switch (Day / Night) -->
+                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="font-bold text-xs sm:text-sm text-slate-700 block">昼と夜の環境切替</label>
+                        <span class="text-[11px] text-slate-500">時間帯によるニューロンXの感度変化を観察</span>
+                    </div>
+                    <div class="inline-flex rounded-lg bg-slate-200 p-1 border border-slate-300">
+                        <button id="dayBtn" onclick="setEnvironment('day')" class="px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 text-slate-600">
+                            <i class="fa-solid fa-sun text-amber-500"></i> 昼
+                        </button>
+                        <button id="nightBtn" onclick="setEnvironment('night')" class="px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 bg-indigo-900 text-white shadow">
+                            <i class="fa-solid fa-moon text-yellow-300"></i> 夜
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Control 2: Light Intensity Slider -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label for="intensitySlider" class="font-bold text-xs sm:text-sm text-slate-700">
+                            光刺激の強さ (相対値): <span id="intensityVal" class="text-indigo-600 text-base font-extrabold ml-1">10³</span>
+                        </label>
+                        <span class="text-xs text-slate-400 font-mono">10⁰ ~ 10⁸</span>
+                    </div>
+                    <input type="range" id="intensitySlider" min="0" max="8" step="1" value="3" oninput="updateIntensity(this.value)" class="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    <div class="flex justify-between text-[10px] text-slate-400 font-mono px-1">
+                        <span>10⁰ (弱)</span>
+                        <span>10²</span>
+                        <span>10⁴</span>
+                        <span>10⁶</span>
+                        <span>10⁸ (超強)</span>
+                    </div>
+                </div>
+
+                <!-- Quick Simulation Trigger Button -->
+                <div class="flex gap-3 pt-1">
+                    <button id="stimulateBtn" onclick="triggerStimulation()" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-bolt text-yellow-300"></i>
+                        光刺激を与える (400ミリ秒間)
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="lg:col-span-5 flex flex-col gap-6">
+
+            <!-- Question Cards Container -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col gap-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-graduation-cap text-amber-500 text-lg"></i>
+                        共通テスト類似問題に挑戦！
+                    </h2>
+                    <span id="activeQuestionTag" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">問 1 の解説</span>
+                </div>
+
+                <!-- QUESTION 1 CONTAINER -->
+                <div id="q1Container" class="flex flex-col gap-3">
+                    <div class="bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-100 text-xs sm:text-sm text-indigo-950 leading-relaxed">
+                        <strong class="text-indigo-900 block mb-1 font-bold">【問1】オシロスコープ結果の分析</strong>
+                        図1（波形記録）の実験結果から、光刺激に対するニューロンXの反応に関して<b>最も適当なもの</b>を1つ選べ。
+                    </div>
+
+                    <!-- Q1 Options -->
+                    <div class="flex flex-col gap-2 text-xs sm:text-sm">
+                        <button onclick="checkAnswer(1, 1)" class="q1-opt text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition flex items-start gap-2 group">
+                            <span class="w-5 h-5 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition">①</span>
+                            <span class="text-slate-700">光刺激の強さに応じて静止電位が大きくなる。</span>
+                        </button>
+                        <button onclick="checkAnswer(1, 2)" class="q1-opt text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition flex items-start gap-2 group">
+                            <span class="w-5 h-5 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition">②</span>
+                            <span class="text-slate-700">光刺激が強くなると反応の閾値が上昇する。</span>
+                        </button>
+                        <button onclick="checkAnswer(1, 3)" class="q1-opt text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition flex items-start gap-2 group">
+                            <span class="w-5 h-5 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition">③</span>
+                            <span class="text-slate-700 font-medium">光刺激が強くなると反応の潜伏期が短くなる。</span>
+                        </button>
+                        <button onclick="checkAnswer(1, 4)" class="q1-opt text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition flex items-start gap-2 group">
+                            <span class="w-5 h-5 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition">④</span>
+                            <span class="text-slate-700">光刺激中の活動電位の発生頻度は一定である。</span>
+                        </button>
+                        <button onclick="checkAnswer(1, 5)" class="q1-opt text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition flex items-start gap-2 group">
+                            <span class="w-5 h-5 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition">⑤</span>
+                            <span class="text-slate-700">光刺激をやめても、100ミリ秒以上反応が続く。</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- QUESTION 2 CONTAINER (Hidden by default or toggled) -->
+                <div id="q2Container" class="hidden flex flex-col gap-3">
+                    <div class="bg-indigo-50/70 p-3.5 rounded-xl border border-indigo-100 text-xs sm:text-sm text-indigo-950 leading-relaxed">
+                        <strong class="text-indigo-900 block mb-1 font-bold">【問2】昼夜の感度比較グラフの分析</strong>
+                        図2（400ms当たりの活動電位発生回数）のグラフ結果から、最も適当なものを1つ選べ。
+                    </div>
+
+                    <!-- Q2 Options -->
+                    <div class="flex flex-col gap-2 text-xs sm:text-sm">
+                        <button onclick="checkAnswer(2, 1)" class="q2-opt text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition flex items-start gap-2 group">
+                            <span class="w-5 h-5 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition">①</span>
+                            <span class="text-slate-700">光の強さ 10²〜10⁶ の範囲では、昼と夜の反応大きさ比は常に一定である。</span>
+                        </button>
+                        <button onclick="checkAnswer(2, 2)" class="q2-opt text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition flex items-start gap-2 group">
+                            <span class="w-5 h-5 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition">②</span>
+                            <span class="text-slate-700 font-medium">昼に30回の活動電位を引き起こす光の強さは、夜の約1000倍である。</span>
+                        </button>
+                        <button onclick="checkAnswer(2, 3)" class="q2-opt text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition flex items-start gap-2 group">
+                            <span class="w-5 h-5 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition">③</span>
+                            <span class="text-slate-700">10⁴の光刺激では、昼の反応は夜の反応の約 60% である。</span>
+                        </button>
+                        <button onclick="checkAnswer(2, 4)" class="q2-opt text-left p-3 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition flex items-start gap-2 group">
+                            <span class="w-5 h-5 rounded-full bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition">④</span>
+                            <span class="text-slate-700">ニューロンXの閾値は夜に比べ昼に低下している。</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interactive Explanation Box -->
+                <div id="explanationBox" class="hidden mt-2 p-4 rounded-xl border bg-slate-50 transition-all duration-300">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span id="resultBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold"></span>
+                        <h3 id="resultTitle" class="font-bold text-sm text-slate-800"></h3>
+                    </div>
+                    <p id="resultText" class="text-xs sm:text-sm text-slate-600 leading-relaxed"></p>
+                </div>
+
+            </div>
+
+            <!-- Biological Knowledge Card for Ergonomic Learning -->
+            <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl p-5 shadow-lg flex flex-col gap-3">
+                <h3 class="font-bold text-amber-300 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    理科が得意になる！ここがポイント
+                </h3>
+                <ul class="text-xs text-indigo-100 space-y-2 leading-relaxed">
+                    <li class="flex items-start gap-2">
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-xs mt-0.5"></i>
+                        <span><b>潜伏期 (Latency)</b>：刺激を受けてから、最初のスパイク（活動電位）が発生するまでの「タイムラグ」。刺激が強いほど短くなります！</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-xs mt-0.5"></i>
+                        <span><b>閾値 (Threshold)</b>：反応を起こすのに必要な最小限の刺激の強さ。昼は「目が光に慣れる」ため閾値が高く（鈍感に）なり、夜は閾値が低く（敏感に）なります！</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-xs mt-0.5"></i>
+                        <span><b>全か無かの法則</b>：活動電位ひとつの「高さ（振幅）」は一定です。情報の強さは「発火の頻度（回数）」に変換されて脳に伝わります。</span>
+                    </li>
+                </ul>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-8 py-6 bg-slate-900 text-slate-400 text-xs text-center border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <a href="index.html" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition shadow">
+                <i class="fa-solid fa-house"></i>
+                高校生物シミュレーター ポータルへ戻る
+            </a>
+            <p>高校生物実験室・デジタル教材コレクション (Lv37: コオロギ視細胞ニューロンX 感度変化・潜伏期・受容器電位)</p>
+        </div>
+    </footer>
+
+    <!-- Modal for Help -->
+    <div id="helpModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative flex flex-col gap-4 animate-glow border border-indigo-100">
+            <button onclick="closeHelpModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+            <h3 class="text-lg font-bold text-indigo-950 flex items-center gap-2">
+                <i class="fa-solid fa-hand-pointer text-indigo-600"></i> シミュレーターの使い方
+            </h3>
+            <div class="text-xs sm:text-sm text-slate-600 space-y-3 leading-relaxed">
+                <p>このシミュレーターは、高校生物で扱う「光刺激とニューロンの応答」を感覚的に学ぶための学習ツールです。</p>
+                <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 space-y-1.5">
+                    <p class="font-bold text-indigo-900">💡 主な操作方法：</p>
+                    <p>1. <b>スライダー</b>で光の強さ（10⁰〜10⁸）を変更できます。</p>
+                    <p>2. <b>「光刺激を与える」</b>ボタンを押すと、ニューロンが発火するオシロスコープ波形（パルス音付き）が再生されます。</p>
+                    <p>3. <b>「昼/夜」スイッチ</b>を切り替えると、暗闇の夜にニューロンがいかに過敏になるかを比較できます。</p>
+                    <p>4. 右側の<b>クイズ選択肢</b>をクリックすると、なぜその正解・不正解になるのかがシミュレーター上にハイライト表示されます！</p>
+                </div>
+            </div>
+            <button onclick="closeHelpModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow transition">
+                理解した！実験をはじめる
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Simulation State
+        let currentTab = 'oscilloscope'; // 'oscilloscope' or 'graph'
+        let environment = 'night'; // 'day' or 'night'
+        let intensityLog = 3; // 10^3
+        let audioEnabled = false;
+        let isStimulating = false;
+        let audioCtx = null;
+
+        // Data Models based on textbook problems
+        // Night response curve (Light power 10^x -> Spikes count per 400ms)
+        const nightSpikeData = {
+            0: 0,
+            1: 10,
+            2: 20,
+            3: 30,
+            4: 40,
+            5: 50,
+            6: 60,
+            7: 70,
+            8: 72
+        };
+
+        // Day response curve
+        const daySpikeData = {
+            0: 0,
+            1: 0,
+            2: 5,
+            3: 12,
+            4: 20,
+            5: 30,
+            6: 35,
+            7: 42,
+            8: 50
+        };
+
+        // Latency mapping (ms) based on light power
+        const latencyData = {
+            0: 120,
+            1: 90,
+            2: 65,
+            3: 45,
+            4: 30,
+            5: 20,
+            6: 15,
+            7: 12,
+            8: 10
+        };
+
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Sound Synthesis (Web Audio API)
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function toggleAudio() {
+            initAudio();
+            audioEnabled = !audioEnabled;
+            const soundIcon = document.getElementById('soundIcon');
+            const soundLabel = document.getElementById('soundLabel');
+            const soundBtn = document.getElementById('soundToggleBtn');
+
+            if (audioEnabled) {
+                soundIcon.className = 'fa-solid fa-volume-high text-emerald-400';
+                soundLabel.innerText = '効果音 ON';
+                soundBtn.classList.replace('bg-indigo-800', 'bg-indigo-700');
+                playClickSound(800, 0.05);
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-xmark text-rose-400';
+                soundLabel.innerText = '効果音 OFF';
+                soundBtn.classList.replace('bg-indigo-700', 'bg-indigo-800');
+            }
+        }
+
+        function playClickSound(freq = 600, duration = 0.03) {
+            if (!audioEnabled || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e){}
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const tab1 = document.getElementById('tab1Btn');
+            const tab2 = document.getElementById('tab2Btn');
+            const q1Container = document.getElementById('q1Container');
+            const q2Container = document.getElementById('q2Container');
+            const activeTag = document.getElementById('activeQuestionTag');
+
+            if (tab === 'oscilloscope') {
+                tab1.className = 'flex-1 py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow';
+                tab2.className = 'flex-1 py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-slate-600 hover:text-indigo-600';
+                q1Container.classList.remove('hidden');
+                q2Container.classList.add('hidden');
+                activeTag.innerText = '問 1 の解説';
+            } else {
+                tab2.className = 'flex-1 py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 bg-indigo-600 text-white shadow';
+                tab1.className = 'flex-1 py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-slate-600 hover:text-indigo-600';
+                q2Container.classList.remove('hidden');
+                q1Container.classList.add('hidden');
+                activeTag.innerText = '問 2 の解説';
+            }
+            hideExplanation();
+            draw();
+        }
+
+        function setEnvironment(env) {
+            environment = env;
+            const dayBtn = document.getElementById('dayBtn');
+            const nightBtn = document.getElementById('nightBtn');
+            const envTag = document.getElementById('envTag');
+            const envIcon = document.getElementById('envIcon');
+            const envLabel = document.getElementById('envLabel');
+
+            if (env === 'day') {
+                dayBtn.className = 'px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 bg-amber-500 text-slate-950 shadow';
+                nightBtn.className = 'px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 text-slate-600';
+                envTag.className = 'px-3 py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-xs font-bold text-amber-300 flex items-center gap-1.5';
+                envIcon.className = 'fa-solid fa-sun text-amber-400';
+                envLabel.innerText = '昼の環境 (順応)';
+            } else {
+                nightBtn.className = 'px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 bg-indigo-900 text-white shadow';
+                dayBtn.className = 'px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 text-slate-600';
+                envTag.className = 'px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-xs font-bold text-amber-300 flex items-center gap-1.5';
+                envIcon.className = 'fa-solid fa-moon text-yellow-300';
+                envLabel.innerText = '夜の環境 (暗闇)';
+            }
+            playClickSound(500, 0.04);
+            draw();
+        }
+
+        function updateIntensity(val) {
+            intensityLog = parseInt(val);
+            document.getElementById('intensityVal').innerText = `10${formatSuperscript(intensityLog)}`;
+            playClickSound(400 + intensityLog * 50, 0.02);
+            draw();
+        }
+
+        function formatSuperscript(val) {
+            const supers = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸'];
+            return supers[val] || val;
+        }
+
+        let animFrameId = null;
+        let animStartTime = null;
+
+        function triggerStimulation() {
+            if (isStimulating) return;
+            isStimulating = true;
+
+            const lightBar = document.getElementById('lightBar');
+            const lightText = document.getElementById('lightText');
+            const stimBtn = document.getElementById('stimulateBtn');
+
+            // Light UI Flash On
+            lightBar.style.opacity = Math.min(1, 0.2 + intensityLog * 0.1);
+            lightText.className = 'relative z-10 text-slate-900 font-extrabold';
+            lightText.innerHTML = `<i class="fa-solid fa-lightbulb mr-1 text-amber-600"></i> 光照射中 (10${formatSuperscript(intensityLog)})`;
+            stimBtn.disabled = true;
+            stimBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            animStartTime = performance.now();
+            animateScope();
+
+            // Light OFF after 400ms
+            setTimeout(() => {
+                lightBar.style.opacity = '0';
+                lightText.className = 'relative z-10 text-slate-400 font-bold';
+                lightText.innerHTML = `<i class="fa-regular fa-lightbulb mr-1"></i> 光刺激 OFF`;
+            }, 400);
+
+            // Reset state after full trace (800ms)
+            setTimeout(() => {
+                isStimulating = false;
+                stimBtn.disabled = false;
+                stimBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }, 800);
+        }
+
+        function animateScope() {
+            const now = performance.now();
+            const elapsed = now - animStartTime; // ms (0 ~ 800ms)
+
+            drawOscilloscopeTrace(elapsed);
+
+            if (elapsed < 800) {
+                animFrameId = requestAnimationFrame(animateScope);
+            } else {
+                draw(); // final static render
+            }
+        }
+
+        function draw() {
+            if (currentTab === 'oscilloscope') {
+                drawOscilloscopeTrace(800);
+            } else {
+                drawDayNightGraph();
+            }
+        }
+
+        // Draw Oscilloscope (Mode 1)
+        function drawOscilloscopeTrace(progressMs = 800) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const padX = 50 * window.devicePixelRatio;
+            const padY = 30 * window.devicePixelRatio;
+            const graphW = w - padX * 2;
+            const graphH = h - padY * 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw Oscilloscope Grid Lines
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1 * window.devicePixelRatio;
+            ctx.beginPath();
+            for (let x = 0; x <= 8; x++) {
+                const gx = padX + (graphW / 8) * x;
+                ctx.moveTo(gx, padY);
+                ctx.lineTo(gx, padY + graphH);
+            }
+            for (let y = 0; y <= 4; y++) {
+                const gy = padY + (graphH / 4) * y;
+                ctx.moveTo(padX, gy);
+                ctx.lineTo(padX + graphW, gy);
+            }
+            ctx.stroke();
+
+            // Axis & Labels
+            ctx.fillStyle = '#64748b';
+            ctx.font = `${11 * window.devicePixelRatio}px Inter, sans-serif`;
+            ctx.textAlign = 'center';
+            for (let x = 0; x <= 8; x++) {
+                const ms = x * 100;
+                const gx = padX + (graphW / 8) * x;
+                ctx.fillText(`${ms}`, gx, padY + graphH + 18 * window.devicePixelRatio);
+            }
+
+            // Light Duration Indicator Bar (0 to 400ms)
+            const lightBarX1 = padX;
+            const lightBarW = (graphW / 800) * 400;
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(lightBarX1, padY + graphH + 28 * window.devicePixelRatio, lightBarW, 4 * window.devicePixelRatio);
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = `${10 * window.devicePixelRatio}px Noto Sans JP, sans-serif`;
+            ctx.textAlign = 'left';
+            ctx.fillText('光刺激期間 (400ms)', lightBarX1, padY + graphH + 44 * window.devicePixelRatio);
+
+            // Calculate Spike Spacing & Timings
+            const spikeCount = environment === 'night' ? nightSpikeData[intensityLog] : daySpikeData[intensityLog];
+            const latency = latencyData[intensityLog];
+            document.getElementById('spikeCounter').innerText = `活動電位発生数: ${spikeCount} 回 (400ms間)`;
+
+            // Base Membrane Potential Line (-70mV relative)
+            const baselineY = padY + graphH * 0.7;
+            const spikeTopY = padY + graphH * 0.2;
+
+            // Generate Spike Timings
+            // Spikes occur during light pulse (latency ~ 400ms) + residual 50ms after light off
+            let spikeTimes = [];
+            if (spikeCount > 0) {
+                const activeDuration = 400 - latency + 50; // Stimulus duration minus latency plus ~50ms residual
+                const interval = activeDuration / spikeCount;
+                for (let i = 0; i < spikeCount; i++) {
+                    // Add slight natural jitter for biological accuracy
+                    const jitter = (Math.sin(i * 99) * 0.15) * interval;
+                    const t = latency + i * interval + jitter;
+                    if (t <= 450) { // Max response stops ~50ms after 400ms
+                        spikeTimes.push(t);
+                    }
+                }
+            }
+
+            // Draw Voltage Trace Curve
+            ctx.strokeStyle = '#10b981'; // Emerald spike color
+            ctx.lineWidth = 2 * window.devicePixelRatio;
+            ctx.beginPath();
+
+            const maxRenderMs = Math.min(800, progressMs);
+            let isSpiking = false;
+
+            for (let px = 0; px <= graphW * (maxRenderMs / 800); px++) {
+                const t = (px / graphW) * 800;
+                let currentY = baselineY;
+
+                // Check spike presence near time t
+                for (let st of spikeTimes) {
+                    const dt = t - st;
+                    if (dt >= 0 && dt <= 8) { // Spike pulse duration ~8ms
+                        const spikeHeight = Math.sin((dt / 8) * Math.PI);
+                        currentY = baselineY - (baselineY - spikeTopY) * spikeHeight;
+
+                        // Trigger audio on spike peak during live animation
+                        if (dt < 1.5 && progressMs < 800 && isStimulating) {
+                            playClickSound(900 + Math.random() * 200, 0.015);
+                        }
+                        break;
+                    }
+                }
+
+                const gx = padX + px;
+                if (px === 0) ctx.moveTo(gx, currentY);
+                else ctx.lineTo(gx, currentY);
+            }
+            ctx.stroke();
+
+            // Overlay Latency Bracket Visualizer
+            if (intensityLog > 0) {
+                const latPxStart = padX;
+                const latPxEnd = padX + (graphW / 800) * latency;
+                
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1.5 * window.devicePixelRatio;
+                ctx.setLineDash([3 * window.devicePixelRatio, 3 * window.devicePixelRatio]);
+                
+                ctx.beginPath();
+                ctx.moveTo(latPxStart, baselineY + 15 * window.devicePixelRatio);
+                ctx.lineTo(latPxStart, padY + 10 * window.devicePixelRatio);
+                ctx.moveTo(latPxEnd, baselineY + 15 * window.devicePixelRatio);
+                ctx.lineTo(latPxEnd, padY + 10 * window.devicePixelRatio);
+                ctx.stroke();
+                ctx.setLineDash([]); // reset line dash
+
+                // Latency arrow
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = `${10 * window.devicePixelRatio}px Inter, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText(`潜伏期: ${latency}ms`, (latPxStart + latPxEnd) / 2, padY + 22 * window.devicePixelRatio);
+            }
+        }
+
+        // Draw Day vs Night Sensitivity Curve Graph (Mode 2)
+        function drawDayNightGraph() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const padX = 60 * window.devicePixelRatio;
+            const padY = 40 * window.devicePixelRatio;
+            const graphW = w - padX * 2;
+            const graphH = h - padY * 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Grid Lines
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1 * window.devicePixelRatio;
+            ctx.beginPath();
+            for (let x = 0; x <= 8; x++) {
+                const gx = padX + (graphW / 8) * x;
+                ctx.moveTo(gx, padY);
+                ctx.lineTo(gx, padY + graphH);
+            }
+            for (let y = 0; y <= 10; y++) {
+                const gy = padY + (graphH / 10) * y;
+                ctx.moveTo(padX, gy);
+                ctx.lineTo(padX + graphW, gy);
+            }
+            ctx.stroke();
+
+            // Axes & Labels
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = `${10 * window.devicePixelRatio}px Inter, sans-serif`;
+            ctx.textAlign = 'center';
+            for (let x = 0; x <= 8; x++) {
+                const gx = padX + (graphW / 8) * x;
+                ctx.fillText(`10${formatSuperscript(x)}`, gx, padY + graphH + 18 * window.devicePixelRatio);
+            }
+            ctx.fillText('光刺激の強さ (相対値)', padX + graphW / 2, padY + graphH + 34 * window.devicePixelRatio);
+
+            ctx.textAlign = 'right';
+            for (let y = 0; y <= 10; y += 2) {
+                const val = y * 10;
+                const gy = padY + graphH - (graphH / 100) * val;
+                ctx.fillText(`${val}`, padX - 8 * window.devicePixelRatio, gy + 4 * window.devicePixelRatio);
+            }
+
+            // Y-axis Title Rotated or Top
+            ctx.textAlign = 'left';
+            ctx.fillText('活動電位発生数 (回/400ms)', padX - 40 * window.devicePixelRatio, padY - 15 * window.devicePixelRatio);
+
+            // Draw NIGHT Curve (Dark/Sensitive)
+            ctx.strokeStyle = '#818cf8'; // Soft Indigo/purple
+            ctx.lineWidth = 3 * window.devicePixelRatio;
+            ctx.beginPath();
+            for (let x = 0; x <= 8; x++) {
+                const gx = padX + (graphW / 8) * x;
+                const gy = padY + graphH - (graphH / 100) * nightSpikeData[x];
+                if (x === 0) ctx.moveTo(gx, gy);
+                else ctx.lineTo(gx, gy);
+            }
+            ctx.stroke();
+
+            // NIGHT Nodes
+            for (let x = 0; x <= 8; x++) {
+                const gx = padX + (graphW / 8) * x;
+                const gy = padY + graphH - (graphH / 100) * nightSpikeData[x];
+                ctx.fillStyle = '#4f46e5';
+                ctx.beginPath();
+                ctx.arc(gx, gy, 5 * window.devicePixelRatio, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5 * window.devicePixelRatio;
+                ctx.stroke();
+            }
+
+            // Draw DAY Curve (Light/Adapted)
+            ctx.strokeStyle = '#f59e0b'; // Amber/Yellow
+            ctx.lineWidth = 3 * window.devicePixelRatio;
+            ctx.beginPath();
+            for (let x = 0; x <= 8; x++) {
+                const gx = padX + (graphW / 8) * x;
+                const gy = padY + graphH - (graphH / 100) * daySpikeData[x];
+                if (x === 0) ctx.moveTo(gx, gy);
+                else ctx.lineTo(gx, gy);
+            }
+            ctx.stroke();
+
+            // DAY Nodes
+            for (let x = 0; x <= 8; x++) {
+                const gx = padX + (graphW / 8) * x;
+                const gy = padY + graphH - (graphH / 100) * daySpikeData[x];
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(gx, gy, 4 * window.devicePixelRatio, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5 * window.devicePixelRatio;
+                ctx.stroke();
+            }
+
+            // Highlight Current Active Intensity Point
+            const activeX = padX + (graphW / 8) * intensityLog;
+            const activeSpikes = environment === 'night' ? nightSpikeData[intensityLog] : daySpikeData[intensityLog];
+            const activeY = padY + graphH - (graphH / 100) * activeSpikes;
+
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2 * window.devicePixelRatio;
+            ctx.setLineDash([4 * window.devicePixelRatio, 4 * window.devicePixelRatio]);
+            ctx.beginPath();
+            ctx.moveTo(activeX, padY + graphH);
+            ctx.lineTo(activeX, activeY);
+            ctx.lineTo(padX, activeY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Pulsing Pointer for selected condition
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(activeX, activeY, 8 * window.devicePixelRatio, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Graph Legend
+            const legX = padX + 20 * window.devicePixelRatio;
+            const legY = padY + 20 * window.devicePixelRatio;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillRect(legX, legY, 110 * window.devicePixelRatio, 50 * window.devicePixelRatio);
+            ctx.strokeStyle = '#334155';
+            ctx.strokeRect(legX, legY, 110 * window.devicePixelRatio, 50 * window.devicePixelRatio);
+
+            // Night Legend item
+            ctx.fillStyle = '#818cf8';
+            ctx.beginPath();
+            ctx.arc(legX + 15 * window.devicePixelRatio, legY + 18 * window.devicePixelRatio, 4 * window.devicePixelRatio, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = `${11 * window.devicePixelRatio}px Noto Sans JP, sans-serif`;
+            ctx.fillText('夜 (感度高)', legX + 30 * window.devicePixelRatio, legY + 22 * window.devicePixelRatio);
+
+            // Day Legend item
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(legX + 15 * window.devicePixelRatio, legY + 36 * window.devicePixelRatio, 4 * window.devicePixelRatio, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillText('昼 (感度低)', legX + 30 * window.devicePixelRatio, legY + 40 * window.devicePixelRatio);
+        }
+
+        function checkAnswer(qNum, choice) {
+            const expBox = document.getElementById('explanationBox');
+            const resultBadge = document.getElementById('resultBadge');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultText = document.getElementById('resultText');
+
+            expBox.classList.remove('hidden');
+
+            if (qNum === 1) {
+                // Question 1 Explanation Logic
+                if (choice === 3) {
+                    resultBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800';
+                    resultBadge.innerText = '正解！⭕';
+                    resultTitle.innerText = '選択肢 ③ が正しい';
+                    resultText.innerHTML = `
+                        <b>【解説】</b><br>
+                        光刺激を始めてから「最初の活動電位が発生するまでの時間（潜伏期）」を波形で見比べると、刺激が10のときよりも<b>10³のときのほうが明らかに短くなっています</b>。<br>
+                        スライダーの強度を変えながら「潜伏期」の幅の変化を確認してみましょう！
+                    `;
+                } else {
+                    resultBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800';
+                    resultBadge.innerText = '不正解 ✖';
+                    resultTitle.innerText = 'もう一度解説を確認しよう';
+
+                    const details = {
+                        1: "① <b>静止電位の大きさは不明</b>：オシロスコープで観察できるのは活動電位（スパイク）であり、基準となる静止電位の数値はこのグラフからは読めません。",
+                        2: "② <b>閾値の上昇は不明</b>：図1の波形ではどちらも活動電位が生じているため、反応に必要な最小刺激（閾値）が変化したかは問1の波形だけでは判断できません。",
+                        4: "④ <b>発生頻度は一定ではない</b>：活動電位と活動電位の間隔（ミリ秒）にはばらつきがあるため、頻度は一定ではありません。",
+                        5: "⑤ <b>反応が続くのは約50ミリ秒間</b>：光刺激（400ms間）をやめた後にスパイクが見られるのは約50ミリ秒程度までです。"
+                    };
+                    resultText.innerHTML = details[choice];
+                }
+            } else if (qNum === 2) {
+                // Question 2 Explanation Logic
+                if (choice === 2) {
+                    resultBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800';
+                    resultBadge.innerText = '正解！⭕';
+                    resultTitle.innerText = '選択肢 ② が正しい';
+                    resultText.innerHTML = `
+                        <b>【計算の解説】</b><br>
+                        ・30回の活動電位を起こす光の強さをグラフで読み取ると：<br>
+                        　<b>夜</b> ➔ <b>10²</b> で 30回発生<br>
+                        　<b>昼</b> ➔ <b>10⁵</b> で 30回発生<br>
+                        ・昼と夜の比率： <b>10⁵ ÷ 10² = 10³ = 1000倍</b> となります！
+                    `;
+                } else {
+                    resultBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800';
+                    resultBadge.innerText = '不正解 ✖';
+                    resultTitle.innerText = '計算ポイントをチェック';
+
+                    const details2 = {
+                        1: "① <b>比は一定ではない</b>：10²のとき昼:夜 = 5:30 = 1:6 ですが、10⁶のときは 昼:夜 = 35:60 = 1:1.7 となり変化しています。",
+                        3: "③ <b>計算ミス</b>：10⁴のとき、昼は20回、夜は50回です。(20 / 50) × 100 = <b>40%</b> となります（60%ではありません）。",
+                        4: "④ <b>閾値は昼に「上昇」している</b>：昼のほうがより強い光（10²以上）でないと反応しないため、閾値は上昇（鈍感化）しています。"
+                    };
+                    resultText.innerHTML = details2[choice];
+                }
+            }
+            playClickSound(choice === 3 || (qNum === 2 && choice === 2) ? 800 : 300, 0.08);
+        }
+
+        function hideExplanation() {
+            document.getElementById('explanationBox').classList.add('hidden');
+        }
+
+        function openHelpModal() {
+            document.getElementById('helpModal').classList.remove('hidden');
+        }
+        function closeHelpModal() {
+            document.getElementById('helpModal').classList.add('hidden');
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            draw();
+        };
+    </script>
+</body>
+</html>
