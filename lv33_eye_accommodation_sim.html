@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【Lv33】EyeLab: 高校生のための人間工学×眼の調節シミュレーター（問題56対応）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: rgba(30, 41, 59, 0.75);
+      --card-border: rgba(148, 163, 184, 0.15);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-blue: #38bdf8;
+      --accent-green: #34d399;
+      --accent-red: #f43f5e;
+      --accent-amber: #fbbf24;
+      --accent-purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b1120 70%);
+      color: var(--text);
+      font-family: 'Noto Sans JP', 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      line-height: 1.6;
+    }
+
+    header {
+      width: 100%;
+      max-width: 1020px;
+      margin-bottom: 20px;
+      text-align: center;
+      position: relative;
+    }
+
+    .badge-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent-blue);
+      padding: 4px 14px;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-level {
+      background: linear-gradient(135deg, #f43f5e, #e11d48);
+      border: none;
+      color: #fff;
+    }
+
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* Tabs */
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--card-border);
+      padding: 6px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 1020px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs-nav::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 160px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--card-bg);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--card-border);
+    }
+    .tab-btn:hover:not(.active) {
+      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    /* Main Container */
+    .container {
+      width: 100%;
+      max-width: 1020px;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Layout Grid */
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 880px) {
+      .grid-2col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+    }
+
+    /* Canvas Wrapper */
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      background: #070d17;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      margin-bottom: 16px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* Controls */
+    .control-group {
+      margin-bottom: 18px;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .control-value {
+      color: var(--accent-blue);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.05rem;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #1e293b;
+      outline: none;
+      transition: background 0.2s;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      cursor: pointer;
+      box-shadow: 0 0 12px var(--accent-blue);
+      border: 2px solid #fff;
+      transition: transform 0.1s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    .presets {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .preset-btn {
+      flex: 1;
+      min-width: 100px;
+      padding: 7px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .preset-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #fff;
+      border-color: var(--accent-blue);
+    }
+
+    /* Ergonomics Strain Meter */
+    .strain-box {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 16px;
+    }
+
+    .strain-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .strain-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .strain-status {
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .meter-bar {
+      width: 100%;
+      height: 12px;
+      background: #1e293b;
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 80%;
+      background: linear-gradient(90deg, var(--accent-green) 0%, var(--accent-amber) 60%, var(--accent-red) 100%);
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .status-table {
+      width: 100%;
+      font-size: 0.82rem;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .status-table th {
+      text-align: left;
+      color: var(--text-muted);
+      padding: 6px 4px;
+      font-weight: 500;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .status-table td {
+      padding: 6px 4px;
+      font-weight: 700;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .highlight-near {
+      color: #fda4af;
+    }
+    .highlight-far {
+      color: #86efac;
+    }
+
+    /* Callout */
+    .callout {
+      border-left: 4px solid var(--accent-blue);
+      background: rgba(56, 189, 248, 0.08);
+      padding: 12px 14px;
+      border-radius: 0 10px 10px 0;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      margin-top: 12px;
+    }
+    .callout strong {
+      color: var(--accent-blue);
+    }
+
+    /* 20-20-20 Rule Box */
+    .rule-box {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 16px;
+    }
+    .rule-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    /* Blind Spot Interactive */
+    .blind-test-area {
+      background: #0f172a;
+      border: 2px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 20px;
+      position: relative;
+      user-select: none;
+      margin: 16px 0;
+    }
+    .cross-mark {
+      font-size: 54px;
+      font-weight: 900;
+      color: #fff;
+    }
+    .dot-mark {
+      width: 44px;
+      height: 44px;
+      background: var(--accent-red);
+      border-radius: 50%;
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.6);
+    }
+
+    /* Quiz Area */
+    .quiz-card {
+      margin-bottom: 20px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .quiz-num {
+      display: inline-block;
+      background: var(--accent-purple);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .quiz-text {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .quiz-options {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .quiz-btn {
+      text-align: left;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #e2e8f0;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quiz-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--accent-blue);
+    }
+    .quiz-btn.correct {
+      background: rgba(52, 211, 153, 0.2) !important;
+      border-color: var(--accent-green) !important;
+      color: var(--accent-green) !important;
+    }
+    .quiz-btn.wrong {
+      background: rgba(244, 63, 94, 0.2) !important;
+      border-color: var(--accent-red) !important;
+      color: var(--accent-red) !important;
+    }
+    .quiz-explain {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding-bottom: 20px;
+    }
+
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .home-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="badge-bar">
+      <span class="badge badge-level"><i class="fa-solid fa-bolt"></i> Lv33 生物基礎</span>
+      <span class="badge"><i class="fa-solid fa-eye"></i> 人間工学 VDTラボ</span>
+      <span class="badge"><i class="fa-solid fa-book-open"></i> 問題56 ヒトの眼</span>
+    </div>
+    <h1>EyeLab : ヒトの眼の調節シミュレーター</h1>
+    <p class="subtitle">なぜスマホを見続けると目が痛くなるのか？生物基礎「問題56 ヒトの眼」のメカニズムを、科学的・人間工学的な視点で体感・理解しよう！</p>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="switchTab('accommodation')"><i class="fa-solid fa-eye"></i> 遠近調節＆スマホ疲労</button>
+    <button class="tab-btn" onclick="switchTab('light')"><i class="fa-solid fa-sun"></i> 明暗調節＆虹彩筋肉</button>
+    <button class="tab-btn" onclick="switchTab('blindspot')"><i class="fa-solid fa-circle-dot"></i> 盲斑（盲点）消失実験</button>
+    <button class="tab-btn" onclick="switchTab('quiz')"><i class="fa-solid fa-graduation-cap"></i> 問題56 実戦クイズ</button>
+  </div>
+
+  <div class="container">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: 遠近調節 & スマホ眼精疲労 -->
+    <!-- ========================================== -->
+    <div id="tab-accommodation" class="tab-content active">
+      <div class="grid-2col">
+        <!-- Canvas Side -->
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-microscope" style="color: var(--accent-blue);"></i>
+            <span>眼球断面の動的シミュレーション（光路＆屈折）</span>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="eyeCanvas" width="560" height="340"></canvas>
+          </div>
+
+          <!-- Controls -->
+          <div class="control-group">
+            <div class="control-label">
+              <span>物体Xの距離（眼からの距離）</span>
+              <span id="distVal" class="control-value">25 cm (スマホ距離)</span>
+            </div>
+            <input type="range" id="distSlider" min="10" max="600" value="25" step="1" oninput="updateEyeAccommodation(this.value)">
+            <div class="presets">
+              <button class="preset-btn" onclick="setDistance(15)"><i class="fa-solid fa-mobile-screen"></i> 至近スマホ (15cm)</button>
+              <button class="preset-btn" onclick="setDistance(35)"><i class="fa-solid fa-book"></i> 読書・ノート (35cm)</button>
+              <button class="preset-btn" onclick="setDistance(100)"><i class="fa-solid fa-laptop"></i> PC・画面 (1m)</button>
+              <button class="preset-btn" onclick="setDistance(500)"><i class="fa-solid fa-mountain-sun"></i> 遠くの景色 (5m〜∞)</button>
+            </div>
+          </div>
+
+          <div class="callout">
+            💡 <strong>光路と焦点Yの解説（問題56 問2）：</strong><br>
+            物体Xが眼に近づくほど、光を強く屈折させる必要があるため水晶体が<strong>厚く</strong>なり、焦点距離（水晶体と焦点Yの距離）は<strong>短く</strong>なります！逆に遠ざけると水晶体は<strong>薄く</strong>なり、焦点距離は<strong>長く</strong>なります（問2の正解：③）。
+          </div>
+        </div>
+
+        <!-- Ergonomics Status Side -->
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-heart-pulse" style="color: var(--accent-red);"></i>
+            <span>人間工学・毛様筋負荷モニター</span>
+          </div>
+
+          <div class="strain-box">
+            <div class="strain-header">
+              <span class="strain-title"><i class="fa-solid fa-dumbbell"></i> 毛様筋の収縮度（筋トレ状態）</span>
+              <span id="strainStatusBadge" class="strain-status" style="background: rgba(244,63,94,0.2); color: var(--accent-red);">過負荷 (92%)</span>
+            </div>
+            <div class="meter-bar">
+              <div id="strainFill" class="meter-fill" style="width: 92%;"></div>
+            </div>
+            <p id="strainComment" style="font-size: 0.82rem; color: #cbd5e1;">
+              現在、毛様筋はずっとダンベルを持ち上げているような「力こぶ状態」です！長時間の維持は調節緊張・痙攣（スマホ老眼）を引き起こします。
+            </p>
+          </div>
+
+          <!-- Biology Question 56 Table -->
+          <table class="status-table">
+            <thead>
+              <tr>
+                <th>部位・指標</th>
+                <th>現在の状態</th>
+                <th>遠近比較の法則</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>毛様筋（毛様体）</td>
+                <td id="tdCiliary" class="highlight-near">強く収縮 (力こぶ)</td>
+                <td>近＝収縮 / 遠＝弛緩</td>
+              </tr>
+              <tr>
+                <td>チン小帯</td>
+                <td id="tdZonule" class="highlight-near">完全にゆるむ</td>
+                <td>近＝ゆるむ / 遠＝緊張</td>
+              </tr>
+              <tr>
+                <td>水晶体の厚さ</td>
+                <td id="tdLens" class="highlight-near">厚い</td>
+                <td>近＝厚い / 遠＝薄い</td>
+              </tr>
+              <tr>
+                <td>焦点距離 (水晶体〜Y)</td>
+                <td id="tdFocal" class="highlight-near">短い</td>
+                <td>近＝短い / 遠＝長い</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 20-20-20 Rule -->
+          <div class="rule-box">
+            <div class="rule-title">
+              <i class="fa-solid fa-shield-halved" style="color: var(--accent-green);"></i>
+              <span>人間工学「20-20-20 ルール」</span>
+            </div>
+            <p style="font-size: 0.82rem; color: #cbd5e1; margin-bottom: 8px;">
+              スマホやPCを<strong>20分間</strong>見つめたら、<strong>20フィート（約6メートル＝遠景）</strong>先を<strong>20秒間</strong>見つめよう！
+            </p>
+            <div style="font-size: 0.8rem; color: var(--accent-green); font-weight: 700;">
+              ✨ 遠くを見つめることで、毛様筋が「完全弛緩（完全脱力）」して血流が回復します！
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: 明暗調節 & 虹彩筋肉 -->
+    <!-- ========================================== -->
+    <div id="tab-light" class="tab-content">
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-bullseye" style="color: var(--accent-amber);"></i>
+            <span>正面から見た虹彩の筋肉運動</span>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="irisCanvas" width="560" height="340"></canvas>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>周囲の明るさ（照度）</span>
+              <span id="luxVal" class="control-value">500 lx (通常教室)</span>
+            </div>
+            <input type="range" id="luxSlider" min="1" max="10000" value="500" step="10" oninput="updateIrisSimulation(this.value)">
+            <div class="presets">
+              <button class="preset-btn" onclick="setLux(5)"><i class="fa-solid fa-moon"></i> 暗室・夜間 (5 lx)</button>
+              <button class="preset-btn" onclick="setLux(500)"><i class="fa-solid fa-lightbulb"></i> 教室・室内 (500 lx)</button>
+              <button class="preset-btn" onclick="setLux(8000)"><i class="fa-solid fa-sun"></i> 真夏の直射日光 (8,000 lx)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <i class="fa-solid fa-gear" style="color: var(--accent-blue);"></i>
+            <span>虹彩の筋肉メカニズム（カメラの絞り）</span>
+          </div>
+
+          <table class="status-table">
+            <thead>
+              <tr>
+                <th>筋肉名</th>
+                <th>形状</th>
+                <th>現在の状態</th>
+                <th>働き</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="color: #60a5fa;">瞳孔括約筋</td>
+                <td>輪状</td>
+                <td id="tdSphincter">適度</td>
+                <td>収縮すると瞳孔が<strong>縮小</strong>（明所）</td>
+              </tr>
+              <tr>
+                <td style="color: #f472b6;">瞳孔散大筋</td>
+                <td>放射状</td>
+                <td id="tdDilator">適度</td>
+                <td>収縮すると瞳孔が<strong>拡大</strong>（暗所）</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout" style="margin-top: 16px;">
+            🔍 <strong>2種類の視細胞（網膜）：</strong><br>
+            • <strong>錐体細胞（すいたい）</strong>：明所で働く。色彩を感じ分ける（赤・緑・青の3種）。黄斑の中心部に集中。<br>
+            • <strong>桿体細胞（かんたい）</strong>：暗所でわずかな光を感じ取る（明暗のみで色は分からない）。網膜の周辺部に広く分布。
+          </div>
+
+          <div class="rule-box" style="margin-top: 16px;">
+            <div class="rule-title">
+              <i class="fa-solid fa-brain" style="color: var(--accent-purple);"></i>
+              <span>視覚中枢の伝達ルート（問題56 問1）</span>
+            </div>
+            <p style="font-size: 0.82rem; color: #cbd5e1;">
+              網膜の視細胞（受容器）で生じた光刺激は、視神経を通じて<strong>大脳の後頭葉（視覚中枢）</strong>に伝えられ、視覚が生じます。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: 盲斑（盲点）消失実験 -->
+    <!-- ========================================== -->
+    <div id="tab-blindspot" class="tab-content">
+      <div class="card" style="margin-bottom: 20px;">
+        <div class="card-title">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-purple);"></i>
+          <span>自宅・教室で今すぐできる！盲斑消失実験</span>
+        </div>
+        <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 12px;">
+          <strong>【実験手順】</strong><br>
+          1. <strong>左目を手で隠し</strong>、右目だけで下の左側にある「<strong>＋</strong>」を真っ直ぐ見つめてください。<br>
+          2. 「<strong>＋</strong>」を見つめたまま、画面（スマホやPC）に顔を近づけたり遠ざけたり（約25cm〜35cm）してください。<br>
+          3. ある特定の距離で、右側の赤い丸「<strong>●</strong>」が<strong>視界から完全に消えて見えなくなります！</strong>
+        </p>
+
+        <div class="blind-test-area">
+          <div class="cross-mark">＋</div>
+          <div class="dot-mark"></div>
+        </div>
+
+        <div class="grid-2col" style="margin-top: 20px;">
+          <div class="callout">
+            ❓ <strong>なぜ赤い丸が消えるの？（問題56 問3の核心）</strong><br>
+            網膜から視神経の束が眼球の外へと出ていく場所を「<strong>盲斑（視神経乳頭）</strong>」と呼びます。<br>
+            ここには<strong>視細胞（桿体細胞も錐体細胞も）が一切存在しない</strong>ため、光が当たっても刺激を受け取ることができません（問3の正解：①）。
+          </div>
+          <div class="callout" style="border-left-color: var(--accent-purple); background: rgba(168, 85, 247, 0.08);">
+            🧠 <strong>消えた場所はどう見える？（大脳の自動補完）</strong><br>
+            丸が消えた瞬間、黒い穴が空くわけではなく、「周囲の背景色（暗い紺色）」で自然に塗りつぶされて見えます。これは<strong>大脳の視覚中枢が、周囲の情報から失われた視野を自動で推測・補完（インペインティング）</strong>している証拠です！
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: 問題56 実戦クイズ -->
+    <!-- ========================================== -->
+    <div id="tab-quiz" class="tab-content">
+      <div class="card">
+        <div class="card-title">
+          <i class="fa-solid fa-clipboard-check" style="color: var(--accent-green);"></i>
+          <span>問題56「ヒトの眼」マスター演習（即時判定・解説付き）</span>
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px;">
+          模試や定期テスト頻出の4問！シミュレーターで学んだ知識を試してみよう。
+        </p>
+
+        <!-- Q1 -->
+        <div class="quiz-card" id="q1">
+          <span class="quiz-num">問 1</span>
+          <div class="quiz-text">カメラのしぼりに相当するはたらきをもつ[ 1 ]があり、視神経を通じて視覚中枢がある[ 2 ]に伝えられる。[ 1 ]と[ 2 ]の組合せとして最も適当なものは？</div>
+          <div class="quiz-options">
+            <button class="quiz-btn" onclick="checkAnswer('q1', 1, this)">① [1] 毛様体 ／ [2] 中脳</button>
+            <button class="quiz-btn" onclick="checkAnswer('q1', 2, this)">② [1] 虹彩 ／ [2] 大脳 (正解)</button>
+            <button class="quiz-btn" onclick="checkAnswer('q1', 3, this)">③ [1] チン小帯 ／ [2] 間脳</button>
+            <button class="quiz-btn" onclick="checkAnswer('q1', 4, this)">④ [1] 角膜 ／ [2] 小脳</button>
+          </div>
+          <div class="quiz-explain" id="q1-exp">
+            ✅ <strong>正解！[1] 虹彩 / [2] 大脳</strong><br>
+            カメラの絞りに相当するのは「虹彩（瞳孔の大きさを調節して光量をコントロール）」。視覚中枢は大脳（後頭葉）にあります。
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="quiz-card" id="q2">
+          <span class="quiz-num">問 2</span>
+          <div class="quiz-text">物体Xを眼から「遠ざけた」とき、水晶体の厚さの変化と、水晶体と焦点Yの距離はどうなるか？</div>
+          <div class="quiz-options">
+            <button class="quiz-btn" onclick="checkAnswer('q2', 1, this)">① 厚くなる ／ 短くなる</button>
+            <button class="quiz-btn" onclick="checkAnswer('q2', 2, this)">② 厚くなる ／ 長くなる</button>
+            <button class="quiz-btn" onclick="checkAnswer('q2', 3, this)">③ 薄くなる ／ 長くなる (正解)</button>
+            <button class="quiz-btn" onclick="checkAnswer('q2', 4, this)">④ 近づけた：厚くなる ／ 長くなる</button>
+          </div>
+          <div class="quiz-explain" id="q2-exp">
+            ✅ <strong>正解！③（薄くなる / 長くなる）</strong><br>
+            遠くを見るときは、毛様筋が弛緩→チン小帯が引っ張られて水晶体は「薄くなる」→光の屈折が緩やかになり水晶体と焦点Yの距離は「長くなる」。
+          </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="quiz-card" id="q3">
+          <span class="quiz-num">問 3</span>
+          <div class="quiz-text">ヒトの「盲斑」に関する記述として最も適当なものはどれか？</div>
+          <div class="quiz-options">
+            <button class="quiz-btn" onclick="checkAnswer('q3', 1, this)">① 盲斑には視細胞が分布していないので、光刺激を受け取ることができない (正解)</button>
+            <button class="quiz-btn" onclick="checkAnswer('q3', 2, this)">② 盲斑の視細胞は桿体細胞だけなので、色彩を感じ分けることができない</button>
+            <button class="quiz-btn" onclick="checkAnswer('q3', 3, this)">③ 近点より近い物体がぼけて見えるのは、盲斑に像を結ぶからである</button>
+            <button class="quiz-btn" onclick="checkAnswer('q3', 4, this)">④ 盲斑の視細胞は、視神経とつながっていない</button>
+          </div>
+          <div class="quiz-explain" id="q3-exp">
+            ✅ <strong>正解！①</strong><br>
+            盲斑は視神経の束が眼球を出る場所で、視細胞そのものが全く分布していません。そのため光刺激を受け取ることができません。
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="quiz-card" id="q4">
+          <span class="quiz-num">問 4</span>
+          <div class="quiz-text">明るいところから急に暗いところに入ると、眼の中でどのようなことが起こるか？</div>
+          <div class="quiz-options">
+            <button class="quiz-btn" onclick="checkAnswer('q4', 1, this)">① チン小帯がゆるんで水晶体が厚くなり、眼に入る光量を増やす</button>
+            <button class="quiz-btn" onclick="checkAnswer('q4', 2, this)">② 毛様体が収縮して色素細胞が広がり、眼に入る光量を減らす</button>
+            <button class="quiz-btn" onclick="checkAnswer('q4', 3, this)">③ 虹彩が開いて瞳孔が大きくなり、眼に入る光量を増やす (正解)</button>
+            <button class="quiz-btn" onclick="checkAnswer('q4', 4, this)">④ ガラス体の色素細胞が収縮して、眼に入る光量を増やす</button>
+          </div>
+          <div class="quiz-explain" id="q4-exp">
+            ✅ <strong>正解！③（元の問題の④に相当）</strong><br>
+            暗所では瞳孔散大筋が収縮し、虹彩が開いて（瞳孔が大きくなって）眼に入る光量を増やします。
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <a href="index.html" class="home-link"><i class="fa-solid fa-house"></i> デジタルコンテンツポータルへ戻る</a>
+    <p>高校生物 × 人間工学 EdTech シミュレーター | 滋賀県立河瀬高等学校 探究学習・授業支援ツール</p>
+  </footer>
+
+  <script>
+    // Tab switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('active');
+
+      if (tabId === 'accommodation') {
+        drawEye();
+      } else if (tabId === 'light') {
+        drawIris();
+      }
+    }
+
+    // ==========================================
+    // Eye Accommodation Simulation (Tab 1)
+    // ==========================================
+    let currentDist = 25; // cm
+    const eyeCanvas = document.getElementById('eyeCanvas');
+    const eyeCtx = eyeCanvas.getContext('2d');
+
+    function setDistance(dist) {
+      document.getElementById('distSlider').value = dist;
+      updateEyeAccommodation(dist);
+    }
+
+    function updateEyeAccommodation(dist) {
+      currentDist = parseFloat(dist);
+      const distLabel = currentDist >= 500 ? '5m〜∞ (遠景)' : `${currentDist} cm`;
+      document.getElementById('distVal').innerText = distLabel;
+
+      // Ergonomics calculations
+      const strainRatio = Math.max(0, Math.min(1, (1 / currentDist - 1 / 600) / (1 / 10 - 1 / 600)));
+      const strainPercent = Math.round(strainRatio * 100);
+
+      const fill = document.getElementById('strainFill');
+      fill.style.width = strainPercent + '%';
+
+      const badge = document.getElementById('strainStatusBadge');
+      const comment = document.getElementById('strainComment');
+      const tdC = document.getElementById('tdCiliary');
+      const tdZ = document.getElementById('tdZonule');
+      const tdL = document.getElementById('tdLens');
+      const tdF = document.getElementById('tdFocal');
+
+      if (strainPercent > 70) {
+        badge.innerText = `過負荷 (${strainPercent}%)`;
+        badge.style.background = 'rgba(244,63,94,0.2)';
+        badge.style.color = 'var(--accent-red)';
+        comment.innerText = '⚠️ 毛様筋が最大収縮してパンパンに緊張！長時間の至近スマホはピント調節筋の痙攣（スマホ老眼）を招きます。';
+        tdC.className = 'highlight-near';
+        tdC.innerText = '強く収縮 (力こぶ)';
+        tdZ.className = 'highlight-near';
+        tdZ.innerText = '完全にゆるむ';
+        tdL.className = 'highlight-near';
+        tdL.innerText = '厚い (屈折力 大)';
+        tdF.className = 'highlight-near';
+        tdF.innerText = '短い';
+      } else if (strainPercent > 25) {
+        badge.innerText = `中程度 (${strainPercent}%)`;
+        badge.style.background = 'rgba(251,191,36,0.2)';
+        badge.style.color = 'var(--accent-amber)';
+        comment.innerText = 'ノート筆記や読書距離。適度な毛様筋の収縮がありますが、40〜50分に一度は遠くを見て休憩しましょう。';
+        tdC.className = 'highlight-near';
+        tdC.innerText = 'やや収縮';
+        tdZ.className = 'highlight-near';
+        tdZ.innerText = 'ややゆるむ';
+        tdL.className = 'highlight-near';
+        tdL.innerText = '中程度の厚さ';
+        tdF.className = 'highlight-near';
+        tdF.innerText = '中程度';
+      } else {
+        badge.innerText = `リラックス (${strainPercent}%)`;
+        badge.style.background = 'rgba(52,211,153,0.2)';
+        badge.style.color = 'var(--accent-green)';
+        comment.innerText = '🌿 毛様筋の力がフッと抜けて脱力・リフレッシュ中！眼精疲労の予防に最適な状態です。';
+        tdC.className = 'highlight-far';
+        tdC.innerText = '弛緩 (脱力・リラックス)';
+        tdZ.className = 'highlight-far';
+        tdZ.innerText = 'ピンと緊張 (引っ張る)';
+        tdL.className = 'highlight-far';
+        tdL.innerText = '薄い (屈折力 小)';
+        tdF.className = 'highlight-far';
+        tdF.innerText = '長い';
+      }
+
+      drawEye();
+    }
+
+    function drawEye() {
+      const w = eyeCanvas.width;
+      const h = eyeCanvas.height;
+      eyeCtx.clearRect(0, 0, w, h);
+
+      // Normalized near factor: 1 = nearest (10cm), 0 = far (600cm)
+      const nearFactor = Math.max(0, Math.min(1, (600 - currentDist) / 590));
+
+      const eyeCenterX = 380;
+      const eyeCenterY = 170;
+      const eyeRadius = 120;
+
+      // 1. Draw Object X
+      const objX = 30 + (1 - nearFactor) * 140;
+      const objY = eyeCenterY;
+      const objHeight = 44;
+
+      // Object line
+      eyeCtx.strokeStyle = '#38bdf8';
+      eyeCtx.lineWidth = 3;
+      eyeCtx.beginPath();
+      eyeCtx.moveTo(objX, objY + objHeight / 2);
+      eyeCtx.lineTo(objX, objY - objHeight / 2);
+      eyeCtx.stroke();
+
+      // Arrowhead for Object X
+      eyeCtx.fillStyle = '#38bdf8';
+      eyeCtx.beginPath();
+      eyeCtx.moveTo(objX, objY - objHeight / 2 - 4);
+      eyeCtx.lineTo(objX - 6, objY - objHeight / 2 + 8);
+      eyeCtx.lineTo(objX + 6, objY - objHeight / 2 + 8);
+      eyeCtx.closePath();
+      eyeCtx.fill();
+
+      // Label X
+      eyeCtx.fillStyle = '#fff';
+      eyeCtx.font = 'bold 13px Inter, sans-serif';
+      eyeCtx.fillText('物体X', objX - 18, objY + objHeight / 2 + 18);
+
+      // Distance indicator
+      eyeCtx.fillStyle = '#94a3b8';
+      eyeCtx.font = '11px Inter, sans-serif';
+      const labelText = currentDist >= 500 ? '遠景' : `${currentDist}cm`;
+      eyeCtx.fillText(labelText, objX - 14, objY - objHeight / 2 - 12);
+
+      // 2. Eyeball Sclera/Retina
+      eyeCtx.save();
+      eyeCtx.beginPath();
+      eyeCtx.arc(eyeCenterX, eyeCenterY, eyeRadius, -Math.PI * 0.72, Math.PI * 0.72);
+      eyeCtx.bezierCurveTo(
+        eyeCenterX - eyeRadius - 15, eyeCenterY + 50,
+        eyeCenterX - eyeRadius - 15, eyeCenterY - 50,
+        eyeCenterX + eyeRadius * Math.cos(-Math.PI * 0.72), eyeCenterY + eyeRadius * Math.sin(-Math.PI * 0.72)
+      );
+      eyeCtx.fillStyle = '#0f172a';
+      eyeCtx.fill();
+      eyeCtx.lineWidth = 2.5;
+      eyeCtx.strokeStyle = '#334155';
+      eyeCtx.stroke();
+
+      // Retina layer (Orange arc on back)
+      eyeCtx.beginPath();
+      eyeCtx.arc(eyeCenterX, eyeCenterY, eyeRadius - 4, -Math.PI * 0.55, Math.PI * 0.55);
+      eyeCtx.strokeStyle = '#f59e0b';
+      eyeCtx.lineWidth = 4;
+      eyeCtx.stroke();
+
+      // Blind spot (below horizontal)
+      const blindAngle = 0.28;
+      const bX = eyeCenterX + (eyeRadius - 4) * Math.cos(blindAngle);
+      const bY = eyeCenterY + (eyeRadius - 4) * Math.sin(blindAngle);
+
+      eyeCtx.fillStyle = '#1e293b';
+      eyeCtx.beginPath();
+      eyeCtx.arc(bX, bY, 10, 0, Math.PI * 2);
+      eyeCtx.fill();
+
+      eyeCtx.fillStyle = '#f87171';
+      eyeCtx.font = '10px "Noto Sans JP"';
+      eyeCtx.fillText('盲斑', bX - 8, bY + 22);
+
+      // 3. Lens & Ciliary muscle & Zonules
+      const lensCenterX = eyeCenterX - 75;
+      const lensHalfHeight = 42;
+      const lensHalfThickness = 5 + nearFactor * 8;
+
+      const ciliaryBulge = nearFactor * 6;
+      const ciliaryTopY = eyeCenterY - lensHalfHeight - 20;
+      const ciliaryBottomY = eyeCenterY + lensHalfHeight + 20;
+
+      eyeCtx.fillStyle = nearFactor > 0.6 ? '#f43f5e' : '#ec4899';
+      eyeCtx.beginPath();
+      eyeCtx.ellipse(lensCenterX, ciliaryTopY + ciliaryBulge, 18, 10 + ciliaryBulge * 0.5, 0, 0, Math.PI * 2);
+      eyeCtx.fill();
+      eyeCtx.beginPath();
+      eyeCtx.ellipse(lensCenterX, ciliaryBottomY - ciliaryBulge, 18, 10 + ciliaryBulge * 0.5, 0, 0, Math.PI * 2);
+      eyeCtx.fill();
+
+      // Zonule of Zinn
+      eyeCtx.strokeStyle = nearFactor < 0.3 ? '#6ee7b7' : '#94a3b8';
+      eyeCtx.lineWidth = nearFactor < 0.3 ? 2 : 1;
+      eyeCtx.setLineDash(nearFactor > 0.6 ? [3, 3] : []);
+
+      for (let offset = -10; offset <= 10; offset += 5) {
+        eyeCtx.beginPath();
+        eyeCtx.moveTo(lensCenterX + offset, ciliaryTopY + 8 + ciliaryBulge);
+        eyeCtx.lineTo(lensCenterX + offset * 0.6, eyeCenterY - lensHalfHeight);
+        eyeCtx.stroke();
+        eyeCtx.beginPath();
+        eyeCtx.moveTo(lensCenterX + offset, ciliaryBottomY - 8 - ciliaryBulge);
+        eyeCtx.lineTo(lensCenterX + offset * 0.6, eyeCenterY + lensHalfHeight);
+        eyeCtx.stroke();
+      }
+      eyeCtx.setLineDash([]);
+
+      // Lens
+      eyeCtx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+      eyeCtx.strokeStyle = '#38bdf8';
+      eyeCtx.lineWidth = 2;
+      eyeCtx.beginPath();
+      eyeCtx.ellipse(lensCenterX, eyeCenterY, lensHalfThickness, lensHalfHeight, 0, 0, Math.PI * 2);
+      eyeCtx.fill();
+      eyeCtx.stroke();
+
+      // Iris
+      eyeCtx.fillStyle = '#475569';
+      eyeCtx.fillRect(lensCenterX - lensHalfThickness - 4, eyeCenterY - lensHalfHeight - 8, 4, 16);
+      eyeCtx.fillRect(lensCenterX - lensHalfThickness - 4, eyeCenterY + lensHalfHeight - 8, 4, 16);
+
+      // 4. Focal Point Y and Light Rays
+      const retinaX = eyeCenterX + eyeRadius - 4;
+
+      const focalDist = 85 + (1 - nearFactor) * 65;
+      const focalX = lensCenterX + focalDist;
+      const focalY = eyeCenterY;
+
+      // Draw Focal Point Y
+      eyeCtx.fillStyle = '#f43f5e';
+      eyeCtx.beginPath();
+      eyeCtx.arc(focalX, focalY, 4, 0, Math.PI * 2);
+      eyeCtx.fill();
+      eyeCtx.fillStyle = '#fff';
+      eyeCtx.font = 'bold 12px Inter';
+      eyeCtx.fillText('焦点 Y', focalX - 16, focalY - 8);
+
+      // Light Rays
+      eyeCtx.lineWidth = 1.5;
+      eyeCtx.strokeStyle = 'rgba(253, 224, 71, 0.7)';
+
+      const objTopY = objY - objHeight / 2;
+      const objBottomY = objY + objHeight / 2;
+      const imgHeight = 28;
+      const imgTopY = eyeCenterY + imgHeight / 2;
+      const imgBottomY = eyeCenterY - imgHeight / 2;
+
+      // Ray 1: Top
+      eyeCtx.beginPath();
+      eyeCtx.moveTo(objX, objTopY);
+      eyeCtx.lineTo(lensCenterX, eyeCenterY - lensHalfHeight * 0.7);
+      eyeCtx.lineTo(retinaX, imgTopY);
+      eyeCtx.stroke();
+
+      // Ray 2: Center
+      eyeCtx.beginPath();
+      eyeCtx.moveTo(objX, objY);
+      eyeCtx.lineTo(lensCenterX, eyeCenterY);
+      eyeCtx.lineTo(retinaX, eyeCenterY);
+      eyeCtx.stroke();
+
+      // Ray 3: Bottom
+      eyeCtx.beginPath();
+      eyeCtx.moveTo(objX, objBottomY);
+      eyeCtx.lineTo(lensCenterX, eyeCenterY + lensHalfHeight * 0.7);
+      eyeCtx.lineTo(retinaX, imgBottomY);
+      eyeCtx.stroke();
+
+      // Inverted Image on Retina
+      eyeCtx.strokeStyle = '#f43f5e';
+      eyeCtx.lineWidth = 2.5;
+      eyeCtx.beginPath();
+      eyeCtx.moveTo(retinaX, imgBottomY);
+      eyeCtx.lineTo(retinaX, imgTopY);
+      eyeCtx.stroke();
+      eyeCtx.fillStyle = '#f43f5e';
+      eyeCtx.beginPath();
+      eyeCtx.moveTo(retinaX, imgTopY + 4);
+      eyeCtx.lineTo(retinaX - 4, imgTopY - 6);
+      eyeCtx.lineTo(retinaX + 4, imgTopY - 6);
+      eyeCtx.closePath();
+      eyeCtx.fill();
+
+      eyeCtx.fillStyle = '#f8fafc';
+      eyeCtx.font = '10px "Noto Sans JP"';
+      eyeCtx.fillText('物体Xの像 (倒立)', retinaX - 70, imgTopY + 18);
+
+      // Anatomy Labels
+      eyeCtx.fillStyle = '#cbd5e1';
+      eyeCtx.font = '11px "Noto Sans JP"';
+      eyeCtx.fillText('毛様筋', lensCenterX - 18, ciliaryTopY - 8);
+      eyeCtx.fillText('チン小帯', lensCenterX - 24, eyeCenterY - lensHalfHeight + 10);
+      eyeCtx.fillText('水晶体', lensCenterX - 18, eyeCenterY + lensHalfHeight + 14);
+      eyeCtx.fillText('網膜', retinaX - 30, eyeCenterY - 65);
+
+      eyeCtx.restore();
+    }
+
+    // ==========================================
+    // Iris & Light Simulation (Tab 2)
+    // ==========================================
+    let currentLux = 500;
+    const irisCanvas = document.getElementById('irisCanvas');
+    const irisCtx = irisCanvas.getContext('2d');
+
+    function setLux(lux) {
+      document.getElementById('luxSlider').value = lux;
+      updateIrisSimulation(lux);
+    }
+
+    function updateIrisSimulation(lux) {
+      currentLux = parseFloat(lux);
+      let desc = '';
+      if (currentLux < 50) desc = `${currentLux} lx (暗室・映画館)`;
+      else if (currentLux < 1000) desc = `${currentLux} lx (室内・教室)`;
+      else desc = `${currentLux} lx (晴天・屋外)`;
+      document.getElementById('luxVal').innerText = desc;
+
+      const sp = document.getElementById('tdSphincter');
+      const di = document.getElementById('tdDilator');
+
+      if (currentLux < 50) {
+        sp.innerText = '弛緩';
+        di.innerText = '収縮！(放射状に引いて瞳孔拡大)';
+        di.style.color = '#f472b6';
+        sp.style.color = '#94a3b8';
+      } else if (currentLux > 2000) {
+        sp.innerText = '収縮！(絞り込んで瞳孔縮小)';
+        di.innerText = '弛緩';
+        sp.style.color = '#60a5fa';
+        di.style.color = '#94a3b8';
+      } else {
+        sp.innerText = '適度';
+        di.innerText = '適度';
+        sp.style.color = '#e2e8f0';
+        di.style.color = '#e2e8f0';
+      }
+
+      drawIris();
+    }
+
+    function drawIris() {
+      const w = irisCanvas.width;
+      const h = irisCanvas.height;
+      irisCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const scleraRadius = 130;
+      const irisRadius = 90;
+
+      const logMin = Math.log10(1);
+      const logMax = Math.log10(10000);
+      const logCur = Math.log10(Math.max(1, currentLux));
+      const brightFactor = (logCur - logMin) / (logMax - logMin);
+      const pupilRadius = 55 - brightFactor * 37;
+
+      // Sclera
+      irisCtx.fillStyle = '#e2e8f0';
+      irisCtx.beginPath();
+      irisCtx.arc(cx, cy, scleraRadius, 0, Math.PI * 2);
+      irisCtx.fill();
+
+      // Iris background
+      const grad = irisCtx.createRadialGradient(cx, cy, pupilRadius, cx, cy, irisRadius);
+      grad.addColorStop(0, '#78350f');
+      grad.addColorStop(0.6, '#b45309');
+      grad.addColorStop(1, '#451a03');
+      irisCtx.fillStyle = grad;
+      irisCtx.beginPath();
+      irisCtx.arc(cx, cy, irisRadius, 0, Math.PI * 2);
+      irisCtx.fill();
+
+      // Dilator muscles
+      const dilatorTension = 1 - brightFactor;
+      irisCtx.strokeStyle = `rgba(244, 114, 182, ${0.3 + dilatorTension * 0.5})`;
+      irisCtx.lineWidth = 1.5;
+      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 16) {
+        irisCtx.beginPath();
+        irisCtx.moveTo(cx + Math.cos(angle) * (pupilRadius + 3), cy + Math.sin(angle) * (pupilRadius + 3));
+        irisCtx.lineTo(cx + Math.cos(angle) * (irisRadius - 4), cy + Math.sin(angle) * (irisRadius - 4));
+        irisCtx.stroke();
+      }
+
+      // Sphincter muscle
+      const sphincterTension = brightFactor;
+      irisCtx.strokeStyle = `rgba(56, 189, 248, ${0.4 + sphincterTension * 0.6})`;
+      irisCtx.lineWidth = 3 + sphincterTension * 2;
+      irisCtx.beginPath();
+      irisCtx.arc(cx, cy, pupilRadius + 5, 0, Math.PI * 2);
+      irisCtx.stroke();
+
+      // Pupil
+      irisCtx.fillStyle = '#050811';
+      irisCtx.beginPath();
+      irisCtx.arc(cx, cy, pupilRadius, 0, Math.PI * 2);
+      irisCtx.fill();
+
+      // Highlight
+      irisCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      irisCtx.beginPath();
+      irisCtx.arc(cx - pupilRadius * 0.35, cy - pupilRadius * 0.35, Math.max(3, pupilRadius * 0.18), 0, Math.PI * 2);
+      irisCtx.fill();
+
+      // Labels
+      irisCtx.fillStyle = '#fff';
+      irisCtx.font = 'bold 12px "Noto Sans JP"';
+      irisCtx.fillText(`瞳孔径: 約 ${(pupilRadius * 0.15).toFixed(1)} mm`, cx - 40, cy + irisRadius + 28);
+
+      irisCtx.font = '11px "Noto Sans JP"';
+      irisCtx.fillStyle = '#60a5fa';
+      irisCtx.fillText('← 瞳孔括約筋 (輪状)', cx - irisRadius - 120, cy - 20);
+      irisCtx.fillStyle = '#f472b6';
+      irisCtx.fillText('← 瞳孔散大筋 (放射状)', cx - irisRadius - 125, cy + 20);
+    }
+
+    // ==========================================
+    // Quiz Logic (Tab 4)
+    // ==========================================
+    const quizAnswers = {
+      q1: 2,
+      q2: 3,
+      q3: 1,
+      q4: 3
+    };
+
+    function checkAnswer(qId, selectedIdx, btn) {
+      const parent = document.getElementById(qId);
+      const buttons = parent.querySelectorAll('.quiz-btn');
+      buttons.forEach(b => b.classList.remove('correct', 'wrong'));
+
+      const isCorrect = (selectedIdx === quizAnswers[qId]);
+      if (isCorrect) {
+        btn.classList.add('correct');
+      } else {
+        btn.classList.add('wrong');
+        buttons[quizAnswers[qId] - 1].classList.add('correct');
+      }
+
+      document.getElementById(`${qId}-exp`).style.display = 'block';
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      drawEye();
+      drawIris();
+    });
+  </script>
+</body>
+</html>
