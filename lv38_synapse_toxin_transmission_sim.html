@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【Lv38】興奮の伝達と毒素Tの作用 - 高校生物シミュレーター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Zen Maru Gothic', 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            color: #1e293b;
+            touch-action: manipulation;
+        }
+        canvas {
+            background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%);
+            border-radius: 1rem;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        /* Custom UI Ergonomic Controls */
+        .btn-ergonomic {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 48px; /* Touch target minimum height */
+        }
+        .btn-ergonomic:active {
+            transform: scale(0.96);
+        }
+        .badge-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 md:p-6 bg-slate-100 selection:bg-indigo-500 selection:text-white">
+
+    <header class="max-w-6xl w-full mx-auto mb-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 text-white p-2.5 rounded-xl flex items-center justify-center shadow-md">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                    <span class="bg-indigo-600 text-white text-xs px-2.5 py-1 rounded-full font-black">Lv38</span>
+                    シナプス興奮伝達インタラクティブ・ラボ
+                </h1>
+                <p class="text-xs md:text-sm text-slate-500 font-medium">高校生物「神経系と毒素Tの阻害メカニズム」学習ツール</p>
+            </div>
+        </div>
+        
+        <!-- Navigation / Mode Tabs & Portal Return -->
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+            <a href="index.html" class="px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-all flex items-center gap-1.5 shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <span>ポータル</span>
+            </a>
+            <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 flex-1 sm:flex-none">
+                <button id="tab-sim" onclick="switchTab('sim')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all bg-white text-indigo-600 shadow-sm">シミュレーター</button>
+                <button id="tab-quiz" onclick="switchTab('quiz')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all text-slate-600 hover:text-slate-900">演習問題と解説</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl w-full mx-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Interactive Canvas Column (Left/Top on mobile) -->
+        <div id="view-sim" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+            <div class="lg:col-span-8 bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center">
+                
+                <!-- Status Info Bar -->
+                <div class="w-full mb-3 flex flex-wrap justify-between items-center gap-2 px-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-block w-3 h-3 rounded-full bg-emerald-500 badge-pulse"></span>
+                        <span id="status-text" class="text-sm font-bold text-slate-700">状態: 正常（神経伝達可能）</span>
+                    </div>
+                    <div class="flex items-center space-x-4 text-xs font-semibold text-slate-500">
+                        <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>シナプス小胞</div>
+                        <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-cyan-400 inline-block"></span>神経伝達物質</div>
+                        <div class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>毒素T</div>
+                    </div>
+                </div>
+
+                <!-- Interactive Simulation Canvas -->
+                <div class="relative w-full aspect-[4/3] max-h-[500px] overflow-hidden rounded-xl shadow-inner border border-slate-800">
+                    <canvas id="synapseCanvas"></canvas>
+                    
+                    <!-- Floating Overlay Hints for Usability -->
+                    <div id="overlay-hint" class="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur text-white text-xs px-3 py-1.5 rounded-lg border border-slate-700 pointer-events-none">
+                        💡 「興奮（電気信号）を送信」ボタンを押して変化を観察しよう
+                    </div>
+                </div>
+
+                <!-- Simulation Controls (Human Factors / Ergonomically Optimized) -->
+                <div class="w-full mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <button id="btn-fire" onclick="triggerActionPotential()" class="btn-ergonomic bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm md:text-base">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        興奮を送信
+                    </button>
+
+                    <button id="btn-toxin" onclick="toggleToxin()" class="btn-ergonomic bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 text-sm md:text-base">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <span id="toxin-btn-label">毒素Tを投与</span>
+                    </button>
+
+                    <button onclick="stepSim()" class="btn-ergonomic bg-slate-700 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm md:text-base">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                        コマ送り
+                    </button>
+
+                    <button onclick="resetSim()" class="btn-ergonomic bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-4 rounded-xl shadow-sm flex items-center justify-center gap-2 text-sm md:text-base">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        リセット
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-2 border-b border-slate-100 pb-3 mb-4">
+                        <span class="bg-indigo-100 text-indigo-700 font-bold px-2.5 py-1 rounded-lg text-xs">ガイド</span>
+                        <h2 class="text-lg font-bold text-slate-800">何が起きている？</h2>
+                    </div>
+
+                    <div id="explanation-box" class="space-y-4 text-sm text-slate-600 leading-relaxed">
+                        <p class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <strong>【通常時】</strong><br>
+                            電気信号（興奮）が軸索の末端に届くと、<strong>シナプス小胞</strong>が細胞膜と融合し、中の<strong>神経伝達物質</strong>がシナプス間隙に放出されます。
+                        </p>
+                        
+                        <div id="toxin-explanation" class="hidden bg-rose-50 p-3 rounded-xl border border-rose-100 text-rose-900">
+                            <strong>【毒素Tの作用時】</strong><br>
+                            毒素Tはシナプス小胞と膜の<strong>融合（放出）を阻害</strong>します。<br>
+                            小胞は作られ末端まで移動してきますが、放出できないため<strong>「神経終末にシナプス小胞が大量に蓄積」</strong>します！
+                        </div>
+
+                        <!-- Quantified Live Data Panel for Higher Order Cognitive Understanding -->
+                        <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-2">
+                            <h3 class="font-bold text-xs uppercase tracking-wider text-indigo-900">リアルタイムデータ</h3>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-600">神経終末のシナプス小胞数:</span>
+                                <span id="data-vesicle-count" class="font-bold text-indigo-700 text-base">8</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-600">放出された伝達物質:</span>
+                                <span id="data-nt-count" class="font-bold text-emerald-600 text-base">0</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-600">後細胞の興奮状態:</span>
+                                <span id="data-post-state" class="font-bold text-slate-500">静止中</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cognitive Tip Box -->
+                <div class="mt-6 p-3 bg-amber-50 rounded-xl border border-amber-200/60 text-amber-900 text-xs flex items-start space-x-2">
+                    <span class="text-base">💡</span>
+                    <span><strong>試験対策ポイント:</strong> 毒素Tがあっても「ゴルジ体での小胞形成」や「軸索内の移動」は影響を受けません！</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-quiz" class="hidden lg:col-span-12 w-full space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <span class="bg-indigo-100 text-indigo-700 font-bold px-3 py-1 rounded-lg text-xs mb-2 inline-block">センター試験・共通テスト類題</span>
+                <h2 class="text-xl font-bold text-slate-800 mb-4">問2 毒素Tの作用機序に関する考察問題</h2>
+                
+                <p class="text-slate-700 text-sm md:text-base leading-relaxed mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    ある細菌が産生する、興奮の伝達を抑制する毒素Tの作用を調べるため実験を行った。<br>
+                    シナプスを形成する神経細胞に毒素Tを作用させたところ、シナプスにおける興奮の伝達は完全に阻害された。電子顕微鏡で観察すると、<strong>作用させなかった細胞に比べ、より多くのシナプス小胞が神経終末に観察された。</strong><br>
+                    また、細胞体や軸索の内部構造、および小胞内の物質量は毒素Tの影響を受けない。毒素Tによって伝達が阻害される理由として最も適当なものを選べ。
+                </p>
+
+                <!-- Ergonomic Option Buttons -->
+                <div id="quiz-options" class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                    <button onclick="checkAnswer(1)" class="quiz-opt text-left p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all font-medium text-sm text-slate-700">
+                        ① ゴルジ体における小胞の形成を抑制した。
+                    </button>
+                    <button onclick="checkAnswer(2)" class="quiz-opt text-left p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all font-medium text-sm text-slate-700">
+                        ② 細胞体から軸索への小胞の移動を抑制した。
+                    </button>
+                    <button onclick="checkAnswer(3)" class="quiz-opt text-left p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all font-medium text-sm text-slate-700">
+                        ③ 軸索内での小胞の移動を抑制した。
+                    </button>
+                    <button onclick="checkAnswer(4)" class="quiz-opt text-left p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all font-medium text-sm text-slate-700">
+                        ④ 軸索から細胞体への小胞の移動を促進した。
+                    </button>
+                    <button onclick="checkAnswer(5)" class="quiz-opt text-left p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all font-medium text-sm text-slate-700">
+                        ⑤ 神経終末における神経伝達物質の放出を抑制した。
+                    </button>
+                    <button onclick="checkAnswer(6)" class="quiz-opt text-left p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all font-medium text-sm text-slate-700">
+                        ⑥ 細胞体における神経伝達物質の放出を促進した。
+                    </button>
+                </div>
+
+                <!-- Answer Feedback Box -->
+                <div id="quiz-feedback" class="hidden p-5 rounded-xl border">
+                    <!-- JS will populate feedback -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Ergonomic Footer -->
+    <footer class="mt-8 py-6 bg-slate-900 text-slate-400 text-xs text-center rounded-2xl max-w-6xl w-full mx-auto">
+        <div class="px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <a href="index.html" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition shadow">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                高校生物シミュレーター ポータルへ戻る
+            </a>
+            <p>高校生物実験室・デジタル教材コレクション (Lv38: シナプス興奮伝達・小胞開口放出・毒素T阻害機序)</p>
+        </div>
+    </footer>
+
+    <script>
+        // Tab Switch Logic
+        function switchTab(tab) {
+            const simTab = document.getElementById('tab-sim');
+            const quizTab = document.getElementById('tab-quiz');
+            const simView = document.getElementById('view-sim');
+            const quizView = document.getElementById('view-quiz');
+
+            if (tab === 'sim') {
+                simTab.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all bg-white text-indigo-600 shadow-sm";
+                quizTab.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all text-slate-600 hover:text-slate-900";
+                simView.classList.remove('hidden');
+                quizView.classList.add('hidden');
+            } else {
+                quizTab.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all bg-white text-indigo-600 shadow-sm";
+                simTab.className = "flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all text-slate-600 hover:text-slate-900";
+                quizView.classList.remove('hidden');
+                simView.classList.add('hidden');
+            }
+        }
+
+        /* --- Canvas & Simulation State Engine --- */
+        const canvas = document.getElementById('synapseCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // State Variables
+        let hasToxin = false;
+        let actionPotentialActive = false;
+        let apPosition = 0; // Action Potential wave progress along axon
+        let vesicles = [];
+        let neurotransmitters = [];
+        let postSynapticExcited = false;
+        let postExcitationTimer = 0;
+
+        // Visual Setup & Resize Handler
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        class SynapticVesicle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.targetY = y;
+                this.radius = 12;
+                this.hasReleased = false;
+                this.speed = 1.5;
+            }
+
+            update(width, height) {
+                // Move towards terminal if far up
+                const terminalY = height * 0.55;
+                if (this.y < terminalY) {
+                    this.y += this.speed;
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#f59e0b'; // Amber yellow for Vesicle membrane
+                ctx.shadowColor = '#f59e0b';
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#fef3c7';
+                ctx.stroke();
+
+                // Draw tiny neurotransmitter dots inside
+                ctx.fillStyle = '#06b6d4';
+                for(let i = -1; i <= 1; i+=2) {
+                    for(let j = -1; j <= 1; j+=2) {
+                        ctx.beginPath();
+                        ctx.arc(this.x + i*4, this.y + j*4, 2, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+                ctx.restore();
+            }
+        }
+
+        class Neurotransmitter {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = Math.random() * 1.5 + 0.5;
+                this.radius = 3;
+                this.bound = false;
+            }
+
+            update(targetY) {
+                if (!this.bound) {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if (this.y >= targetY) {
+                        this.y = targetY;
+                        this.bound = true;
+                    }
+                }
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#22d3ee';
+                ctx.shadowColor = '#22d3ee';
+                ctx.shadowBlur = 6;
+                ctx.fill();
+            }
+        }
+
+        // Initialize Vesicles Pool
+        function initVesicles() {
+            vesicles = [];
+            neurotransmitters = [];
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+
+            // Standard set of vesicles in terminal
+            const count = hasToxin ? 16 : 8;
+            for (let i = 0; i < count; i++) {
+                const vx = (width * 0.5) + (Math.random() - 0.5) * (width * 0.35);
+                const vy = (height * 0.25) + Math.random() * (height * 0.3);
+                vesicles.push(new SynapticVesicle(vx, vy));
+            }
+        }
+
+        function draw() {
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 1. Draw Axon Terminal (Pre-synaptic membrane)
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(w * 0.35, 0);
+            ctx.lineTo(w * 0.35, h * 0.2);
+            ctx.quadraticCurveTo(w * 0.1, h * 0.4, w * 0.15, h * 0.6);
+            ctx.quadraticCurveTo(w * 0.5, h * 0.68, w * 0.85, h * 0.6);
+            ctx.quadraticCurveTo(w * 0.9, h * 0.4, w * 0.65, h * 0.2);
+            ctx.lineTo(w * 0.65, 0);
+
+            ctx.fillStyle = 'rgba(79, 70, 229, 0.15)';
+            ctx.fill();
+            ctx.strokeStyle = '#6366f1';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.restore();
+
+            // Label Pre-synaptic membrane
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '12px "Zen Maru Gothic"';
+            ctx.fillText('軸索末端（前細胞）', w * 0.37, 24);
+
+            // 2. Draw Post-synaptic Membrane & Receptors
+            const postY = h * 0.78;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(w * 0.05, postY);
+            ctx.quadraticCurveTo(w * 0.5, postY - 10, w * 0.95, postY);
+            ctx.lineTo(w * 0.95, h);
+            ctx.lineTo(w * 0.05, h);
+            ctx.closePath();
+
+            // Flash effect if post-synaptic cell is excited
+            if (postSynapticExcited) {
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.3)'; // Emerald active glow
+            } else {
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
+            }
+            ctx.fill();
+            ctx.strokeStyle = postSynapticExcited ? '#10b981' : '#475569';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Receptors on post-synaptic membrane
+            const receptorCount = 7;
+            for (let i = 0; i < receptorCount; i++) {
+                const rx = w * 0.15 + (i * (w * 0.7 / (receptorCount - 1)));
+                ctx.fillStyle = '#f43f5e';
+                ctx.fillRect(rx - 8, postY - 6, 16, 8); // Channel structure
+            }
+            ctx.restore();
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText('樹状突起（後細胞・受容体）', w * 0.35, postY + 35);
+            ctx.fillText('シナプス間隙', w * 0.05, h * 0.72);
+
+            // 3. Draw Toxin T Blocks if Active
+            if (hasToxin) {
+                ctx.fillStyle = '#ef4444';
+                // Draw inhibition markers near release zone
+                const blockY = h * 0.58;
+                for (let x = w * 0.2; x <= w * 0.8; x += 40) {
+                    ctx.beginPath();
+                    ctx.arc(x, blockY, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Draw 'X'
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x-3, blockY-3); ctx.lineTo(x+3, blockY+3);
+                    ctx.moveTo(x+3, blockY-3); ctx.lineTo(x-3, blockY+3);
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = '#f87171';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.fillText('🚫 毒素T：膜融合を阻害中', w * 0.33, blockY - 14);
+            }
+
+            // 4. Action Potential Wave Animation
+            if (actionPotentialActive) {
+                apPosition += 0.04;
+                const apY = apPosition * (h * 0.55);
+
+                ctx.save();
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(w * 0.35, apY);
+                ctx.lineTo(w * 0.65, apY);
+                ctx.stroke();
+                ctx.restore();
+
+                if (apY >= h * 0.55) {
+                    actionPotentialActive = false;
+                    apPosition = 0;
+                    triggerVesicleRelease();
+                }
+            }
+
+            // 5. Update and Draw Vesicles
+            vesicles.forEach(v => {
+                v.update(w, h);
+                v.draw(ctx);
+            });
+
+            // 6. Update and Draw Neurotransmitters
+            let boundCount = 0;
+            neurotransmitters.forEach(nt => {
+                nt.update(postY);
+                nt.draw(ctx);
+                if (nt.bound) boundCount++;
+            });
+
+            // Activate post-synaptic excitation if enough neurotransmitters bind
+            if (boundCount >= 6 && !postSynapticExcited) {
+                postSynapticExcited = true;
+                postExcitationTimer = 100;
+            }
+
+            if (postSynapticExcited) {
+                postExcitationTimer--;
+                if (postExcitationTimer <= 0) {
+                    postSynapticExcited = false;
+                }
+            }
+
+            // Live Stat Updates
+            document.getElementById('data-vesicle-count').innerText = vesicles.length;
+            document.getElementById('data-nt-count').innerText = neurotransmitters.length;
+            const stateEl = document.getElementById('data-post-state');
+            if (postSynapticExcited) {
+                stateEl.innerText = "興奮（刺激伝達成功！）";
+                stateEl.className = "font-bold text-emerald-600 animate-bounce";
+            } else {
+                stateEl.innerText = "静止中";
+                stateEl.className = "font-bold text-slate-500";
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // Action Potential Trigger
+        function triggerActionPotential() {
+            if (!actionPotentialActive) {
+                actionPotentialActive = true;
+                apPosition = 0;
+            }
+        }
+
+        // Vesicle Release Physics Engine
+        function triggerVesicleRelease() {
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+
+            if (hasToxin) {
+                // Toxin T blocks release: Add new vesicles from axon transport instead!
+                if (vesicles.length < 24) {
+                    for(let i=0; i<4; i++) {
+                        const vx = (w * 0.5) + (Math.random() - 0.5) * (w * 0.4);
+                        const vy = 20 + Math.random() * 30;
+                        vesicles.push(new SynapticVesicle(vx, vy));
+                    }
+                }
+            } else {
+                // Normal Mode: Vesicles fuse with membrane and release neurotransmitters
+                if (vesicles.length > 0) {
+                    const releaseCount = Math.min(vesicles.length, 4);
+                    for (let i = 0; i < releaseCount; i++) {
+                        const v = vesicles.pop();
+                        // Spawn neurotransmitters at release site
+                        for (let k = 0; k < 6; k++) {
+                            neurotransmitters.push(new Neurotransmitter(v.x + (Math.random()-0.5)*10, h * 0.62));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Toggle Toxin State
+        function toggleToxin() {
+            hasToxin = !hasToxin;
+            const btnLabel = document.getElementById('toxin-btn-label');
+            const statusText = document.getElementById('status-text');
+            const toxinExp = document.getElementById('toxin-explanation');
+
+            if (hasToxin) {
+                btnLabel.innerText = "毒素Tを解除";
+                statusText.innerText = "状態: 毒素T作用中（伝達阻害）";
+                statusText.className = "text-sm font-bold text-rose-600";
+                toxinExp.classList.remove('hidden');
+            } else {
+                btnLabel.innerText = "毒素Tを投与";
+                statusText.innerText = "状態: 正常（神経伝達可能）";
+                statusText.className = "text-sm font-bold text-slate-700";
+                toxinExp.classList.add('hidden');
+            }
+            initVesicles();
+        }
+
+        // Step-by-step Execution for Ergonimic Learning
+        function stepSim() {
+            triggerActionPotential();
+        }
+
+        // Reset Simulator
+        function resetSim() {
+            hasToxin = false;
+            actionPotentialActive = false;
+            postSynapticExcited = false;
+            document.getElementById('toxin-btn-label').innerText = "毒素Tを投与";
+            document.getElementById('status-text').innerText = "状態: 正常（神経伝達可能）";
+            document.getElementById('status-text').className = "text-sm font-bold text-slate-700";
+            document.getElementById('toxin-explanation').classList.add('hidden');
+            initVesicles();
+        }
+
+        function checkAnswer(selectedOption) {
+            const feedbackEl = document.getElementById('quiz-feedback');
+            feedbackEl.classList.remove('hidden');
+
+            if (selectedOption === 5) {
+                feedbackEl.className = "p-5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 space-y-2";
+                feedbackEl.innerHTML = `
+                    <div class="flex items-center space-x-2 font-bold text-lg text-emerald-700">
+                        <span>🎉 正解！【⑤ 神経終末における神経伝達物質の放出を抑制した】</span>
+                    </div>
+                    <p class="text-sm text-emerald-800 leading-relaxed">
+                        <strong>解説:</strong> 問題文より「毒素Tを作用させると神経終末により多くのシナプス小胞が観察された」とあります。<br>
+                        シナプス小胞は軸索を通じて終末に移動してきますが、<strong>膜と融合して内容物（神経伝達物質）を放出できないため、出口を失って終末に溜まってしまった</strong>と考えられます。<br>
+                        小胞の作製（①）や移動（②③④）が阻害されているなら、終末の小胞数は減少するはずです。
+                    </p>
+                `;
+            } else {
+                feedbackEl.className = "p-5 rounded-xl border border-rose-200 bg-rose-50 text-rose-900 space-y-2";
+                feedbackEl.innerHTML = `
+                    <div class="flex items-center space-x-2 font-bold text-lg text-rose-700">
+                        <span>❌ 残念！不正解です</span>
+                    </div>
+                    <p class="text-sm text-rose-800 leading-relaxed">
+                        <strong>ヒント:</strong> もし形成や移動（①〜④）が阻害されていたら、神経終末にあるシナプス小胞の数は<strong>「減る」</strong>はずです。<br>
+                        実験では「より多くのシナプス小胞が神経終末に観察された」ので、小胞が終末に到着した後に<strong>放出できずに溜まっている</strong>状態（⑤）が正解です！
+                    </p>
+                `;
+            }
+        }
+
+        // Start animation on load
+        window.onload = function() {
+            resizeCanvas();
+            initVesicles();
+            draw();
+        };
+    </script>
+</body>
+</html>
