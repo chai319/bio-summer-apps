@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【Lv34】ヒトの視神経と視野 シミュレーター - 高校生物</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#095196',
+                        },
+                        leftEye: '#3b82f6', // 青
+                        rightEye: '#ef4444', // 赤
+                        leftField: '#06b6d4', // シアン (左視野)
+                        rightField: '#f97316', // オレンジ (右視野)
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 480px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100,100,100,0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100,100,100,0.5);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- ヘッダー -->
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-blue-600 to-indigo-500 p-2 rounded-lg text-white shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-eye text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-white flex items-center gap-2">
+                        【Lv34】ヒトの視神経と視野 <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">高校生物 探究</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">視交叉・視神経切断と視野欠損シミュレーター</p>
+                </div>
+            </div>
+
+            <!-- ナビゲーションタブ -->
+            <nav class="flex bg-slate-800/80 p-1 rounded-xl text-sm font-medium">
+                <button id="tab-sim" onclick="switchTab('sim')" class="px-4 py-1.5 rounded-lg transition-all text-white bg-blue-600 shadow">
+                    <i class="fa-solid fa-flask mr-1"></i> シミュレーター
+                </button>
+                <button id="tab-theory" onclick="switchTab('theory')" class="px-4 py-1.5 rounded-lg transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-book-open mr-1"></i> 原理と解説
+                </button>
+                <button id="tab-quiz" onclick="switchTab('quiz')" class="px-4 py-1.5 rounded-lg transition-all text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-graduation-cap mr-1"></i> 京大問題演習
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ領域 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- ================= シミュレーター タブ ================= -->
+        <div id="view-sim" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+            
+            <!-- 左側：視神経の走行図キャンバス -->
+            <div class="lg:col-span-7 bg-slate-800/50 border border-slate-700/60 rounded-2xl p-4 flex flex-col justify-between shadow-xl relative overflow-hidden backdrop-blur">
+                <div class="flex justify-between items-center mb-2 z-10">
+                    <h2 class="text-md font-semibold flex items-center gap-2 text-slate-200">
+                        <i class="fa-solid fa-diagram-project text-blue-400"></i> 視覚経路と切断ポイント
+                    </h2>
+                    <span class="text-xs bg-slate-700 text-slate-300 px-2.5 py-1 rounded-full">
+                        切断部位をクリックして選択可能
+                    </span>
+                </div>
+
+                <!-- キャンバスコンテナ -->
+                <div class="canvas-container flex-1 bg-slate-950/60 rounded-xl border border-slate-800 overflow-hidden">
+                    <canvas id="pathwayCanvas"></canvas>
+                </div>
+
+                <!-- 凡例/コントロール -->
+                <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                    <div class="flex items-center gap-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                        <span class="w-3 h-3 rounded-full bg-cyan-400 inline-block shadow-sm shadow-cyan-400/50"></span>
+                        <span>左視野 (青光)</span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                        <span class="w-3 h-3 rounded-full bg-orange-400 inline-block shadow-sm shadow-orange-400/50"></span>
+                        <span>右視野 (橙光)</span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                        <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
+                        <span>耳側神経 (同側)</span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                        <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
+                        <span>鼻側神経 (交叉)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：コントロール ＆ 視野リアルタイム表示 -->
+            <div class="lg:col-span-5 flex flex-col gap-5">
+                
+                <!-- 切断プリセット & 眼開閉コントロール -->
+                <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-4 shadow-xl backdrop-blur">
+                    <h3 class="text-sm font-semibold mb-3 text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-scissors text-rose-400"></i> 切断部位の選択
+                    </h3>
+                    <div class="grid grid-cols-4 gap-2 mb-4">
+                        <button onclick="setCut('none')" id="cut-btn-none" class="cut-btn px-3 py-2 rounded-xl border border-slate-600 bg-blue-600 text-white font-medium text-xs text-center transition-all shadow">
+                            正常
+                        </button>
+                        <button onclick="setCut('a')" id="cut-btn-a" class="cut-btn px-3 py-2 rounded-xl border border-slate-700 bg-slate-700/50 text-slate-300 font-medium text-xs text-center hover:bg-slate-700 transition-all">
+                            a 切断<br><span class="text-[10px] text-slate-400">(左視神経)</span>
+                        </button>
+                        <button onclick="setCut('b')" id="cut-btn-b" class="cut-btn px-3 py-2 rounded-xl border border-slate-700 bg-slate-700/50 text-slate-300 font-medium text-xs text-center hover:bg-slate-700 transition-all">
+                            b 切断<br><span class="text-[10px] text-slate-400">(左視索)</span>
+                        </button>
+                        <button onclick="setCut('c')" id="cut-btn-c" class="cut-btn px-3 py-2 rounded-xl border border-slate-700 bg-slate-700/50 text-slate-300 font-medium text-xs text-center hover:bg-slate-700 transition-all">
+                            c 切断<br><span class="text-[10px] text-slate-400">(視交叉)</span>
+                        </button>
+                    </div>
+
+                    <!-- 眼の開閉チェック -->
+                    <div class="pt-3 border-t border-slate-700/50">
+                        <h3 class="text-xs font-semibold mb-2 text-slate-300 flex items-center gap-1">
+                            <i class="fa-regular fa-eye-slash text-slate-400"></i> 片目を閉じる操作
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                            <label class="flex items-center gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:bg-slate-900 transition">
+                                <input type="checkbox" id="closeLeftEye" onchange="updateSimulation()" class="w-4 h-4 text-blue-600 rounded focus:ring-0">
+                                <span class="text-slate-300">左目を閉じる</span>
+                            </label>
+                            <label class="flex items-center gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:bg-slate-900 transition">
+                                <input type="checkbox" id="closeRightEye" onchange="updateSimulation()" class="w-4 h-4 text-blue-600 rounded focus:ring-0">
+                                <span class="text-slate-300">右目を閉じる</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- リアルタイム視野シミュレーション -->
+                <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-4 shadow-xl flex-1 flex flex-col justify-between backdrop-blur">
+                    <h3 class="text-sm font-semibold mb-2 text-slate-200 flex items-center justify-between">
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-vr-cardboard text-emerald-400"></i> 実際に見える視野（欠損プレビュー）</span>
+                        <span id="perceptionStatus" class="text-xs px-2 py-0.5 rounded border border-emerald-500/30 text-emerald-400 bg-emerald-500/10">両眼視・正常</span>
+                    </h3>
+
+                    <!-- 各眼の視野 ＆ 合成視野 -->
+                    <div class="space-y-3 my-2">
+                        
+                        <!-- 合成視野 (実際の見え方) -->
+                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+                            <div class="text-xs text-slate-400 mb-1 flex justify-between">
+                                <span>合成視野 (両眼で見た世界)</span>
+                                <span id="depthText" class="text-amber-400 font-medium"><i class="fa-solid fa-cube mr-1"></i>立体感・遠近感：あり</span>
+                            </div>
+                            <div class="h-20 w-full relative rounded-lg overflow-hidden flex border border-slate-700/60" id="combinedVisionContainer">
+                                <!-- 左視野領域 (cyan) -->
+                                <div id="combinedLeftField" class="w-1/2 h-full bg-cyan-900/80 flex items-center justify-center border-r border-slate-800 transition-all duration-300 relative">
+                                    <span class="text-xs text-cyan-200 font-bold z-10">左視野</span>
+                                    <div id="combinedLeftBlind" class="absolute inset-0 bg-black/90 opacity-0 transition-opacity duration-300 flex items-center justify-center">
+                                        <i class="fa-solid fa-eye-slash text-slate-600 text-lg"></i>
+                                    </div>
+                                </div>
+                                <!-- 右視野領域 (orange) -->
+                                <div id="combinedRightField" class="w-1/2 h-full bg-orange-900/80 flex items-center justify-center transition-all duration-300 relative">
+                                    <span class="text-xs text-orange-200 font-bold z-10">右視野</span>
+                                    <div id="combinedRightBlind" class="absolute inset-0 bg-black/90 opacity-0 transition-opacity duration-300 flex items-center justify-center">
+                                        <i class="fa-solid fa-eye-slash text-slate-600 text-lg"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 左右個別の視野 -->
+                        <div class="grid grid-cols-2 gap-3 text-center">
+                            <!-- 左眼の視野 -->
+                            <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                                <div class="text-[11px] text-slate-400 mb-1">左眼の視野</div>
+                                <div class="h-12 w-full rounded flex border border-slate-800 overflow-hidden relative">
+                                    <div class="w-1/2 bg-cyan-950/90 relative flex items-center justify-center border-r border-slate-800">
+                                        <div id="leftEye_leftBlind" class="absolute inset-0 bg-black/95 opacity-0 transition-opacity duration-300"></div>
+                                    </div>
+                                    <div class="w-1/2 bg-orange-950/90 relative flex items-center justify-center">
+                                        <div id="leftEye_rightBlind" class="absolute inset-0 bg-black/95 opacity-0 transition-opacity duration-300"></div>
+                                    </div>
+                                    <div id="leftEyeClosedMask" class="absolute inset-0 bg-slate-950/90 hidden items-center justify-center text-slate-500 text-xs font-semibold">
+                                        閉眼
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 右眼の視野 -->
+                            <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                                <div class="text-[11px] text-slate-400 mb-1">右眼の視野</div>
+                                <div class="h-12 w-full rounded flex border border-slate-800 overflow-hidden relative">
+                                    <div class="w-1/2 bg-cyan-950/90 relative flex items-center justify-center border-r border-slate-800">
+                                        <div id="rightEye_leftBlind" class="absolute inset-0 bg-black/95 opacity-0 transition-opacity duration-300"></div>
+                                    </div>
+                                    <div class="w-1/2 bg-orange-950/90 relative flex items-center justify-center">
+                                        <div id="rightEye_rightBlind" class="absolute inset-0 bg-black/95 opacity-0 transition-opacity duration-300"></div>
+                                    </div>
+                                    <div id="rightEyeClosedMask" class="absolute inset-0 bg-slate-950/90 hidden items-center justify-center text-slate-500 text-xs font-semibold">
+                                        閉眼
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- 状態の自然言語解説 -->
+                    <div id="statusExplanation" class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 leading-relaxed mt-1">
+                        正常な状態です。左右両方の視覚情報が大脳皮質視覚野に届き、重ね合わさることで遠近感（立体感）が得られます。
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= 原理解説 タブ ================= -->
+        <div id="view-theory" class="hidden lg:col-span-12 space-y-6">
+            <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-6 shadow-xl backdrop-blur">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2 border-b border-slate-700 pb-3">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i> ヒトの視神経と視野の仕組み（高校生物）
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 1. 光の反転原理 -->
+                    <div class="bg-slate-900/70 p-5 rounded-xl border border-slate-800">
+                        <div class="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-3">1</div>
+                        <h3 class="font-bold text-slate-100 text-base mb-2">レンズによる光の反転</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            眼球の水晶体（レンズ）を通るため、外界の光は網膜上で上下左右が反転して投影されます。
+                        </p>
+                        <ul class="text-xs text-slate-400 mt-3 space-y-1 list-disc list-inside">
+                            <li><strong class="text-cyan-400">左視野</strong>の光 → 左右両眼の<strong class="text-cyan-300">右側（左眼の鼻側・右眼の耳側）</strong>の網膜に届く</li>
+                            <li><strong class="text-orange-400">右視野</strong>の光 → 左右両眼の<strong class="text-orange-300">左側（左眼の耳側・右眼の鼻側）</strong>の網膜に届く</li>
+                        </ul>
+                    </div>
+
+                    <!-- 2. 視交叉のルール -->
+                    <div class="bg-slate-900/70 p-5 rounded-xl border border-slate-800">
+                        <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-lg font-bold mb-3">2</div>
+                        <h3 class="font-bold text-slate-100 text-base mb-2">視交叉での神経分岐ルール</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            網膜の神経節細胞から出る視神経は、脳に向かう途中の「視交叉（しこうさ）」で一部が交差します。
+                        </p>
+                        <ul class="text-xs text-slate-400 mt-3 space-y-1.5 border-t border-slate-800 pt-2">
+                            <li><span class="text-amber-400 font-semibold">● 網膜の内側（鼻側）：</span> 反対側へ<strong class="text-amber-300">交叉</strong>する</li>
+                            <li><span class="text-blue-400 font-semibold">● 網膜の外側（耳側）：</span> 交差せず<strong class="text-blue-300">同側（非交叉）</strong>を進む</li>
+                        </ul>
+                        <p class="text-[11px] text-slate-400 mt-2 bg-slate-950 p-2 rounded">
+                            ⇒ この結果、<strong>左半分の視野の情報は「右大脳半球」</strong>に、<strong>右半分の視野の情報は「左大脳半球」</strong>へ集約されます。
+                        </p>
+                    </div>
+
+                    <!-- 3. 遠近感・立体視 -->
+                    <div class="bg-slate-900/70 p-5 rounded-xl border border-slate-800">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg font-bold mb-3">3</div>
+                        <h3 class="font-bold text-slate-100 text-base mb-2">両眼視と遠近感（奥行き）</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            左右の眼はわずかに離れているため、同一の物体を見てもわずかに異なる角度からの像（両眼視差）が生じます。
+                        </p>
+                        <p class="text-xs text-slate-300 leading-relaxed mt-2">
+                            脳内で両眼からの情報を統合・処理することで、正確な<strong class="text-emerald-400">遠近感（立体感）</strong>が生み出されます。
+                        </p>
+                        <div class="mt-3 bg-emerald-950/40 border border-emerald-800/50 p-2.5 rounded text-emerald-200 text-xs">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> 片目の視覚情報が完全に遮断されたり、視交叉が切断されて両眼視による融合が不能になると、<strong>遠近感が消失</strong>します。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- まとめ図表 -->
+                <div class="mt-6 bg-slate-900/90 rounded-xl p-5 border border-slate-800">
+                    <h3 class="font-bold text-sm text-slate-200 mb-3"><i class="fa-solid fa-table mr-2 text-blue-400"></i>代表的な切断部位と症例（テスト頻出）</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-700 bg-slate-800/60 text-slate-300">
+                                    <th class="p-2.5">切断部位</th>
+                                    <th class="p-2.5">切断場所の名称</th>
+                                    <th class="p-2.5">遮断される情報</th>
+                                    <th class="p-2.5">視野欠損の特徴</th>
+                                    <th class="p-2.5">遠近感</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800 text-slate-300">
+                                <tr>
+                                    <td class="p-2.5 font-bold text-blue-400">a の位置</td>
+                                    <td class="p-2.5">左視神経 (片側視神経)</td>
+                                    <td class="p-2.5">左眼からの全情報</td>
+                                    <td class="p-2.5">左眼全盲（右眼のみで見えるため視野自体は確保）</td>
+                                    <td class="p-2.5 text-rose-400 font-bold">消失 (片眼視のため)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold text-amber-400">b の位置</td>
+                                    <td class="p-2.5">左視索 (片側視索)</td>
+                                    <td class="p-2.5">両眼の左半側網膜（＝右視野）</td>
+                                    <td class="p-2.5">両眼で<strong class="text-orange-400">視野の右半分が見えなくなる</strong> (同名半盲)</td>
+                                    <td class="p-2.5 text-emerald-400">残存 (見えている左視野内)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold text-rose-400">c の位置</td>
+                                    <td class="p-2.5">視交叉の中央 (正中切断)</td>
+                                    <td class="p-2.5">両眼の鼻側網膜（＝両眼の外側視野）</td>
+                                    <td class="p-2.5">左眼の左視野・右眼の右視野が見えない (両耳側半盲)</td>
+                                    <td class="p-2.5 text-rose-400 font-bold">消失 (両眼統合不能)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 京都大学入試問題演習 タブ ================= -->
+        <div id="view-quiz" class="hidden lg:col-span-12">
+            <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-6 shadow-xl backdrop-blur max-w-4xl mx-auto">
+                
+                <div class="flex justify-between items-center border-b border-slate-700 pb-4 mb-4">
+                    <div>
+                        <span class="text-xs font-semibold px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-md">京都大学 入試題アレンジ</span>
+                        <h2 class="text-xl font-bold text-white mt-2">探究 6-1 ヒトの視神経と視野</h2>
+                    </div>
+                    <button onclick="resetQuiz()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg transition">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> 解答をリセット
+                    </button>
+                </div>
+
+                <!-- 問題文 -->
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-xs md:text-sm text-slate-200 leading-relaxed mb-6">
+                    <p class="mb-2">
+                        網膜の神経節細胞の軸索から構成される視神経は、視交叉を形成した後、視索となって間脳に入る。ヒトでは、網膜の外側半分の神経節細胞に由来する視神経繊維は、交差せずに同側の視索に入り、網膜の内側半分の神経節細胞に由来する視神経繊維は、交差して反対側の視索に入る。
+                    </p>
+                    <p class="font-bold text-amber-300">
+                        【考察】次のような場所で切断されると、どのようになるか。それぞれ( ) に示された数だけ下の語群より適するものを選び、記号で示せ。
+                    </p>
+                </div>
+
+                <!-- 設問群 -->
+                <div class="space-y-6">
+                    
+                    <!-- (ア) aの切断 -->
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-slate-100 text-sm">
+                                (ア) <span class="text-blue-400">a の位置</span>で視神経を切断する。 <span class="text-slate-400 text-xs font-normal">( 選択数: 2 個 )</span>
+                            </h3>
+                            <button onclick="testSimCut('a')" class="text-xs text-blue-400 hover:underline">
+                                <i class="fa-solid fa-eye mr-1"></i>シミュレーターで確認
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2" id="quiz-options-a">
+                            <!-- JSで選択肢ボタン動的生成 -->
+                        </div>
+                    </div>
+
+                    <!-- (イ) bの切断 -->
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-slate-100 text-sm">
+                                (イ) <span class="text-amber-400">b の位置</span>で視神経を切断する。 <span class="text-slate-400 text-xs font-normal">( 選択数: 1 個 )</span>
+                            </h3>
+                            <button onclick="testSimCut('b')" class="text-xs text-blue-400 hover:underline">
+                                <i class="fa-solid fa-eye mr-1"></i>シミュレーターで確認
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2" id="quiz-options-b">
+                            <!-- JSで選択肢ボタン動的生成 -->
+                        </div>
+                    </div>
+
+                    <!-- (ウ) cの切断 -->
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-slate-100 text-sm">
+                                (ウ) <span class="text-rose-400">c の位置</span>で視神経を切断する。 <span class="text-slate-400 text-xs font-normal">( 選択数: 3 個 )</span>
+                            </h3>
+                            <button onclick="testSimCut('c')" class="text-xs text-blue-400 hover:underline">
+                                <i class="fa-solid fa-eye mr-1"></i>シミュレーターで確認
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2" id="quiz-options-c">
+                            <!-- JSで選択肢ボタン動的生成 -->
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 語群参照表 -->
+                <div class="mt-6 bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs">
+                    <h4 class="font-bold text-slate-400 mb-2">〈語群〉</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5 text-slate-300" id="wordGroupList">
+                        <!-- JSで動的描画 -->
+                    </div>
+                </div>
+
+                <!-- 採点ボタン＆判定 -->
+                <div class="mt-6 flex flex-col items-center gap-4">
+                    <button onclick="checkQuizAnswer()" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-check-double"></i> 答え合わせをする
+                    </button>
+
+                    <div id="quizResult" class="hidden w-full p-4 rounded-xl border text-sm leading-relaxed"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+        <a href="index.html" class="inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-bold mb-2">
+            <i class="fa-solid fa-house"></i> デジタルコンテンツポータルへ戻る
+        </a>
+        <p>高校生物 探究学習用インタラクティブシミュレータ | 滋賀県立河瀬高等学校</p>
+    </footer>
+
+    <!-- アプリケーションロジック -->
+    <script>
+        // ================= グローバル状態 =================
+        let currentCut = 'none'; // 'none', 'a', 'b', 'c'
+        let closeLeft = false;
+        let closeRight = false;
+
+        // 語群定義
+        const wordGroup = [
+            { id: '1', text: '① 視野の左半分が見えなくなる' },
+            { id: '2', text: '② 視野の右半分が見えなくなる' },
+            { id: '3', text: '③ 左側の眼が見えなくなる' },
+            { id: '4', text: '④ 右側の眼が見えなくなる' },
+            { id: '5', text: '⑤ 両眼とも見えなくなる' },
+            { id: '6', text: '⑥ 遠近感が消失する' },
+            { id: '7', text: '⑦ 左側の眼を閉じると，視野の右半分が見えなくなる' },
+            { id: '8', text: '⑧ 左側の眼を閉じると，視野の左半分が見えなくなる' },
+            { id: '9', text: '⑨ 右側の眼を閉じると，視野の左半分が見えなくなる' },
+            { id: '10', text: '⑩ 右側の眼を閉じると，視野の右半分が見えなくなる' }
+        ];
+
+        // ユーザー解答状態
+        let userAnswers = {
+            a: [],
+            b: [],
+            c: []
+        };
+
+        // 正解の定義 (京大問題解答)
+        const correctAnswers = {
+            a: ['3', '6'],
+            b: ['2'],
+            c: ['6', '7', '9']
+        };
+
+        // ================= タブ切替 =================
+        function switchTab(tab) {
+            document.getElementById('view-sim').classList.add('hidden');
+            document.getElementById('view-theory').classList.add('hidden');
+            document.getElementById('view-quiz').classList.add('hidden');
+
+            document.getElementById('tab-sim').className = "px-4 py-1.5 rounded-lg transition-all text-slate-400 hover:text-white";
+            document.getElementById('tab-theory').className = "px-4 py-1.5 rounded-lg transition-all text-slate-400 hover:text-white";
+            document.getElementById('tab-quiz').className = "px-4 py-1.5 rounded-lg transition-all text-slate-400 hover:text-white";
+
+            if (tab === 'sim') {
+                document.getElementById('view-sim').classList.remove('hidden');
+                document.getElementById('tab-sim').className = "px-4 py-1.5 rounded-lg transition-all text-white bg-blue-600 shadow";
+                setTimeout(drawPathway, 50);
+            } else if (tab === 'theory') {
+                document.getElementById('view-theory').classList.remove('hidden');
+                document.getElementById('tab-theory').className = "px-4 py-1.5 rounded-lg transition-all text-white bg-blue-600 shadow";
+            } else if (tab === 'quiz') {
+                document.getElementById('view-quiz').classList.remove('hidden');
+                document.getElementById('tab-quiz').className = "px-4 py-1.5 rounded-lg transition-all text-white bg-blue-600 shadow";
+            }
+        }
+
+        function testSimCut(cutPoint) {
+            switchTab('sim');
+            setCut(cutPoint);
+        }
+
+        // ================= 切断設定 & シミュレータ更新 =================
+        function setCut(cut) {
+            currentCut = cut;
+
+            // ボタンハイライト
+            document.querySelectorAll('.cut-btn').forEach(btn => {
+                btn.className = "cut-btn px-3 py-2 rounded-xl border border-slate-700 bg-slate-700/50 text-slate-300 font-medium text-xs text-center hover:bg-slate-700 transition-all";
+            });
+            const activeBtn = document.getElementById(`cut-btn-${cut}`);
+            if (activeBtn) {
+                activeBtn.className = "cut-btn px-3 py-2 rounded-xl border border-blue-500 bg-blue-600 text-white font-medium text-xs text-center transition-all shadow-lg shadow-blue-500/30";
+            }
+
+            updateSimulation();
+        }
+
+        function updateSimulation() {
+            closeLeft = document.getElementById('closeLeftEye').checked;
+            closeRight = document.getElementById('closeRightEye').checked;
+
+            let leftEye_canSeeLeft = true;
+            let leftEye_canSeeRight = true;
+            let rightEye_canSeeLeft = true;
+            let rightEye_canSeeRight = true;
+
+            // 切断ロジック
+            if (currentCut === 'a') {
+                leftEye_canSeeLeft = false;
+                leftEye_canSeeRight = false;
+            } else if (currentCut === 'b') {
+                leftEye_canSeeRight = false;
+                rightEye_canSeeRight = false;
+            } else if (currentCut === 'c') {
+                leftEye_canSeeLeft = false;
+                rightEye_canSeeRight = false;
+            }
+
+            // 眼を閉じている場合の適用
+            if (closeLeft) {
+                leftEye_canSeeLeft = false;
+                leftEye_canSeeRight = false;
+            }
+            if (closeRight) {
+                rightEye_canSeeLeft = false;
+                rightEye_canSeeRight = false;
+            }
+
+            // 個別視野マスクの更新
+            document.getElementById('leftEye_leftBlind').style.opacity = leftEye_canSeeLeft ? '0' : '1';
+            document.getElementById('leftEye_rightBlind').style.opacity = leftEye_canSeeRight ? '0' : '1';
+            document.getElementById('rightEye_leftBlind').style.opacity = rightEye_canSeeLeft ? '0' : '1';
+            document.getElementById('rightEye_rightBlind').style.opacity = rightEye_canSeeRight ? '0' : '1';
+
+            document.getElementById('leftEyeClosedMask').style.display = closeLeft ? 'flex' : 'none';
+            document.getElementById('rightEyeClosedMask').style.display = closeRight ? 'flex' : 'none';
+
+            // 合成視野の算出
+            const combinedSeeLeft = leftEye_canSeeLeft || rightEye_canSeeLeft;
+            const combinedSeeRight = leftEye_canSeeRight || rightEye_canSeeRight;
+
+            document.getElementById('combinedLeftBlind').style.opacity = combinedSeeLeft ? '0' : '1';
+            document.getElementById('combinedRightBlind').style.opacity = combinedSeeRight ? '0' : '1';
+
+            // 立体感・遠近感の判定
+            const hasBinocularOverlap = (leftEye_canSeeLeft && rightEye_canSeeLeft) || (leftEye_canSeeRight && rightEye_canSeeRight);
+
+            const depthText = document.getElementById('depthText');
+            const perceptionStatus = document.getElementById('perceptionStatus');
+            const statusExplanation = document.getElementById('statusExplanation');
+
+            if (hasBinocularOverlap && !closeLeft && !closeRight) {
+                depthText.innerHTML = `<i class="fa-solid fa-cube mr-1"></i>遠近感（立体視）：良好`;
+                depthText.className = "text-emerald-400 font-medium";
+                perceptionStatus.textContent = "両眼視・正常";
+                perceptionStatus.className = "text-xs px-2 py-0.5 rounded border border-emerald-500/30 text-emerald-400 bg-emerald-500/10";
+            } else {
+                depthText.innerHTML = `<i class="fa-solid fa-vector-square mr-1"></i>遠近感（立体視）：消失`;
+                depthText.className = "text-rose-400 font-medium";
+                perceptionStatus.textContent = "遠近感 消失";
+                perceptionStatus.className = "text-xs px-2 py-0.5 rounded border border-rose-500/30 text-rose-400 bg-rose-500/10";
+            }
+
+            // 説明文の動的テキスト生成
+            let explanation = "";
+            if (currentCut === 'none') {
+                if (closeLeft && closeRight) {
+                    explanation = "両眼を閉じているため、外界の視野は完全に遮断されています。";
+                } else if (closeLeft) {
+                    explanation = "左眼を閉じているため、右眼のみでの視覚となります。視野全体は見えますが、両眼視差が得られないため<strong>遠近感（奥行き感）が消失</strong>します（問の⑦, ⑧に関連）。";
+                } else if (closeRight) {
+                    explanation = "右眼を閉じているため、左眼のみでの視覚となります。視野全体は見えますが、<strong>遠近感が消失</strong>します（問の⑨, ⑩に関連）。";
+                } else {
+                    explanation = "正常な状態です。両眼からの視覚情報が正しく大脳視覚野へ送られ、良好な遠近感と全視野が確保されます。";
+                }
+            } else if (currentCut === 'a') {
+                explanation = "<strong>【a 切断（左視神経切断）】</strong><br>左眼からの視神経が完全に途絶えるため、<strong>左眼は全盲（③）</strong>になります。右眼は正常なため全視野は見えますが、片眼からの情報のみとなるため<strong>遠近感が消失（⑥）</strong>します。";
+            } else if (currentCut === 'b') {
+                explanation = "<strong>【b 切断（左視索切断）】</strong><br>左眼の耳側（右視野）と右眼の鼻側（右視野）からの情報が途絶えます。その結果、両眼とも右側の視覚を失い、<strong>視野の右半分が見えなくなります（②）</strong>（同名半盲）。";
+            } else if (currentCut === 'c') {
+                explanation = "<strong>【c 切断（視交叉中央切断）】</strong><br>交差する鼻側網膜の繊維（左眼の左視野・右眼の右視野）が遮断されます。<br>・両眼視による統合が不能なため<strong>遠近感が消失（⑥）</strong>します。<br>・左眼を閉じると右眼の右視野が欠損しているため<strong>視野の右半分が見えなくなります（⑦）</strong>。<br>・右眼を閉じると左眼の左視野が欠損しているため<strong>視野の左半分が見えなくなります（⑨）</strong>。";
+            }
+
+            statusExplanation.innerHTML = explanation;
+
+            drawPathway();
+        }
+
+        // ================= キャンバス描画 (視神経経路図) =================
+        function drawPathway() {
+            const canvas = document.getElementById('pathwayCanvas');
+            const container = canvas.parentElement;
+            
+            canvas.width = container.clientWidth * window.devicePixelRatio;
+            canvas.height = container.clientHeight * window.devicePixelRatio;
+
+            const ctx = canvas.getContext('2d');
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const centerX = width / 2;
+            const eyeY = height * 0.32;
+            const eyeRadius = Math.min(width, height) * 0.11;
+            const eyeGap = Math.min(width, height) * 0.28;
+
+            const leftEyeX = centerX - eyeGap;
+            const rightEyeX = centerX + eyeGap;
+
+            const chiasmY = height * 0.62;
+            const tractY = height * 0.88;
+
+            // 1. 光線
+            const fieldY = eyeY - eyeRadius - 40;
+            
+            function drawLightRays(eyeX, isLeftEye) {
+                const alpha = (isLeftEye && closeLeft) || (!isLeftEye && closeRight) ? 0.15 : 0.6;
+                
+                ctx.beginPath();
+                ctx.moveTo(eyeX - 40, fieldY);
+                ctx.lineTo(eyeX, eyeY - eyeRadius + 5);
+                ctx.lineTo(eyeX + eyeRadius * 0.7, eyeY + eyeRadius * 0.7);
+                ctx.strokeStyle = `rgba(6, 182, 212, ${alpha})`;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.beginPath();
+                ctx.moveTo(eyeX + 40, fieldY);
+                ctx.lineTo(eyeX, eyeY - eyeRadius + 5);
+                ctx.lineTo(eyeX - eyeRadius * 0.7, eyeY + eyeRadius * 0.7);
+                ctx.strokeStyle = `rgba(249, 115, 22, ${alpha})`;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            drawLightRays(leftEyeX, true);
+            drawLightRays(rightEyeX, false);
+
+            ctx.font = '11px Noto Sans JP';
+            ctx.textAlign = 'center';
+            
+            ctx.fillStyle = '#06b6d4';
+            ctx.fillText('左視野', leftEyeX - 35, fieldY - 8);
+            ctx.fillText('左視野', rightEyeX - 35, fieldY - 8);
+
+            ctx.fillStyle = '#f97316';
+            ctx.fillText('右視野', leftEyeX + 35, fieldY - 8);
+            ctx.fillText('右視野', rightEyeX + 35, fieldY - 8);
+
+            // 2. 眼球 & 網膜
+            function drawEye(x, y, label, isClosed) {
+                ctx.beginPath();
+                ctx.arc(x, y, eyeRadius, 0, Math.PI * 2);
+                ctx.fillStyle = isClosed ? '#1e293b' : '#0f172a';
+                ctx.fill();
+                ctx.strokeStyle = isClosed ? '#475569' : '#94a3b8';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                if (isClosed) {
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = 'bold 12px Noto Sans JP';
+                    ctx.fillText('閉眼', x, y);
+                    return;
+                }
+
+                ctx.beginPath();
+                ctx.ellipse(x, y - eyeRadius + 6, 12, 5, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(x, y, eyeRadius - 3, Math.PI * 0.5, Math.PI * 1.5, false);
+                ctx.strokeStyle = '#f97316';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(x, y, eyeRadius - 3, Math.PI * 1.5, Math.PI * 0.5, false);
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = 'bold 12px Noto Sans JP';
+                ctx.fillText(label, x, y - 5);
+
+                ctx.font = '10px Noto Sans JP';
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillText('耳側', x - eyeRadius - 12, y);
+                ctx.fillText('鼻側', x + (label === '左眼' ? eyeRadius + 12 : -eyeRadius - 12), y);
+                ctx.fillText('耳側', x + eyeRadius + 12, y);
+            }
+
+            drawEye(leftEyeX, eyeY, '左眼', closeLeft);
+            drawEye(rightEyeX, eyeY, '右眼', closeRight);
+
+            // 3. 神経線維
+            const path_L_temporal = [
+                {x: leftEyeX - eyeRadius * 0.6, y: eyeY + eyeRadius * 0.8},
+                {x: leftEyeX - 15, y: chiasmY - 30},
+                {x: leftEyeX - 20, y: chiasmY + 20},
+                {x: centerX - 35, y: tractY}
+            ];
+
+            const path_L_nasal = [
+                {x: leftEyeX + eyeRadius * 0.6, y: eyeY + eyeRadius * 0.8},
+                {x: leftEyeX + 10, y: chiasmY - 30},
+                {x: centerX, y: chiasmY},
+                {x: centerX + 35, y: tractY}
+            ];
+
+            const path_R_nasal = [
+                {x: rightEyeX - eyeRadius * 0.6, y: eyeY + eyeRadius * 0.8},
+                {x: rightEyeX - 10, y: chiasmY - 30},
+                {x: centerX, y: chiasmY},
+                {x: centerX - 35, y: tractY}
+            ];
+
+            const path_R_temporal = [
+                {x: rightEyeX + eyeRadius * 0.6, y: eyeY + eyeRadius * 0.8},
+                {x: rightEyeX + 15, y: chiasmY - 30},
+                {x: rightEyeX + 20, y: chiasmY + 20},
+                {x: centerX + 35, y: tractY}
+            ];
+
+            const active_L_temp = !closeLeft && currentCut !== 'a';
+            const active_L_nasal = !closeLeft && currentCut !== 'a' && currentCut !== 'c';
+            const active_R_nasal = !closeRight && currentCut !== 'c';
+            const active_R_temp = !closeRight;
+
+            const active_left_tract_L_temp = active_L_temp && currentCut !== 'b';
+            const active_left_tract_R_nasal = active_R_nasal && currentCut !== 'b';
+
+            function drawNervePath(points, color, isActive) {
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.strokeStyle = isActive ? color : '#334155';
+                ctx.lineWidth = isActive ? 3.5 : 1.5;
+                ctx.stroke();
+            }
+
+            drawNervePath(path_L_temporal, '#3b82f6', active_left_tract_L_temp);
+            drawNervePath(path_L_nasal, '#f59e0b', active_L_nasal);
+            drawNervePath(path_R_nasal, '#f59e0b', active_left_tract_R_nasal);
+            drawNervePath(path_R_temporal, '#ef4444', active_R_temp);
+
+            // 4. 切断マーカー
+            const cutA = { x: leftEyeX - 5, y: chiasmY - 35 };
+            const cutB = { x: centerX - 30, y: chiasmY + 45 };
+            const cutC = { x: centerX, y: chiasmY };
+
+            function drawCutMarker(pos, label, cutKey) {
+                const isSelected = currentCut === cutKey;
+
+                if (isSelected) {
+                    ctx.beginPath();
+                    ctx.moveTo(pos.x - 14, pos.y - 10);
+                    ctx.lineTo(pos.x + 14, pos.y + 10);
+                    ctx.moveTo(pos.x - 14, pos.y + 10);
+                    ctx.lineTo(pos.x + 14, pos.y - 10);
+                    ctx.strokeStyle = '#f43f5e';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                }
+
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 13, 0, Math.PI * 2);
+                ctx.fillStyle = isSelected ? '#f43f5e' : '#1e293b';
+                ctx.fill();
+                ctx.strokeStyle = isSelected ? '#fff' : '#64748b';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 11px Noto Sans JP';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, pos.x, pos.y);
+            }
+
+            drawCutMarker(cutA, 'a', 'a');
+            drawCutMarker(cutB, 'b', 'b');
+            drawCutMarker(cutC, 'c', 'c');
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px Noto Sans JP';
+            ctx.textAlign = 'left';
+            ctx.fillText('視神経 →', leftEyeX - 60, chiasmY - 35);
+            ctx.fillText('視交叉 →', centerX - 65, chiasmY);
+            ctx.fillText('視索 →', centerX - 80, chiasmY + 45);
+
+            ctx.textAlign = 'center';
+            ctx.fillText('大脳視覚野へ', centerX - 35, tractY + 15);
+            ctx.fillText('大脳視覚野へ', centerX + 35, tractY + 15);
+        }
+
+        document.getElementById('pathwayCanvas').addEventListener('click', function(e) {
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const width = rect.width;
+            const height = rect.height;
+            const centerX = width / 2;
+            const eyeGap = Math.min(width, height) * 0.28;
+            const leftEyeX = centerX - eyeGap;
+            const chiasmY = height * 0.62;
+
+            const cutA = { x: leftEyeX - 5, y: chiasmY - 35 };
+            const cutB = { x: centerX - 30, y: chiasmY + 45 };
+            const cutC = { x: centerX, y: chiasmY };
+
+            function isNear(pos) {
+                const dx = x - pos.x;
+                const dy = y - pos.y;
+                return (dx * dx + dy * dy) < 400;
+            }
+
+            if (isNear(cutA)) setCut(currentCut === 'a' ? 'none' : 'a');
+            else if (isNear(cutB)) setCut(currentCut === 'b' ? 'none' : 'b');
+            else if (isNear(cutC)) setCut(currentCut === 'c' ? 'none' : 'c');
+        });
+
+        // ================= クイズロジック =================
+        function initQuizUI() {
+            const wordGroupList = document.getElementById('wordGroupList');
+            wordGroupList.innerHTML = '';
+            wordGroup.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "p-1.5 bg-slate-900 rounded border border-slate-800 text-slate-300";
+                div.textContent = item.text;
+                wordGroupList.appendChild(div);
+            });
+
+            function createOptionButtons(section, maxSelect) {
+                const container = document.getElementById(`quiz-options-${section}`);
+                container.innerHTML = '';
+
+                wordGroup.forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.id = `btn-${section}-${item.id}`;
+                    btn.className = "quiz-opt-btn p-2 rounded-lg border text-xs font-medium text-left transition-all bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500 flex items-center justify-between";
+                    btn.innerHTML = `<span>${item.text.split(' ')[0]}</span> <i class="fa-regular fa-circle text-slate-600 check-icon"></i>`;
+                    
+                    btn.onclick = () => toggleQuizSelect(section, item.id, maxSelect);
+                    container.appendChild(btn);
+                });
+            }
+
+            createOptionButtons('a', 2);
+            createOptionButtons('b', 1);
+            createOptionButtons('c', 3);
+        }
+
+        function toggleQuizSelect(section, optionId, maxSelect) {
+            const list = userAnswers[section];
+            const index = list.indexOf(optionId);
+
+            if (index > -1) {
+                list.splice(index, 1);
+            } else {
+                if (list.length < maxSelect) {
+                    list.push(optionId);
+                } else {
+                    if (maxSelect === 1) {
+                        list[0] = optionId;
+                    }
+                }
+            }
+
+            updateQuizUI(section);
+        }
+
+        function updateQuizUI(section) {
+            wordGroup.forEach(item => {
+                const btn = document.getElementById(`btn-${section}-${item.id}`);
+                if (!btn) return;
+
+                const isSelected = userAnswers[section].includes(item.id);
+                const checkIcon = btn.querySelector('.check-icon');
+
+                if (isSelected) {
+                    btn.className = "quiz-opt-btn p-2 rounded-lg border text-xs font-medium text-left transition-all bg-blue-600/30 border-blue-500 text-white flex items-center justify-between shadow";
+                    checkIcon.className = "fa-solid fa-circle-check text-blue-400 check-icon";
+                } else {
+                    btn.className = "quiz-opt-btn p-2 rounded-lg border text-xs font-medium text-left transition-all bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500 flex items-center justify-between";
+                    checkIcon.className = "fa-regular fa-circle text-slate-600 check-icon";
+                }
+            });
+        }
+
+        function resetQuiz() {
+            userAnswers = { a: [], b: [], c: [] };
+            updateQuizUI('a');
+            updateQuizUI('b');
+            updateQuizUI('c');
+            const resultBox = document.getElementById('quizResult');
+            resultBox.classList.add('hidden');
+        }
+
+        function checkQuizAnswer() {
+            function isSame(arr1, arr2) {
+                if (arr1.length !== arr2.length) return false;
+                const sorted1 = [...arr1].sort();
+                const sorted2 = [...arr2].sort();
+                return sorted1.every((val, idx) => val === sorted2[idx]);
+            }
+
+            const isA_Correct = isSame(userAnswers.a, correctAnswers.a);
+            const isB_Correct = isSame(userAnswers.b, correctAnswers.b);
+            const isC_Correct = isSame(userAnswers.c, correctAnswers.c);
+
+            const allCorrect = isA_Correct && isB_Correct && isC_Correct;
+
+            const resultBox = document.getElementById('quizResult');
+            resultBox.classList.remove('hidden');
+
+            if (allCorrect) {
+                resultBox.className = "w-full p-5 rounded-xl border text-sm leading-relaxed bg-emerald-950/80 border-emerald-500/50 text-emerald-200 shadow-xl";
+                resultBox.innerHTML = `
+                    <div class="flex items-center gap-2 font-bold text-lg text-emerald-400 mb-2">
+                        <i class="fa-solid fa-circle-check text-xl"></i> 全問正解です！素晴らしい！
+                    </div>
+                    <p class="text-xs text-emerald-300">視覚経路と視野欠損のメカニズムを完璧に理解できています。</p>
+                `;
+            } else {
+                resultBox.className = "w-full p-5 rounded-xl border text-sm leading-relaxed bg-slate-900 border-amber-500/50 text-slate-200 shadow-xl";
+                resultBox.innerHTML = `
+                    <div class="flex items-center gap-2 font-bold text-lg text-amber-400 mb-3">
+                        <i class="fa-solid fa-triangle-exclamation"></i> 採点結果と解説
+                    </div>
+                    <div class="space-y-3 text-xs">
+                        <div class="p-2.5 rounded bg-slate-950 border border-slate-800">
+                            <span class="font-bold ${isA_Correct ? 'text-emerald-400' : 'text-rose-400'}">(ア) a の切断： ${isA_Correct ? '正解！' : '不正解'}</span>
+                            <span class="ml-2 text-slate-400">正解: ③, ⑥</span>
+                            <p class="mt-1 text-slate-300">aを外すと左眼が入る情報が絶たれるため「③ 左側の眼が見えなくなる」。右眼で視野全体は見えますが、両眼視ができないため「⑥ 遠近感が消失する」。</p>
+                        </div>
+                        <div class="p-2.5 rounded bg-slate-950 border border-slate-800">
+                            <span class="font-bold ${isB_Correct ? 'text-emerald-400' : 'text-rose-400'}">(イ) b の切断： ${isB_Correct ? '正解！' : '不正解'}</span>
+                            <span class="ml-2 text-slate-400">正解: ②</span>
+                            <p class="mt-1 text-slate-300">bを切断すると左右両眼の左側網膜（＝右視野の情報）が途絶えるため「② 視野の右半分が見えなくなる」。</p>
+                        </div>
+                        <div class="p-2.5 rounded bg-slate-950 border border-slate-800">
+                            <span class="font-bold ${isC_Correct ? 'text-emerald-400' : 'text-rose-400'}">(ウ) c の切断： ${isC_Correct ? '正解！' : '不正解'}</span>
+                            <span class="ml-2 text-slate-400">正解: ⑥, ⑦, ⑨</span>
+                            <p class="mt-1 text-slate-300">cを切断すると「⑥ 遠近感が消失」。左眼を閉じると右眼の右視野が見えないため「⑦ 左眼を閉じると視野の右半分が見えなくなる」。右眼を閉じると左眼の左視野が見えないため「⑨ 右眼を閉じると視野の左半分が見えなくなる」。</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        window.onload = function() {
+            initQuizUI();
+            updateSimulation();
+            
+            window.addEventListener('resize', () => {
+                if (!document.getElementById('view-sim').classList.contains('hidden')) {
+                    drawPathway();
+                }
+            });
+        };
+    </script>
+</body>
+</html>

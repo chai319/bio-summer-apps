@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【Lv35】耳の仕組みと聴覚シミュレーター - 高校生物</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            background: #0f172a;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        /* Custom scrollbar for explanations */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased pb-12">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white py-4 shadow-md">
+        <div class="max-w-6xl mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-ear-listen text-2xl text-amber-300"></i>
+                <h1 class="text-xl md:text-2xl font-bold tracking-wide">【Lv35】聴覚の仕組み & 音波伝達シミュレーター</h1>
+            </div>
+            <span class="bg-indigo-700 text-indigo-100 text-xs px-3 py-1 rounded-full border border-indigo-500 font-bold">Lv35 高校生物 探究学習</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left / Top Column: Visualizer & Controls (8 cols) -->
+        <div class="lg:col-span-7 flex flex-col space-y-6">
+
+            <!-- Simulation Canvas Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                <!-- Mode Tabs -->
+                <div class="flex border-b border-slate-200 mb-4">
+                    <button id="tab-apparatus" onclick="switchMode('apparatus')" class="pb-2 px-4 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2">
+                        <i class="fa-solid fa-flask"></i> 1. 中耳の役割 (装置A vs 装置B)
+                    </button>
+                    <button id="tab-cochlea" onclick="switchMode('cochlea')" class="pb-2 px-4 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-wave-square"></i> 2. うずまき管と基底膜 (周波数識別)
+                    </button>
+                </div>
+
+                <!-- Canvas -->
+                <div class="canvas-container shadow-inner">
+                    <canvas id="simCanvas"></canvas>
+                    
+                    <!-- Overlay Badge -->
+                    <div id="simOverlayInfo" class="absolute top-3 left-3 bg-slate-900/80 text-white px-3 py-1.5 rounded-lg text-xs backdrop-blur-sm border border-slate-700">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <!-- Control 1: Frequency -->
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                            <label for="freqRange"><i class="fa-solid fa-arrows-left-right-to-line"></i> 音の高さ（周波数）</label>
+                            <span id="freqVal" class="text-indigo-600 font-bold">1000 Hz</span>
+                        </div>
+                        <input type="range" id="freqRange" min="200" max="8000" value="1000" step="50" class="w-full accent-indigo-600 cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                            <span>低い音 (200Hz)</span>
+                            <span>高い音 (8000Hz)</span>
+                        </div>
+                    </div>
+
+                    <!-- Control 2: Amplitude / Sound Volume -->
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-slate-600 mb-1">
+                            <label for="ampRange"><i class="fa-solid fa-volume-high"></i> 音の大きさと振幅</label>
+                            <span id="ampVal" class="text-indigo-600 font-bold">中</span>
+                        </div>
+                        <input type="range" id="ampRange" min="1" max="5" value="3" step="1" class="w-full accent-indigo-600 cursor-pointer">
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                            <span>小さい音</span>
+                            <span>大きな音</span>
+                        </div>
+                    </div>
+
+                    <!-- Mode-Specific Toggle Options -->
+                    <div id="apparatusControls" class="sm:col-span-2 flex items-center justify-between pt-2 border-t border-slate-200">
+                        <span class="text-xs font-bold text-slate-600">実験装置切り替え:</span>
+                        <div class="inline-flex rounded-md shadow-sm" role="group">
+                            <button type="button" id="btnAppA" onclick="setApparatus('A')" class="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-l-lg border border-indigo-600 hover:bg-indigo-700">
+                                装置A (空気→水 直通)
+                            </button>
+                            <button type="button" id="btnAppB" onclick="setApparatus('B')" class="px-3 py-1.5 text-xs font-medium bg-white text-slate-700 rounded-r-lg border border-slate-300 hover:bg-slate-50">
+                                装置B (セロハン+硬い棒+板)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="cochleaControls" class="sm:col-span-2 hidden flex items-center justify-between pt-2 border-t border-slate-200">
+                        <span class="text-xs font-bold text-slate-600">音再生テスト:</span>
+                        <button id="btnAudio" onclick="toggleAudio()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg hover:bg-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-volume-high"></i> 実際の音を聴く (ON/OFF)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conceptual Explanation Panel -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <h2 class="text-base font-bold text-slate-800 border-b pb-2 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                    <span id="explanationTitle">装置Aと装置Bの比較解釈</span>
+                </h2>
+                <div id="explanationBody" class="text-xs leading-relaxed text-slate-600 space-y-2">
+                    <!-- Dynamic Text via JS -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Interactive Practice / Quiz Section (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col space-y-6">
+
+            <!-- Quiz Box -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex-1 flex flex-col">
+                <div class="flex items-center justify-between border-b pb-3 mb-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-graduation-cap text-indigo-600"></i> 理解度チェック（問題演習）
+                    </h2>
+                    <span id="quizProgress" class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full">問 1 / 4</span>
+                </div>
+
+                <!-- Quiz Content -->
+                <div class="flex-1 flex flex-col justify-between">
+                    <div>
+                        <!-- Question Title -->
+                        <h3 id="quizQuestion" class="text-sm font-bold text-slate-800 mb-3 leading-snug">
+                            <!-- JS Inject -->
+                        </h3>
+
+                        <!-- Question Options -->
+                        <div id="quizOptions" class="space-y-2 mb-4">
+                            <!-- JS Inject -->
+                        </div>
+                    </div>
+
+                    <!-- Feedback Box -->
+                    <div id="quizFeedback" class="hidden p-3 rounded-lg text-xs mb-3 transition-all duration-200">
+                        <!-- JS Inject -->
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                        <button id="btnPrevQuiz" onclick="changeQuiz(-1)" class="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-300 rounded-lg disabled:opacity-30">
+                            <i class="fa-solid fa-arrow-left"></i> 前の問題
+                        </button>
+                        <button id="btnNextQuiz" onclick="changeQuiz(1)" class="px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg">
+                            次の問題 <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Correspondence Table / Key Vocabulary -->
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                <h3 class="text-xs font-bold text-indigo-900 mb-2 flex items-center gap-1.5">
+                    <i class="fa-solid fa-table-cells"></i> 実験装置とヒトの耳の対応関係
+                </h3>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-white p-2 rounded border border-indigo-100">
+                        <span class="text-slate-400 block text-[10px]">装置モデル</span>
+                        <span class="font-bold text-slate-700">セロハン膜</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-indigo-100">
+                        <span class="text-slate-400 block text-[10px]">ヒトの耳の構造</span>
+                        <span class="font-bold text-indigo-700">鼓膜（外耳と中耳の境界）</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-indigo-100">
+                        <span class="text-slate-400 block text-[10px]">装置モデル</span>
+                        <span class="font-bold text-slate-700">硬い棒</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-indigo-100">
+                        <span class="text-slate-400 block text-[10px]">ヒトの耳の構造</span>
+                        <span class="font-bold text-indigo-700">耳小骨（中耳にある）</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-indigo-100">
+                        <span class="text-slate-400 block text-[10px]">装置モデル</span>
+                        <span class="font-bold text-slate-700">水面の板</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-indigo-100">
+                        <span class="text-slate-400 block text-[10px]">ヒトの耳の構造</span>
+                        <span class="font-bold text-indigo-700">卵円窓（うずまき管入口）</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-indigo-100">
+                        <span class="text-slate-400 block text-[10px]">装置モデル</span>
+                        <span class="font-bold text-slate-700">容器の中の水</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-indigo-100">
+                        <span class="text-slate-400 block text-[10px]">ヒトの耳の構造</span>
+                        <span class="font-bold text-indigo-700">うずまき管内のリンパ液</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="max-w-6xl mx-auto px-4 mt-8 text-center text-xs text-slate-500">
+        <a href="index.html" class="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 font-bold mb-2">
+            <i class="fa-solid fa-house"></i> デジタルコンテンツポータルへ戻る
+        </a>
+        <p>高校生物 × 聴覚メカニズム EdTech シミュレーター | 滋賀県立河瀬高等学校</p>
+    </footer>
+
+    <!-- JavaScript Simulation Engine -->
+    <script>
+        // --- State Management ---
+        let currentMode = 'apparatus'; // 'apparatus' or 'cochlea'
+        let apparatusType = 'A'; // 'A' or 'B'
+        let frequency = 1000; // Hz
+        let amplitude = 3; // 1 - 5
+        let audioContext = null;
+        let oscillator = null;
+        let gainNode = null;
+        let isAudioPlaying = false;
+
+        // --- Canvas Element ---
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        let animFrameId = null;
+        let time = 0;
+
+        // Resize Canvas dynamically
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // --- Controls Event Listeners ---
+        const freqSlider = document.getElementById('freqRange');
+        const freqVal = document.getElementById('freqVal');
+        freqSlider.addEventListener('input', (e) => {
+            frequency = parseInt(e.target.value);
+            freqVal.textContent = `${frequency} Hz`;
+            if (isAudioPlaying && oscillator) {
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            }
+        });
+
+        const ampSlider = document.getElementById('ampRange');
+        const ampVal = document.getElementById('ampVal');
+        const ampLabels = ["極小", "小", "中", "大", "極大"];
+        ampSlider.addEventListener('input', (e) => {
+            amplitude = parseInt(e.target.value);
+            ampVal.textContent = ampLabels[amplitude - 1];
+            if (isAudioPlaying && gainNode) {
+                gainNode.gain.setValueAtTime(amplitude * 0.03, audioContext.currentTime);
+            }
+        });
+
+        function setApparatus(type) {
+            apparatusType = type;
+            const btnA = document.getElementById('btnAppA');
+            const btnB = document.getElementById('btnAppB');
+            if (type === 'A') {
+                btnA.className = "px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-l-lg border border-indigo-600 hover:bg-indigo-700";
+                btnB.className = "px-3 py-1.5 text-xs font-medium bg-white text-slate-700 rounded-r-lg border border-slate-300 hover:bg-slate-50";
+            } else {
+                btnB.className = "px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-r-lg border border-indigo-600 hover:bg-indigo-700";
+                btnA.className = "px-3 py-1.5 text-xs font-medium bg-white text-slate-700 rounded-l-lg border border-slate-300 hover:bg-slate-50";
+            }
+            updateExplanations();
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const tabApp = document.getElementById('tab-apparatus');
+            const tabCoch = document.getElementById('tab-cochlea');
+            const appCtrls = document.getElementById('apparatusControls');
+            const cochCtrls = document.getElementById('cochleaControls');
+
+            if (mode === 'apparatus') {
+                tabApp.className = "pb-2 px-4 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2";
+                tabCoch.className = "pb-2 px-4 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2";
+                appCtrls.classList.remove('hidden');
+                cochCtrls.classList.add('hidden');
+            } else {
+                tabCoch.className = "pb-2 px-4 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2";
+                tabApp.className = "pb-2 px-4 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 flex items-center gap-2";
+                cochCtrls.classList.remove('hidden');
+                appCtrls.classList.add('hidden');
+            }
+            updateExplanations();
+        }
+
+        // --- Web Audio API Integration ---
+        function toggleAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            if (isAudioPlaying) {
+                if (oscillator) {
+                    oscillator.stop();
+                    oscillator.disconnect();
+                }
+                isAudioPlaying = false;
+                document.getElementById('btnAudio').classList.replace('bg-indigo-600', 'bg-slate-800');
+            } else {
+                oscillator = audioContext.createOscillator();
+                gainNode = audioContext.createGain();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+
+                gainNode.gain.setValueAtTime(amplitude * 0.03, audioContext.currentTime);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.start();
+                isAudioPlaying = true;
+                document.getElementById('btnAudio').classList.replace('bg-slate-800', 'bg-indigo-600');
+            }
+        }
+
+        // --- Canvas Rendering Loop ---
+        function render() {
+            time += 0.05;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const overlayInfo = document.getElementById('simOverlayInfo');
+
+            if (currentMode === 'apparatus') {
+                drawApparatusSimulation(overlayInfo);
+            } else {
+                drawCochleaSimulation(overlayInfo);
+            }
+
+            animFrameId = requestAnimationFrame(render);
+        }
+
+        // --- Mode 1: Apparatus A vs B Simulation ---
+        function drawApparatusSimulation(overlayElem) {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            overlayElem.innerHTML = `ステータス: <span class="font-bold text-amber-400">装置 ${apparatusType}</span> (${apparatusType === 'A' ? '空気中から水中へ直接' : 'セロハン膜＋耳小骨テコによる増幅'})`;
+
+            // Speaker top center
+            const spkX = w / 2;
+            const spkY = 40;
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(spkX - 50, spkY - 20, 100, 20);
+            ctx.beginPath();
+            ctx.moveTo(spkX - 40, spkY);
+            ctx.lineTo(spkX + 40, spkY);
+            ctx.lineTo(spkX + 60, spkY + 25);
+            ctx.lineTo(spkX - 60, spkY + 25);
+            ctx.closePath();
+            ctx.fillStyle = '#334155';
+            ctx.fill();
+
+            // Sound Waves (Air)
+            const speed = 2 + (frequency / 2000);
+            const waveAmp = amplitude * 3;
+            ctx.strokeStyle = 'rgba(129, 140, 248, 0.6)';
+            ctx.lineWidth = 2;
+            for (let r = (time * 20) % 30; r < 140; r += 25) {
+                ctx.beginPath();
+                ctx.arc(spkX, spkY + 25, r, 0.3 * Math.PI, 0.7 * Math.PI);
+                ctx.stroke();
+            }
+
+            // Container Water (Bottom Half)
+            const waterY = 220;
+            ctx.fillStyle = 'rgba(14, 165, 233, 0.25)';
+            ctx.fillRect(w / 2 - 120, waterY, 240, 120);
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(w / 2 - 120, waterY, 240, 120);
+
+            // Water Mic
+            const micX = w / 2;
+            const micY = waterY + 80;
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(micX, micY, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '10px sans-serif';
+            ctx.fillText("水中マイク", micX - 24, micY + 24);
+
+            if (apparatusType === 'A') {
+                // Apparatus A: Sound enters water directly
+                const vib = Math.sin(time * speed) * waveAmp * 0.15;
+                
+                // Draw water surface ripple
+                ctx.beginPath();
+                ctx.moveTo(w / 2 - 120, waterY);
+                for (let x = -120; x <= 120; x += 10) {
+                    const y = waterY + Math.sin((x + time * 50) * 0.05) * vib;
+                    ctx.lineTo(w / 2 + x, y);
+                }
+                ctx.strokeStyle = '#38bdf8';
+                ctx.stroke();
+
+                // Faint sound waves in water
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+                ctx.font = '12px sans-serif';
+                ctx.fillText("音波の大部分が反射・減衰（音が極めて小さい）", w / 2 - 120, waterY + 45);
+
+            } else {
+                // Apparatus B: Cellophane Membrane -> Hard Rod -> Plate
+                const membraneY = 130;
+                const rodDisplacement = Math.sin(time * speed) * waveAmp * 1.8;
+
+                // Cellophane Membrane (鼓膜)
+                ctx.beginPath();
+                ctx.moveTo(w / 2 - 80, membraneY);
+                ctx.quadraticCurveTo(w / 2, membraneY + rodDisplacement, w / 2 + 80, membraneY);
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillText("セロハン膜（鼓膜）", w / 2 + 90, membraneY + 5);
+
+                // Hard Rod (耳小骨)
+                const rodTop = membraneY + rodDisplacement;
+                const rodBottom = waterY + rodDisplacement;
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillRect(w / 2 - 4, rodTop, 8, rodBottom - rodTop);
+                ctx.strokeStyle = '#475569';
+                ctx.strokeRect(w / 2 - 4, rodTop, 8, rodBottom - rodTop);
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fillText("硬い棒（耳小骨）", w / 2 + 15, (rodTop + rodBottom) / 2);
+
+                // Plate on Water Surface (卵円窓)
+                const plateY = waterY + rodDisplacement;
+                ctx.fillStyle = '#f43f5e';
+                ctx.fillRect(w / 2 - 35, plateY - 4, 70, 8);
+                ctx.fillStyle = '#fda4af';
+                ctx.fillText("板（卵円窓）", w / 2 + 45, plateY + 4);
+
+                // Strong Vibration Waves in Water
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+                ctx.lineWidth = 3;
+                for (let r = 10; r < 70; r += 15) {
+                    const waveR = (r + time * 30) % 70;
+                    ctx.beginPath();
+                    ctx.arc(w / 2, plateY + 5, waveR, 0, Math.PI);
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = '#22c55e';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText("効率的に音波が伝達！（水中マイクで鮮明にキャッチ）", w / 2 - 130, waterY + 110);
+            }
+        }
+
+        // --- Mode 2: Basilar Membrane Cochlea Simulation ---
+        function drawCochleaSimulation(overlayElem) {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            overlayElem.innerHTML = `うずまき管（基底膜）の共振モデル | 入力周波数: <span class="font-bold text-amber-400">${frequency} Hz</span>`;
+
+            // Unrolled Cochlea Schematic
+            const startX = 60;
+            const endX = w - 60;
+            const baseWidth = endX - startX;
+            const topY = 80;
+            const bottomY = 280;
+
+            // Draw Oval Window (Entrance)
+            ctx.fillStyle = '#f43f5e';
+            ctx.fillRect(startX - 15, topY + 40, 15, 60);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '11px sans-serif';
+            ctx.fillText("卵円窓(入口)", startX - 50, topY + 35);
+
+            const bmY = 170; // Center Line
+            
+            // Draw Basilar Membrane Base Container
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(startX, topY);
+            ctx.lineTo(endX, topY + 30);
+            ctx.lineTo(endX, bottomY - 30);
+            ctx.lineTo(startX, bottomY);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(30, 41, 59, 0.5)';
+            ctx.fill();
+            ctx.stroke();
+
+            // Frequency Mapping: High Freq -> Entrance (startX), Low Freq -> Apex (endX)
+            const minLog = Math.log10(200);
+            const maxLog = Math.log10(8000);
+            const currentLog = Math.log10(frequency);
+            const peakRatio = 1 - ((currentLog - minLog) / (maxLog - minLog)); 
+            const peakX = startX + peakRatio * baseWidth;
+
+            // Draw Basilar Membrane Shape
+            ctx.fillStyle = 'rgba(99, 102, 241, 0.2)';
+            ctx.beginPath();
+            for (let x = startX; x <= endX; x += 5) {
+                const norm = (x - startX) / baseWidth;
+                const halfWidth = 10 + norm * 35;
+                if (x === startX) ctx.moveTo(x, bmY - halfWidth);
+                else ctx.lineTo(x, bmY - halfWidth);
+            }
+            for (let x = endX; x >= startX; x -= 5) {
+                const norm = (x - startX) / baseWidth;
+                const halfWidth = 10 + norm * 35;
+                ctx.lineTo(x, bmY + halfWidth);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw Vibrating Wave along Basilar Membrane
+            ctx.beginPath();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+
+            const speed = 15;
+            for (let x = startX; x <= endX; x += 2) {
+                const distFromPeak = Math.abs(x - peakX);
+                const resonance = Math.exp(-Math.pow(distFromPeak / 45, 2));
+                const waveAmp = resonance * amplitude * 18;
+                const y = bmY + Math.sin((x - startX) * 0.1 - time * speed) * waveAmp;
+
+                if (x === startX) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Draw Resonance Peak Indicator
+            ctx.beginPath();
+            ctx.arc(peakX, bmY, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Electrical signal pulses going to Auditory Nerve
+            const pulseY = bottomY + 30;
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(startX, pulseY);
+            for (let x = startX; x <= endX; x += 10) {
+                const isNearPeak = Math.abs(x - peakX) < 30;
+                const pY = isNearPeak ? pulseY - (Math.random() * 15 + 5) : pulseY;
+                ctx.lineTo(x, pY);
+            }
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '11px sans-serif';
+            ctx.fillText("入口（幅が狭く硬い）", startX, topY - 10);
+            ctx.fillText("奥/頂部（幅が広く柔らかい）", endX - 110, topY + 20);
+
+            ctx.fillStyle = '#f87171';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(`最高振幅地点 (ここで聴細胞が興奮)`, Math.min(peakX - 60, w - 210), bmY - 50);
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText("聴神経への電気信号（インパルス）", startX, pulseY + 25);
+            
+            // Pitch indicator text
+            ctx.fillStyle = '#e2e8f0';
+            if (frequency > 3000) {
+                ctx.fillText("【高音】入口近くの基底膜がよく振動する", w / 2 - 100, 45);
+            } else if (frequency < 800) {
+                ctx.fillText("【低音】奥（頂部）の基底膜がよく振動する", w / 2 - 100, 45);
+            } else {
+                ctx.fillText("【中音】中央付近の基底膜がよく振動する", w / 2 - 100, 45);
+            }
+        }
+
+        // Start Animation Loop
+        window.onload = () => {
+            render();
+            updateExplanations();
+            loadQuizQuestion();
+        };
+
+        // --- Explanation Updates ---
+        function updateExplanations() {
+            const title = document.getElementById('explanationTitle');
+            const body = document.getElementById('explanationBody');
+
+            if (currentMode === 'apparatus') {
+                title.textContent = "装置A・Bと中耳（耳小骨）の物理的・生物的意味";
+                body.innerHTML = `
+                    <p><strong>■ なぜ装置Aでは音が伝わらないのか？（インピーダンスミスマッチ）</strong><br>
+                    空気と水（液体）では密度や硬さが大きく異なるため、空気の音波が直接水面に当たっても約99.9%のエネルギーが反射されてしまいます。</p>
+                    <p><strong>■ 装置B（耳の構造）が音を強く伝えるしくみ</strong><br>
+                    ヒトの耳では、<strong>セロハン膜（鼓膜）</strong>で捉えた振動を<strong>硬い棒（耳小骨）</strong>を通じて<strong>小さな板（卵円窓）</strong>に集中的に伝えます。
+                    面積比による圧力の集中とテコの原理によって振動が増幅され、液体の満ちた<strong>うずまき管（リンパ液）</strong>へ効率よく音を伝えることができます。</p>
+                `;
+            } else {
+                title.textContent = "うずまき管（基底膜）における周波数識別メカニズム";
+                body.innerHTML = `
+                    <p><strong>■ 基底膜の場所による構造の違い</strong><br>
+                    うずまき管の内部にある<strong>基底膜</strong>は、入口（卵円窓）側が<strong>「幅が狭く硬い」</strong>のに対し、奥（頂部）側は<strong>「幅が広く柔らかい」</strong>構造をしています。</p>
+                    <p><strong>■ 音の高さ（周波数）の識別</strong><br>
+                    ・<span class="text-indigo-600 font-bold">高い音（高周波数）</span>：入口に近い幅の狭い基底膜がよく共振します。<br>
+                    ・<span class="text-indigo-600 font-bold">低い音（低周波数）</span>：奥の幅が広い基底膜がよく共振します。<br>
+                    共振した場所にある<strong>コルチ器の聴細胞</strong>が興奮し、受容電位が発生して聴神経から大脳皮質の聴覚野へ伝わることで、脳は音の高低を識別しています。</p>
+                `;
+            }
+        }
+
+        // --- Quiz Section Data & Logic ---
+        const quizData = [
+            {
+                q: "問1: 装置Aと比較して装置Bのほうが音を水中へ効率よく伝達しました。これに似た構造が見られるヒトの耳の部位はどこですか？",
+                options: ["① 外耳", "② 中耳", "③ 前庭", "④ うずまき管", "⑤ 半規管"],
+                answer: 1, // Index 1 = ② 中耳
+                explain: "正解は ② 中耳 です。中耳には耳小骨（てこ作用・面積差による圧力増幅）が存在し、空気中からリンパ液中への音波伝達効率を高めています。"
+            },
+            {
+                q: "問2: 装置Bで用いたセロハンは、耳のどの構造に相当しますか？",
+                options: ["① 耳小骨", "② 内耳", "③ 聴神経", "④ 鼓膜", "⑤ 耳殻"],
+                answer: 3, // Index 3 = ④ 鼓膜
+                explain: "正解は ④ 鼓膜 です。セロハン膜は空気振動（音波）を直接受けて機械的振動に変換する鼓膜に相当します。"
+            },
+            {
+                q: "問3: ヒトの聴覚についての記述として正しいものを【2つ】選びなさい。（※この問題では代表的な正しい記述を選択してください）",
+                options: [
+                    "① 大きな音は鼓膜にある聴細胞を興奮させる。",
+                    "② 音は内耳で受けとられ、聴神経を経て大脳に伝えられる。",
+                    "③ 聴神経によって音波が機械的な振動に変えられる。",
+                    "④ うずまき管は外部からの音を増幅して内耳に伝える構造である。",
+                    "⑤ 音を効率よくリンパ液内へ伝えるしくみがあるので、ヒトは敏感に音を聞くことができる。"
+                ],
+                answer: 4, // Index 4 (or 1)
+                explain: "正解は ② と ⑤ です。①聴細胞は鼓膜ではなくコルチ器にあります。③聴神経は機械振動ではなく電気信号を大脳へ伝えます。④音を増幅するのは耳小骨（中耳）です。"
+            },
+            {
+                q: "問4: 音の高低が識別されるしくみとして最も適当なものを1つ選びなさい。",
+                options: [
+                    "① 内耳の聴細胞は、細胞の大きさの違いによって感じ取る音の周波数が異なる。",
+                    "② 内耳の聴細胞は、中耳の耳小骨との接続の強さの違いにより感じ取る周波数が異なる。",
+                    "③ 内耳の聴細胞は、中耳の耳小骨によって鼓膜の異なる部分と連絡するので周波数が異なる。",
+                    "④ 内耳の基底膜は、音の周波数の違いにより、よく振動する場所が異なるため、その上にある聴細胞の感じ取る周波数が異なる。",
+                    "⑤ 個々の聴細胞はすべての周波数の音を感じ取り、大脳に伝えられてから周波数ごとに識別される。"
+                ],
+                answer: 3, // Index 3 = ④
+                explain: "正解は ④ です。基底膜の入口側は幅が狭く高音で振動し、奥側は幅が広く低音で振動します。振動位置の違いにより興奮する聴細胞が異なり、音の高低が識別されます。"
+            }
+        ];
+
+        let currentQuizIndex = 0;
+        let selectedAnswers = Array(quizData.length).fill(null);
+
+        function loadQuizQuestion() {
+            const qData = quizData[currentQuizIndex];
+            document.getElementById('quizProgress').textContent = `問 ${currentQuizIndex + 1} / ${quizData.length}`;
+            document.getElementById('quizQuestion').textContent = qData.q;
+
+            const optionsContainer = document.getElementById('quizOptions');
+            optionsContainer.innerHTML = '';
+
+            qData.options.forEach((opt, idx) => {
+                const isSelected = selectedAnswers[currentQuizIndex] === idx;
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-2.5 rounded-lg text-xs font-medium border transition-all ${
+                    isSelected ? 'bg-indigo-50 border-indigo-500 text-indigo-900 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`;
+                btn.innerHTML = opt;
+                btn.onclick = () => selectOption(idx);
+                optionsContainer.appendChild(btn);
+            });
+
+            // Update Navigation Buttons
+            document.getElementById('btnPrevQuiz').disabled = currentQuizIndex === 0;
+
+            // Show Feedback if already answered
+            const feedbackBox = document.getElementById('quizFeedback');
+            if (selectedAnswers[currentQuizIndex] !== null) {
+                showQuizFeedback(selectedAnswers[currentQuizIndex]);
+            } else {
+                feedbackBox.classList.add('hidden');
+            }
+        }
+
+        function selectOption(optionIndex) {
+            selectedAnswers[currentQuizIndex] = optionIndex;
+            loadQuizQuestion();
+            showQuizFeedback(optionIndex);
+
+            if (currentQuizIndex === 0 || currentQuizIndex === 1) {
+                switchMode('apparatus');
+            } else if (currentQuizIndex === 3) {
+                switchMode('cochlea');
+            }
+        }
+
+        function showQuizFeedback(optionIndex) {
+            const qData = quizData[currentQuizIndex];
+            const feedbackBox = document.getElementById('quizFeedback');
+            feedbackBox.classList.remove('hidden');
+
+            const isCorrect = optionIndex === qData.answer || (currentQuizIndex === 2 && (optionIndex === 1 || optionIndex === 4));
+
+            if (isCorrect) {
+                feedbackBox.className = "p-3 rounded-lg text-xs mb-3 bg-emerald-50 text-emerald-900 border border-emerald-200";
+                feedbackBox.innerHTML = `<div class="font-bold flex items-center gap-1 text-emerald-700 mb-1"><i class="fa-solid fa-circle-check"></i> 正解です！</div>${qData.explain}`;
+            } else {
+                feedbackBox.className = "p-3 rounded-lg text-xs mb-3 bg-rose-50 text-rose-900 border border-rose-200";
+                feedbackBox.innerHTML = `<div class="font-bold flex items-center gap-1 text-rose-700 mb-1"><i class="fa-solid fa-circle-xmark"></i> 残念、もう一度考えてみよう</div>${qData.explain}`;
+            }
+        }
+
+        function changeQuiz(delta) {
+            currentQuizIndex += delta;
+            if (currentQuizIndex < 0) currentQuizIndex = 0;
+            if (currentQuizIndex >= quizData.length) currentQuizIndex = quizData.length - 1;
+            loadQuizQuestion();
+        }
+    </script>
+</body>
+</html>
