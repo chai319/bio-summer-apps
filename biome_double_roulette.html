@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英国式ティースタンド生態ピラミッド｜バイオーム2連ルーレット</title>
+<style>
+  :root {
+    --bg: #0F172A;
+    --surface: #1E293B;
+    --surface-sub: #162032;
+    --border: #334155;
+    --text: #F8FAFC;
+    --text-muted: #94A3B8;
+    --accent: #10B981;
+    --warn: #D97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 20px 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .wrap {
+    width: 100%;
+    max-width: 1120px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* ヘッダー（直線基調） */
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 14px;
+  }
+  .title-block .kicker {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .title-block h1 {
+    font-size: 25px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+  .mode-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  select.mode-select {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    max-width: 100%;
+  }
+
+  /* 2連スロット */
+  .slots-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 820px) {
+    .slots-grid { grid-template-columns: 1fr; }
+  }
+  .slot-panel {
+    background: var(--surface);
+    border-top: 3px solid var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .slot-panel.second {
+    border-top-color: var(--warn);
+  }
+  .slot-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .slot-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+  }
+  .slot-tier {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .slot-tier.hard {
+    border-color: var(--warn);
+    color: #FCD34D;
+  }
+
+  /* リール窓 */
+  .reel-window {
+    height: 92px;
+    background: #0B1120;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    position: relative;
+  }
+  .reel-window::before,
+  .reel-window::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; height: 18px;
+    pointer-events: none; z-index: 2;
+  }
+  .reel-window::before { top: 0; background: linear-gradient(to bottom, #0B1120, transparent); }
+  .reel-window::after { bottom: 0; background: linear-gradient(to top, #0B1120, transparent); }
+  .reel-strip {
+    display: flex;
+    flex-direction: column;
+    will-change: transform;
+  }
+  .reel-item {
+    height: 92px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    padding: 0 12px;
+    text-align: center;
+    color: var(--text);
+  }
+
+  /* 確定情報表示 */
+  .detail-box {
+    background: var(--surface-sub);
+    border-left: 3px solid var(--border);
+    padding: 12px 14px;
+    min-height: 175px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .slot-panel.locked .detail-box {
+    border-left-color: var(--accent);
+  }
+  .slot-panel.second.locked .detail-box {
+    border-left-color: var(--warn);
+  }
+  .env-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 12px;
+    color: #CBD5E1;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+  .hint-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12.5px;
+    color: #E2E8F0;
+  }
+  .hint-row strong {
+    color: #94A3B8;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+
+  /* コントロールボタン */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  button.btn {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px 22px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  button.btn:hover:not(:disabled) {
+    background: #273549;
+    border-color: #64748B;
+  }
+  button.btn.primary {
+    background: var(--accent);
+    color: #052E16;
+    border-color: var(--accent);
+    padding: 12px 32px;
+    font-size: 15px;
+  }
+  button.btn.primary:hover:not(:disabled) {
+    background: #34D399;
+  }
+  button.btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* 一覧アコーディオン */
+  details.catalog {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  details.catalog summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: #CBD5E1;
+    margin-bottom: 8px;
+  }
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .catalog-item {
+    background: var(--surface);
+    border-left: 2px solid var(--border);
+    padding: 6px 10px;
+  }
+  .catalog-item.hard {
+    border-left-color: var(--warn);
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="title-block">
+      <div class="kicker">高校生物 探究実践 ｜ 英国式ティースタンド生態ピラミッド（2バイオーム比較抽選）</div>
+      <h1>バイオーム・ダブルルーレット（標準 ＋ 雲霧林等難関24種）</h1>
+    </div>
+    <div class="mode-bar">
+      <label for="drawMode" style="font-size:12.5px; color:#94A3B8;">出題モード：</label>
+      <select id="drawMode" class="mode-select">
+        <option value="balanced">標準 ＋ 難関バランス（①は広め / ②は難関寄り）</option>
+        <option value="second_hard">②を必ず難関（雲霧林・泥炭湿地・深海など）にする</option>
+        <option value="all_hard">①・②どちらも難関13種のみから引く</option>
+        <option value="uniform">全24種 完全均等ランダム</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="controls">
+    <button class="btn primary" id="spinBothBtn">2つまとめて抽選する</button>
+    <button class="btn" id="spin1Btn">バイオーム①だけ引き直す</button>
+    <button class="btn" id="spin2Btn">バイオーム②だけ引き直す</button>
+  </div>
+
+  <div class="slots-grid">
+    <!-- SLOT 1 -->
+    <section class="slot-panel" id="panel1">
+      <div class="slot-head">
+        <span class="slot-label">SLOT 01 ｜ バイオーム①（1作目制作）</span>
+        <span class="slot-tier" id="tier1">未確定</span>
+      </div>
+      <div class="reel-window">
+        <div class="reel-strip" id="reel1">
+          <div class="reel-item">待機中</div>
+        </div>
+      </div>
+      <div class="detail-box" id="detail1">
+        <div style="color:#94A3B8;">「2つまとめて抽選する」を押すと、1作目に制作するバイオーム①の条件と設計の着眼点が表示されます。</div>
+      </div>
+    </section>
+
+    <!-- SLOT 2 -->
+    <section class="slot-panel second" id="panel2">
+      <div class="slot-head">
+        <span class="slot-label">SLOT 02 ｜ バイオーム②（2作目制作・①と比較）</span>
+        <span class="slot-tier" id="tier2">未確定</span>
+      </div>
+      <div class="reel-window">
+        <div class="reel-strip" id="reel2">
+          <div class="reel-item">待機中</div>
+        </div>
+      </div>
+      <div class="detail-box" id="detail2">
+        <div style="color:#94A3B8;">①とは重複しない2作目のバイオーム②が選ばれます。両者の現存量・サブ皿・エネルギー消費（呼吸・被食・排出）の違いを比較します。</div>
+      </div>
+    </section>
+  </div>
+
+  <details class="catalog">
+    <summary>収録バイオーム全24種リストを確認する（標準11種 ＋ 雲霧林など難関・特殊13種）</summary>
+    <div class="catalog-grid" id="catalogGrid"></div>
+  </details>
+</div>
+
+<script>
+const BIOMES = [
+  // --- 標準バイオーム 11種 ---
+  {
+    id: "tropical_rainforest",
+    name: "熱帯多雨林",
+    level: "標準",
+    hard: false,
+    temp: "25〜30℃",
+    prec: "2000mm以上",
+    env: "高温多湿・年中成長・高い分解速度",
+    producerHint: "階層構造が発達し膨大な光合成量・植物現存量。ただし土壌の栄養蓄積は少ない。",
+    detritusHint: "落葉は多いが高温多湿で分解者が猛烈に働くため、地表（サブ皿）に未分解物が厚く積もりにくい。",
+    energyHint: "高い総生産量に対して植物・分解者の呼吸消費と水の蒸散サイクルが非常に速い。"
+  },
+  {
+    id: "subtropical_rainforest",
+    name: "亜熱帯多雨林",
+    level: "標準",
+    hard: false,
+    temp: "20〜25℃",
+    prec: "1500〜2000mm",
+    env: "温暖多湿・木生シダや常緑広葉樹",
+    producerHint: "ソテツ・ヘゴ・ガジュマルなど多様な植物が密集し高い一次生産と現存量。",
+    detritusHint: "湿潤環境で菌類・細菌による分解が進み、多層的な腐食連鎖が回る。",
+    energyHint: "台風など季節的撹乱と湿度・水分循環をドリンク等でどう表すかが鍵。"
+  },
+  {
+    id: "raingreen_forest",
+    name: "雨緑樹林",
+    level: "標準",
+    hard: false,
+    temp: "20〜25℃",
+    prec: "1000〜1500mm",
+    env: "明確な雨季と乾季・乾季に一斉落葉",
+    producerHint: "雨季に旺盛に光合成し、乾季は葉を落として生産を抑える。",
+    detritusHint: "乾季入りに大量の落葉（デトリタス）がサブ皿へ供給されるが、雨季まで分解が遅れる季節波がある。",
+    energyHint: "乾季と雨季の水・エネルギー消費（呼吸量）の切り替えをどう表現するか。"
+  },
+  {
+    id: "laurel_forest",
+    name: "照葉樹林",
+    level: "標準",
+    hard: false,
+    temp: "15〜20℃",
+    prec: "1000mm以上",
+    env: "暖温帯・クチクラ層を持つ常緑広葉樹（シイ・カシ）",
+    producerHint: "林内が暗く下層植生は控えめだが、常緑のため通年で生産を行い高い現存量を保つ。",
+    detritusHint: "厚いクチクラ層を持つ硬い落ち葉は分解に時間がかかり、土壌動物と菌類の連携が重要。",
+    energyHint: "年間を通じた穏やかな物質循環と、堅果（ドングリ）による動物へのエネルギー供給。"
+  },
+  {
+    id: "sclerophyll_forest",
+    name: "硬葉樹林",
+    level: "標準",
+    hard: false,
+    temp: "15〜20℃",
+    prec: "500〜1000mm",
+    env: "地中海性気候・夏が乾燥し冬に降雨",
+    producerHint: "小さく硬い葉で夏の乾燥に耐える（オリーブ等）。森林より疎な構造になりやすい。",
+    detritusHint: "乾燥する夏は微生物の分解が止まり、落ち葉がサブ皿に乾いたまま残りやすい（山火事撹乱も起きる）。",
+    energyHint: "水制限と光エネルギーのバランス、乾燥期の不消化・分解停滞。"
+  },
+  {
+    id: "summergreen_forest",
+    name: "夏緑樹林",
+    level: "標準",
+    hard: false,
+    temp: "5〜15℃",
+    prec: "1000mm以上",
+    env: "冷温帯・冬の寒さに備え秋に落葉（ブナ・ミズナラ）",
+    producerHint: "春〜夏に集中して生産し、落葉後の春先に林床植物が一斉開花する。",
+    detritusHint: "秋の大量落葉が冬を越えて春〜夏にゆっくり分解され、肥沃な褐色森林土をつくる。",
+    energyHint: "季節による呼吸量の大きな増減と、腐植の安定した蓄積。"
+  },
+  {
+    id: "taiga",
+    name: "針葉樹林（タイガ）",
+    level: "標準",
+    hard: false,
+    temp: "-5〜5℃",
+    prec: "500〜1000mm",
+    env: "亜寒帯・低温・常緑針葉樹が優占",
+    producerHint: "種多様性は控えめだが常緑針葉樹の現存量は大きく、植食動物は周期変動や季節移動を示す。",
+    detritusHint: "低温と樹脂成分により分解が極めて遅く、酸性土壌と厚い未分解落葉層がサブ皿に積もる。",
+    energyHint: "生食に回りにくい硬い針葉と、寒冷下での呼吸熱維持の負担。"
+  },
+  {
+    id: "savanna",
+    name: "サバンナ",
+    level: "標準",
+    hard: false,
+    temp: "20〜30℃",
+    prec: "500〜1000mm",
+    env: "熱帯の長い乾季・イネ科草本と点在するアカシア",
+    producerHint: "森林より植物の現存量は小さいが、草本層が多くの大型草食動物を支え回転率が非常に高い。",
+    detritusHint: "大型草食動物の大量の糞（不消化排出物）をフンコロガシやシロアリが処理する。",
+    energyHint: "高い「被食量」と「不消化排出量→サブ皿への移動」および動物の大きな呼吸消費。"
+  },
+  {
+    id: "steppe",
+    name: "ステップ（温帯草原）",
+    level: "標準",
+    hard: false,
+    temp: "0〜20℃",
+    prec: "250〜500mm",
+    env: "温帯内陸・少雨のため樹木は育たずイネ科草本が優占",
+    producerHint: "地上部（お菓子の見た目）より地下部（根系）に巨大な現存量を蓄える傾向がある。",
+    detritusHint: "毎年の枯死草本と地下根の回転により、極めて肥沃な黒土（チェルノーゼム）が形成される。",
+    energyHint: "地上の草食動物＋地下の根・土壌生物へのエネルギー分配。"
+  },
+  {
+    id: "desert",
+    name: "砂漠",
+    level: "標準",
+    hard: false,
+    temp: "10〜40℃",
+    prec: "250mm以下",
+    env: "極度の乾燥・昼夜の寒暖差・まばらな多肉植物",
+    producerHint: "全体の生産量・現存量は極めて小さい。サボテンなど水分貯蔵植物に動物が集中する。",
+    detritusHint: "乾燥により微生物分解が極めて遅く、雨が降った瞬間だけ急激に分解が進む。",
+    energyHint: "水制限と極端な寒暖差の中で、呼吸や水分損失をどう抑えているか。"
+  },
+  {
+    id: "tundra",
+    name: "ツンドラ",
+    level: "標準",
+    hard: false,
+    temp: "-5℃以下",
+    prec: "250mm以下",
+    env: "寒帯・永久凍土・地衣類とコケ植物が優占",
+    producerHint: "背の低い地衣類・コケが中心で現存量は極めて小さく、短い夏に一気に生産する。",
+    detritusHint: "低温と永久凍土により分解がほぼ進まず、過去の有機物がサブ皿で凍結保存される。",
+    energyHint: "極小のエネルギー入力に対して、恒温動物の呼吸熱維持コストが非常に高い。"
+  },
+
+  // --- 難関・特殊バイオーム 13種（雲霧林など） ---
+  {
+    id: "cloud_forest",
+    name: "熱帯山地雲霧林（クラウドフォレスト）",
+    level: "難関",
+    hard: true,
+    temp: "12〜18℃",
+    prec: "霧による水平降水＋2000mm超",
+    env: "標高1500〜3000m・常時霧が立ち込める低温多湿林",
+    producerHint: "低木の幹や枝に着生植物（コケ・ラン・シダ）がびっしり覆い、樹木自体は低めで葉の蒸散が少ない。",
+    detritusHint: "多湿だが気温が低いため分解が遅く、地表だけでなく樹上にも厚い腐植（樹上土壌）が溜まる。",
+    energyHint: "日射が霧に遮られる光制限と「霧（水蒸気）の凝結」をドリンク等でどう表すかが腕の見せ所。"
+  },
+  {
+    id: "peat_swamp",
+    name: "泥炭湿地林（ボグ・熱帯泥炭林）",
+    level: "難関",
+    hard: true,
+    temp: "0〜28℃（地域差）",
+    prec: "湛水・強酸性・貧酸素",
+    env: "水没による低酸素と強酸性で分解者が極端に働きにくい湿地",
+    producerHint: "ミズゴケや湿地適応樹木が光合成を行うが栄養塩が乏しい（食虫植物も見られる）。",
+    detritusHint: "【最大の特徴】枯死体が分解されずサブ皿に「泥炭」として延々と蓄積し続ける。",
+    energyHint: "本来サブ皿の呼吸で消えるはずの有機物が循環に戻らず固定される「炭素貯蔵庫」の構造。"
+  },
+  {
+    id: "mangrove",
+    name: "マングローブ林",
+    level: "難関",
+    hard: true,
+    temp: "20〜28℃",
+    prec: "汽水域（潮の干満あり）",
+    env: "海水と淡水が混ざる泥底・呼吸根を持つ特異な森林",
+    producerHint: "塩分に耐えるヒルギ類などが生育。直接生葉を食べる昆虫は少なく、多くが落葉になる。",
+    detritusHint: "【腐食連鎖主役】落ち葉をカニ・貝・微生物が細片化し、豊かな水産資源（稚魚）を支える。",
+    energyHint: "生食連鎖より腐食連鎖（サブ皿側）の矢印が太く、潮汐による系外流出入がある。"
+  },
+  {
+    id: "temperate_rainforest",
+    name: "温帯多雨林（倒木更新の森）",
+    level: "難関",
+    hard: true,
+    temp: "8〜18℃",
+    prec: "2000mm以上",
+    env: "冷涼多雨・巨大針葉樹と菌根菌ネットワーク",
+    producerHint: "圧倒的な巨大樹木（レッドウッド等）の現存量と、林床のシダ・コケ。",
+    detritusHint: "巨大な倒木（ナーサリーログ）が菌類にゆっくり分解されながら、次の苗木の養分・足場になる。",
+    energyHint: "サブ皿の倒木の上に次の生産者が育つ循環と、長寿命巨木の維持呼吸。"
+  },
+  {
+    id: "kelp_forest",
+    name: "藻場（ジャイアントケルプの森）",
+    level: "難関",
+    hard: true,
+    temp: "5〜20℃",
+    prec: "寒冷な沿岸海域（湧昇流）",
+    env: "海中で1日数十cm成長する大型褐藻とウニ・ラッコの連鎖",
+    producerHint: "陸上森林より生産者の入れ替わり（ターンオーバー）が極めて速く、被食割合も非常に高い。",
+    detritusHint: "波でちぎれた海藻（流れ藻）が別の海底や砂浜の腐食連鎖へ大量に運ばれる。",
+    energyHint: "高次捕食者（ラッコ）の摂食・呼吸がウニを抑え、藻場全体の存在を決める。"
+  },
+  {
+    id: "coral_reef",
+    name: "サンゴ礁（貧栄養海の共生系）",
+    level: "難関",
+    hard: true,
+    temp: "24〜28℃",
+    prec: "貧栄養・高透明度の浅海",
+    env: "栄養塩の乏しい「海の砂漠」に成立する高密度生態系",
+    producerHint: "サンゴ体内に共生する褐虫藻が生産者となり、宿主へ直接有機物を渡す。",
+    detritusHint: "外へ逃がさず、粘液・不消化排出物を即座に微生物と底生生物が回収する超高速リサイクル。",
+    energyHint: "外部入力（栄養）が少ないのに高い多様性を保つ「閉じた高速循環と呼吸消費」の表現。"
+  },
+  {
+    id: "alpine_windward",
+    name: "高山風衝地・高山ツンドラ",
+    level: "難関",
+    hard: true,
+    temp: "-15〜10℃",
+    prec: "強風・強紫外線・積雪",
+    env: "森林限界より上・地を這う高山植物と限られた夏の活動",
+    producerHint: "植物は強風と低温を避けて背が低くクッション状。現存量は小さく、生産期間も数か月に限られる。",
+    detritusHint: "土壌が薄く低温のため分解が遅い。ライチョウやナキウサギの糞は貴重な局所栄養源。",
+    energyHint: "強風・低温という非生物的ストレスに対する生き物のエネルギー消費。"
+  },
+  {
+    id: "bsc_cold_desert",
+    name: "生物土壌クラスト砂漠（冷砂漠）",
+    level: "難関",
+    hard: true,
+    temp: "-20〜15℃",
+    prec: "100〜250mm（冬寒冷）",
+    env: "シアノバクテリア・地衣類の極薄マットが砂地を覆う乾燥帯",
+    producerHint: "見かけは不毛な荒地だが、地表数mmの微生物・地衣類フィルムが光合成と窒素固定を担う。",
+    detritusHint: "土壌クラストのわずかな隙間に微小動物・分解者が集中し、水と栄養を逃さない。",
+    energyHint: "巨大植物がゼロに近い環境で、薄皮一枚の生産者現存量をどうお菓子の量で表現するか。"
+  },
+  {
+    id: "bamboo_mass_dieback",
+    name: "モンスーン竹林（一斉開花枯死系）",
+    level: "難関",
+    hard: true,
+    temp: "15〜28℃",
+    prec: "1200〜2000mm",
+    env: "地下茎クローンで急拡大し、数十年ごとに一斉開花して枯死する系",
+    producerHint: "普段は1つの巨大クローン植物が圧倒的に空間と光を占有する。",
+    detritusHint: "一斉枯死の直後、大量の種子によるネズミ等大発生と同時に巨大な枯死体が一気にサブ皿へ落ちる。",
+    energyHint: "時間軸の急変（通常期→一斉枯死・デトリタス爆発期）におけるエネルギー流れの変化。"
+  },
+  {
+    id: "satoyama",
+    name: "里山・雑木林（人為撹乱生態系）",
+    level: "難関",
+    hard: true,
+    temp: "5〜25℃",
+    prec: "1000〜1500mm",
+    env: "薪炭利用・落ち葉かき・田んぼ等、人の手が毎年入る二次自然",
+    producerHint: "定期的な伐採により明るい林床が保たれ、下草・昆虫から猛禽類まで多様になる。",
+    detritusHint: "【重要】落ち葉（デトリタス）の一部を人間が系外へ持ち出して堆肥や農業に使う。",
+    energyHint: "人間による持ち出し（収穫・落ち葉かき）を系の矢印・不消化/排出の延長に組み込めるか。"
+  },
+  {
+    id: "abyssal_plain",
+    name: "深海平原（マリンスノー生態系）",
+    level: "難関",
+    hard: true,
+    temp: "1〜4℃",
+    prec: "太陽光ゼロ・高水圧（深海）",
+    env: "光合成生産者ゼロ・表層から降り積もる遺骸に依存する世界",
+    producerHint: "【トラップ】この場には光合成生産者が存在しない！3段タワーの下段をどう扱うか？",
+    detritusHint: "上層から降ってくるマリンスノーやクジラの死骸＝ほぼすべてが腐食連鎖（サブ皿主役）で成立。",
+    energyHint: "極限の低温・低エネルギー下で、代謝（呼吸消費）を極限まで下げて生き延びる省エネ戦略。"
+  },
+  {
+    id: "cave_guano",
+    name: "洞窟生態系（グアノ腐食系）",
+    level: "難関",
+    hard: true,
+    temp: "10〜20℃（通年一定）",
+    prec: "暗黒・閉鎖的地下空間",
+    env: "光合成なし。外部で採餌したコウモリの糞（グアノ）が唯一の入り口",
+    producerHint: "生産者が不在。系外から運び込まれる「コウモリの不消化排出物」がすべての土台。",
+    detritusHint: "グアノを起点にカビ・細菌・トビムシ・洞窟性動物が連鎖する完全腐食生態系。",
+    energyHint: "系外からのエネルギー搬入と、暗い閉鎖空間での極めて低いエネルギー密度・呼吸量。"
+  },
+  {
+    id: "hydrothermal_vent",
+    name: "深海熱水噴出孔（化学合成生態系）",
+    level: "難関",
+    hard: true,
+    temp: "周辺2℃ / 噴出口300℃超",
+    prec: "暗黒深海・硫化水素噴出",
+    env: "太陽光の代わりに地球内部の化学エネルギーを使う特異生態系",
+    producerHint: "植物（光合成）の代わりに「化学合成細菌」が無機物（硫化水素）を酸化して一次生産を担う。",
+    detritusHint: "チューブワーム等との共生が中心だが、熱水停止とともに生態系全体が一気に消滅・分解される。",
+    energyHint: "ドリンクで「太陽」ではなく「熱水・化学エネルギーの供給」をどう表現するかが最大の山場。"
+  }
+];
+
+const reel1 = document.getElementById("reel1");
+const reel2 = document.getElementById("reel2");
+const detail1 = document.getElementById("detail1");
+const detail2 = document.getElementById("detail2");
+const tier1 = document.getElementById("tier1");
+const tier2 = document.getElementById("tier2");
+const panel1 = document.getElementById("panel1");
+const panel2 = document.getElementById("panel2");
+const drawModeEl = document.getElementById("drawMode");
+const spinBothBtn = document.getElementById("spinBothBtn");
+const spin1Btn = document.getElementById("spin1Btn");
+const spin2Btn = document.getElementById("spin2Btn");
+
+const ITEM_HEIGHT = 92;
+const REEL_LENGTH = 36;
+let currentSelection = { b1: null, b2: null };
+let busy = false;
+
+function renderCatalog() {
+  const grid = document.getElementById("catalogGrid");
+  grid.innerHTML = BIOMES.map(b => `
+    <div class="catalog-item ${b.hard ? "hard" : ""}">
+      <div style="font-weight:700; color:#F8FAFC;">[${b.level}] ${b.name}</div>
+      <div style="font-size:11px; color:#94A3B8; margin-top:2px;">${b.env}</div>
+    </div>
+  `).join("");
+}
+
+function pickBiomeForSlot(slotNumber, excludeId) {
+  const mode = drawModeEl.value;
+  let pool = BIOMES.filter(b => b.id !== excludeId);
+
+  if (mode === "all_hard") {
+    pool = pool.filter(b => b.hard);
+  } else if (mode === "second_hard" && slotNumber === 2) {
+    pool = pool.filter(b => b.hard);
+  } else if (mode === "balanced") {
+    const wantHard = slotNumber === 1 ? Math.random() < 0.35 : Math.random() < 0.70;
+    const sub = pool.filter(b => b.hard === wantHard);
+    if (sub.length > 0) pool = sub;
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function spinSingle(slotNum, targetBiome, durationMs) {
+  const reel = slotNum === 1 ? reel1 : reel2;
+  const panel = slotNum === 1 ? panel1 : panel2;
+  const tierBadge = slotNum === 1 ? tier1 : tier2;
+  const detailBox = slotNum === 1 ? detail1 : detail2;
+
+  panel.classList.remove("locked");
+  tierBadge.textContent = "抽選中";
+  tierBadge.className = "slot-tier";
+
+  reel.style.transition = "none";
+  reel.style.transform = "translateY(0px)";
+  reel.innerHTML = "";
+
+  const targetIndex = REEL_LENGTH - 3;
+  for (let i = 0; i < REEL_LENGTH; i++) {
+    const b = i === targetIndex ? targetBiome : BIOMES[Math.floor(Math.random() * BIOMES.length)];
+    const div = document.createElement("div");
+    div.className = "reel-item";
+    div.textContent = b.name;
+    reel.appendChild(div);
+  }
+  void reel.offsetWidth;
+
+  reel.style.transition = `transform ${durationMs}ms cubic-bezier(0.12, 0.85, 0.22, 1)`;
+  reel.style.transform = `translateY(${-(targetIndex * ITEM_HEIGHT)}px)`;
+
+  return new Promise(resolve => {
+    setTimeout(() => {
+      panel.classList.add("locked");
+      tierBadge.textContent = targetBiome.hard ? "難関・思考拡張" : "標準バイオーム";
+      tierBadge.className = "slot-tier" + (targetBiome.hard ? " hard" : "");
+      detailBox.innerHTML = `
+        <div class="env-meta">
+          <span><strong>気候・条件：</strong>${targetBiome.env}</span>
+          <span><strong>目安気温：</strong>${targetBiome.temp}</span>
+          <span><strong>降水・環境：</strong>${targetBiome.prec}</span>
+        </div>
+        <div class="hint-list">
+          <div class="hint-row"><strong>現存量・生産者（3段）：</strong>${targetBiome.producerHint}</div>
+          <div class="hint-row"><strong>腐食連鎖（サブ皿）：</strong>${targetBiome.detritusHint}</div>
+          <div class="hint-row"><strong>エネルギー消費＆ドリンク：</strong>${targetBiome.energyHint}</div>
+        </div>
+      `;
+      resolve();
+    }, durationMs);
+  });
+}
+
+function setButtonsDisabled(disabled) {
+  spinBothBtn.disabled = disabled;
+  spin1Btn.disabled = disabled;
+  spin2Btn.disabled = disabled;
+}
+
+spinBothBtn.addEventListener("click", async () => {
+  if (busy) return;
+  busy = true;
+  setButtonsDisabled(true);
+  const b1 = pickBiomeForSlot(1, null);
+  const b2 = pickBiomeForSlot(2, b1.id);
+  currentSelection = { b1, b2 };
+  await Promise.all([
+    spinSingle(1, b1, 2200),
+    spinSingle(2, b2, 2900)
+  ]);
+  setButtonsDisabled(false);
+  busy = false;
+});
+
+spin1Btn.addEventListener("click", async () => {
+  if (busy) return;
+  busy = true;
+  setButtonsDisabled(true);
+  const exclude = currentSelection.b2 ? currentSelection.b2.id : null;
+  const b1 = pickBiomeForSlot(1, exclude);
+  currentSelection.b1 = b1;
+  await spinSingle(1, b1, 2200);
+  setButtonsDisabled(false);
+  busy = false;
+});
+
+spin2Btn.addEventListener("click", async () => {
+  if (busy) return;
+  busy = true;
+  setButtonsDisabled(true);
+  const exclude = currentSelection.b1 ? currentSelection.b1.id : null;
+  const b2 = pickBiomeForSlot(2, exclude);
+  currentSelection.b2 = b2;
+  await spinSingle(2, b2, 2400);
+  setButtonsDisabled(false);
+  busy = false;
+});
+
+renderCatalog();
+</script>
+</body>
+</html>
